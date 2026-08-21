@@ -2,10 +2,19 @@
 import { readFile } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 
-const input = process.argv[2];
+const args = process.argv.slice(2);
+const input = args.find((arg) => !arg.startsWith("--"));
+const profileArg = args.find((arg) => arg.startsWith("--profile="));
+const profile = profileArg?.slice("--profile=".length) || "teacher-external";
+const supportedProfiles = new Set(["teacher-external", "dev-workspace"]);
 
 if (!input) {
-  console.error("Usage: node validator/validate-lesson.mjs <lesson.html>");
+  console.error("Usage: node validator/validate-lesson.mjs <lesson.html> [--profile=teacher-external|dev-workspace]");
+  process.exit(1);
+}
+
+if (!supportedProfiles.has(profile)) {
+  console.error(`Unknown profile: ${profile}`);
   process.exit(1);
 }
 
@@ -13,6 +22,15 @@ const file = resolve(input);
 const errors = [];
 const add = (code, stage, message, details = "") => errors.push({ code, stage, message, details });
 let html = "";
+let standardAssetIds = new Set();
+
+try {
+  const catalogText = await readFile(new URL("../sdk/asset-library.catalog.json", import.meta.url), "utf8");
+  const catalog = JSON.parse(catalogText);
+  standardAssetIds = new Set(Object.keys(catalog.assets || {}));
+} catch (error) {
+  add("SDK_CATALOG_INVALID", "validator", `อ่าน Standard Asset catalog ไม่ได้: ${error.message}`);
+}
 
 try {
   html = await readFile(file, "utf8");
@@ -47,6 +65,39 @@ if (html) {
     if (pattern.test(html)) add("LESSON_API_NOT_SUPPORTED", "validate", `ห้ามใช้ ${label}`);
   }
 
+  if (profile === "teacher-external") {
+    const externalAssetPatterns = [
+      [/\.\s*addModel\s*\(/, "world.addModel()"],
+      [/\btype\s*:\s*["']model["']/, "addObject type: model"],
+      [/\b(?:path|texture)\s*:\s*["'](?:\.\.?\/|assets\/)/i, "direct asset path"]
+    ];
+    for (const [pattern, label] of externalAssetPatterns) {
+      if (pattern.test(html)) {
+        add(
+          "LESSON_EXTERNAL_ASSET_FORBIDDEN",
+          "validate",
+          `TEACHER_EXTERNAL ห้ามใช้ ${label}; ใช้ primitive หรือ Standard Asset ID ใน catalog เท่านั้น`
+        );
+      }
+    }
+
+    for (const match of html.matchAll(/\basset\s*:\s*["']([^"']+)["']/g)) {
+      if (!standardAssetIds.has(match[1])) {
+        add(
+          "LESSON_ASSET_NOT_FOUND",
+          "validate",
+          `ไม่พบ Standard Asset ID: ${match[1]}`,
+          "เลือก ID จาก sdk/asset-library.catalog.json เท่านั้น"
+        );
+      }
+    }
+  }
+
+  const unsupportedOperator = html.match(/\.addOperatorSign\s*\(\s*{[\s\S]{0,240}?\btext\s*:\s*["']([^"']+)["']/);
+  if (unsupportedOperator && !["<", ">", "="].includes(unsupportedOperator[1])) {
+    add("LESSON_OPERATOR_UNSUPPORTED", "validate", `addOperatorSign ไม่รองรับ ${unsupportedOperator[1]}; ใช้ addText3D สำหรับเครื่องหมายทั่วไป`);
+  }
+
   const requiredPatterns = [
     [/\bid\s*:\s*["'][^"']+["']/, "id"],
     [/\bversion\s*:\s*["'][^"']+["']/, "version"],
@@ -74,7 +125,8 @@ if (html) {
 const report = {
   ok: errors.length === 0,
   file: basename(file),
-  contractVersion: "1.0.0",
+  contractVersion: "1.1.0",
+  profile,
   errors
 };
 
@@ -90,4 +142,3 @@ if (errors.length) {
 
 console.log(JSON.stringify(report, null, 2));
 process.exit(errors.length ? 1 : 0);
-

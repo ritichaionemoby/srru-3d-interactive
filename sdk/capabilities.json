@@ -1,0 +1,31 @@
+{
+  "sdkVersion": "2.0.0",
+  "worldOwner": "main-world",
+  "accessProfiles": {
+    "teacherExternal": {
+      "output": "one-lesson-html",
+      "allowedObjects": ["primitive", "group", "text3d", "library", "zone", "callout", "guideline", "target-focus"],
+      "forbidden": ["custom-asset", "model", "runtime-edit", "shared-asset-edit", "network"]
+    },
+    "devWorkspace": {
+      "defaultScope": "lesson-only",
+      "explicitlyAuthorizedExtensions": ["custom-asset", "model", "runtime", "public-api", "catalog"]
+    }
+  },
+  "lessonOwns": ["scene-composition", "interaction-state", "answer-condition", "lab-step-behavior", "quiz-data"],
+  "objects": ["primitive", "group", "text3d", "library", "zone", "callout", "guideline", "target-focus"],
+  "primitiveShapes": ["box", "sphere", "cylinder", "cone", "torus", "circle", "plane"],
+  "interactions": ["drag", "click"],
+  "standardAssets": [
+    "food/apple",
+    "food/pizza",
+    "sports/ball",
+    "science/water-tank",
+    "math/balance-scale",
+    "space/rocket",
+    "classroom/counter"
+  ],
+  "comparisonOperatorPrefab": ["<", ">", "="],
+  "genericOperatorsUse": "world.addText3D",
+  "optionalFutureCapabilities": ["throw", "physics", "balance", "cut-state", "pour-state"]
+}

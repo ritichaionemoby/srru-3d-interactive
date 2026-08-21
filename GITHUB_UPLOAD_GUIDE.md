@@ -20,13 +20,15 @@ AgentLesson/
 │  └─ lesson.schema.json
 ├─ sdk/
 │  ├─ LESSON_API_REFERENCE.md
+│  ├─ asset-library.catalog.json
+│  ├─ capabilities.json
 │  └─ lesson-sdk.d.ts
 └─ validator/
    ├─ README.md
    └─ validate-lesson.mjs
 ```
 
-ไม่ควรอัป source ภายในทั้งหมดของ `main-world.js`, CMS, secret, deployment config, `node_modules` หรือ assets ขนาดใหญ่ เพราะ Agent ต้องรู้เฉพาะ public contract ไม่ควรอาศัย internal implementation
+ไม่ควรอัป source ภายในทั้งหมดของ `main-world.js`, CMS, secret, deployment config, `node_modules` หรือ assets ขนาดใหญ่ เพราะ Agent ต้องรู้เฉพาะ public contract ไม่ควรอาศัย internal implementation ชุดนี้ใช้ TEACHER_EXTERNAL จึงไม่รับ custom asset จากอาจารย์
 
 ## ตั้งค่า repository ครั้งแรก
 

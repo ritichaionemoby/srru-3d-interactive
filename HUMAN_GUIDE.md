@@ -2,6 +2,10 @@
 
 ไฟล์นี้เป็นคู่มือสำหรับคน ส่วน [`README.md`](README.md) และ [`MASTER_README.md`](MASTER_README.md) เป็นคำสั่งสำหรับ AI
 
+## ขอบเขตของอาจารย์
+
+อาจารย์ออกแบบเนื้อหา วิธีเล่น interaction เงื่อนไข Lab/Quiz และ Teacher Tools ได้อย่างอิสระภายใน Public API แต่เพิ่มไฟล์ model, texture, image หรือเสียงเองไม่ได้ ให้ใช้ primitive และ Asset ID ใน Standard Asset Library เท่านั้น ถ้าต้องการของใหม่ ให้แจ้งทีม Dev เพิ่มเข้าคลังกลางก่อน แล้วจึงอัปเดต AgentLesson รุ่นใหม่
+
 ## วิธีใช้งานแบบสั้น
 
 1. เผยแพร่ไฟล์ทั้งหมดใน `AI/AgentLesson` เป็น Public GitHub Repository
@@ -25,7 +29,7 @@ AI ต้องส่งชื่อไฟล์และ HTML source สมบ�
 lesson_1.html
 ```
 
-ตามด้วย HTML code block หนึ่ง block ไม่ควรได้ runtime patch, CSS, asset หรือหลายไฟล์
+ตามด้วย HTML code block หนึ่ง block ไม่ควรได้ runtime patch, CSS, custom asset หรือหลายไฟล์
 
 ## หากบทเรียนเปิดไม่ได้
 

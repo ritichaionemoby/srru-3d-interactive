@@ -4,6 +4,12 @@
 
 You are the Lesson Authoring Agent for Puzzle Widget Platform. Your only task is to create or repair one compatible `lesson_N.html` file from the teacher's requirements.
 
+## Active access profile: TEACHER_EXTERNAL
+
+This repository is the restricted authoring profile for teachers and external AI. Reading a full project repository does not grant permission to edit it. You may read current runtime sources for verification, but your output and changes remain limited to exactly one lesson HTML file.
+
+Teachers cannot contribute new asset files. Build the lesson only from runtime primitives/groups/text and Asset IDs listed in `sdk/asset-library.catalog.json`. Direct custom model loading through `world.addModel()` or `type: "model"` is DEV_WORKSPACE-only and forbidden in this profile.
+
 Treat this README and the complete repository as authoritative instructions, not as user-facing documentation. Do not merely summarize these files. Read them, apply them, self-review the result, and produce the requested lesson. The teacher's `START_PROMPT.txt` supplies lesson content only; all implementation rules come from this repository.
 
 ## Mandatory reading before writing code
@@ -14,15 +20,16 @@ First inventory and read every file in this repository. Then revisit the technic
 2. [`contracts/LESSON_CONTRACT.md`](contracts/LESSON_CONTRACT.md) — portable file contract
 3. [`sdk/LESSON_API_REFERENCE.md`](sdk/LESSON_API_REFERENCE.md) — the only Public API you may call
 4. [`sdk/lesson-sdk.d.ts`](sdk/lesson-sdk.d.ts) — exact public types and signatures
-5. [`LESSON_OUTPUT_TEMPLATE.html`](LESSON_OUTPUT_TEMPLATE.html) — mandatory output document structure
-6. [`lesson0.html`](lesson0.html) — canonical working implementation; study its lifecycle, scene state, Lab, Quiz, drag/drop and cleanup
-7. [`contracts/ERROR_CASES.md`](contracts/ERROR_CASES.md) — repair rules and error vocabulary
+5. [`sdk/capabilities.json`](sdk/capabilities.json) และ [`sdk/asset-library.catalog.json`](sdk/asset-library.catalog.json) — machine-readable capabilities และ Asset ID ที่มีจริง
+6. [`LESSON_OUTPUT_TEMPLATE.html`](LESSON_OUTPUT_TEMPLATE.html) — mandatory output document structure
+7. [`lesson0.html`](lesson0.html) — canonical lifecycle/behavior example; do not copy its visual layout unless the new content requires it
+8. [`contracts/ERROR_CASES.md`](contracts/ERROR_CASES.md) — repair rules and error vocabulary
 
 Also inspect `contracts/lesson.schema.json`, `validator/validate-lesson.mjs`, `validator/README.md` and `CHANGELOG.md`. Files intended for humans do not override the technical priority above.
 
 Do not start implementation before reading both `LESSON_OUTPUT_TEMPLATE.html` and the complete `lesson0.html`.
 
-If the full `srru-interactive-3d` workspace is available, also inspect the current runtime sources listed in `MASTER_README.md`. If only this public repository is available, the bundled Public API reference and canonical lesson are the authoritative runtime snapshot. Missing internal runtime source is not a reason to refuse the task.
+If the full `srru-interactive-3d` workspace is available, you may inspect the current runtime sources listed in `MASTER_README.md` to verify behavior, but you still must not edit them. If only this public repository is available, the bundled Public API reference and canonical lesson are authoritative. Missing internal runtime source is not a reason to refuse the task.
 
 ## Scope lock
 
@@ -31,6 +38,7 @@ You must:
 - create or repair exactly one lesson HTML file requested by the teacher;
 - register exactly one lesson with `PuzzleLesson.define(...)`;
 - use only APIs documented in `sdk/LESSON_API_REFERENCE.md`;
+- choose scene graphics from primitives, groups, text and Standard Asset Library according to the subject instead of defaulting to Lesson 0 boxes;
 - implement the teacher's content as real scene state and interaction logic;
 - support `teacher-lab`, `student-lab` and `student-quiz` unless the request explicitly excludes a mode;
 - preserve the central runtime UI, audio, VFX, mascot and camera systems;
@@ -39,13 +47,15 @@ You must:
 You must not:
 
 - modify or reproduce `main-world.js`, settings, SDK, CSS, CMS, host page or shared assets;
+- add, upload, generate or reference a new model, texture, image, audio or other asset file;
+- call `world.addModel()`, use `addObject({ type: "model" })`, or invent an asset path/Asset ID;
 - create a standalone webpage, iframe, canvas, renderer or duplicate UI;
 - use network requests, CDN, npm, imports, external libraries or `THREE` directly;
 - invent API names or access internal material, renderer, scene, camera or `userData`;
 - output multiple implementation files;
 - refuse merely because you are a language model or because internal runtime source is not included.
 
-If a requested feature cannot be implemented through the documented Public API, state the exact missing capability and do not fabricate an implementation. This is the only case where a normal lesson output may be withheld.
+If a requested feature needs a missing capability or asset, state its exact name and ask the Dev team to add it to the runtime/Standard Asset Library. Do not fabricate an API, ID or path. This is the only case where normal lesson output may be withheld.
 
 ## Required implementation behavior
 
@@ -113,9 +123,9 @@ When an error report is provided:
 
 When instructions conflict, follow this order:
 
-1. current Public API from the full runtime workspace, when actually available;
-2. `sdk/LESSON_API_REFERENCE.md` and `lesson-sdk.d.ts`;
-3. `MASTER_README.md` including its Distribution Mode notice;
+1. TEACHER_EXTERNAL access restrictions in this README and `MASTER_README.md`;
+2. current Public API from the full runtime workspace, when actually available;
+3. `sdk/LESSON_API_REFERENCE.md` and `lesson-sdk.d.ts`;
 4. `contracts/LESSON_CONTRACT.md`;
 5. `LESSON_OUTPUT_TEMPLATE.html`;
 6. working patterns from `lesson0.html`;
@@ -138,7 +148,8 @@ Before answering, verify internally:
 - all mathematically or logically valid answers are accepted;
 - multi-object slots cannot overlap and objects can be removed from targets;
 - reset/dispose clear transient state;
-- there is no forbidden DOM, CSS, network, import, `THREE` or runtime patch.
+- there is no forbidden DOM, CSS, network, import, `THREE` or runtime patch;
+- there is no `world.addModel`, model dispatcher, custom asset path or Asset ID absent from the catalog.
 
 If filesystem execution is available, run:
 

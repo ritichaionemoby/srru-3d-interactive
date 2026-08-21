@@ -2,7 +2,104 @@
 
 เอกสารนี้คือ allow-list: บทเรียนเรียกได้เฉพาะ API ที่ระบุไว้ หากต้องการ feature อื่นต้องเพิ่มใน runtime และอัปเดต contract ก่อน ห้าม AI สมมติชื่อ method เอง
 
+> **TEACHER_EXTERNAL restriction:** ใช้เฉพาะ primitive/group/text และ Standard Asset Library ชุดนี้ไม่เปิด custom-model API หรือ direct asset path ให้บทเรียนภายนอก
+
 ดู type signatures เพิ่มเติมที่ [`lesson-sdk.d.ts`](lesson-sdk.d.ts)
+
+## Universal Scene API (SDK 2.0)
+
+บทเรียนใหม่ไม่ควรคัดลอกฉากซ้าย/ขวา กล่อง หรือเครื่องหมายจาก Lesson 0 โดยอัตโนมัติ ให้เลือกวัตถุและการจัดฉากตามเนื้อหาของครูผ่าน API กลางต่อไปนี้ ส่วน API เดิมยังรองรับเพื่อให้บทเรียนเก่าทำงานต่อได้
+
+### Standard Asset Library
+
+รายการที่ runtime ใช้จริงอยู่ที่ `Project/interactive/assets/library/catalog.json` และมี portable snapshot สำหรับ AI ที่ `sdk/asset-library.catalog.json`
+
+```js
+const apple = world.addLibraryObject({
+  asset: "food/apple",
+  name: "answer-apple",
+  position: [-3, 0.2, 0],
+  scale: 1.1,
+  draggable: true,
+  onDrop(position, handle) {
+    return { accepted: true, commit: true };
+  }
+});
+```
+
+Asset เริ่มต้น:
+
+- `food/apple`
+- `food/pizza`
+- `sports/ball`
+- `science/water-tank`
+- `math/balance-scale`
+- `space/rocket`
+- `classroom/counter`
+
+ตรวจรายการแบบ runtime ได้ด้วย `context.assets.list()` และ `context.assets.get(id)` ห้ามสมมติ Asset ID ที่ไม่มีใน catalog
+
+### `world.addPrimitive(options)`
+
+สร้างรูปร่างมาตรฐาน รองรับ `box`, `sphere`, `cylinder`, `cone`, `torus`, `circle` และ `plane`
+
+```js
+world.addPrimitive({
+  shape: "cylinder",
+  size: [2, 0.5, 2],
+  position: [0, 0.25, 0],
+  color: "#ffcf62",
+  draggable: true
+});
+```
+
+### `world.addGroup(options)`
+
+ประกอบหลาย primitive เป็นวัตถุเดียว ทุก `parts` ใช้ position/rotation แบบ local ภายใน group:
+
+```js
+world.addGroup({
+  name: "simple-rocket",
+  position: [0, 0, 0],
+  parts: [
+    { shape: "cylinder", size: [1, 2.5, 1], position: [0, 1.4, 0], color: "#ffffff" },
+    { shape: "cone", size: [1.1, 1.2, 1.1], position: [0, 3.2, 0], color: "#ff7897" }
+  ]
+});
+```
+
+### `world.addText3D(options)`
+
+สร้างข้อความหรือเครื่องหมายทั่วไปใน world space ใช้กับ `+ - × ÷` ตัวเลขและคำสั้นๆ ได้
+
+```js
+world.addText3D({
+  text: "+",
+  position: [0, 1.2, 0],
+  size: [2.2, 1.7],
+  color: "#6049c7",
+  background: "rgba(255,255,255,.8)"
+});
+```
+
+`world.addOperatorSign()` เป็น prefab เฉพาะบทเปรียบเทียบและรองรับเพียง `<`, `>` และ `=` เท่านั้น เครื่องหมายอื่นต้องใช้ `addText3D`
+
+### Custom model
+
+ไม่มีใน TEACHER_EXTERNAL allow-list ห้ามใช้ `world.addModel()`, `type: "model"`, `context.resolveAsset()` หรือ path ไปยัง GLB/GLTF/FBX ถ้าต้องการโมเดลใหม่ ให้ส่ง requirement ให้ทีม Dev เพิ่มเป็น Standard Asset ID แล้วอัปเดต catalog ก่อน
+
+### `world.addObject(options)`
+
+Dispatcher กลางรองรับ `type: "primitive" | "group" | "text3d" | "library"`; runtime มี `type: "model"` สำหรับ DEV_WORKSPACE แต่ TEACHER_EXTERNAL ห้ามใช้
+
+### Interaction กลาง
+
+วัตถุจาก API ใหม่กำหนดได้ทั้ง:
+
+- `draggable`, `dragAxis`, `guideTarget`, `onDrag`, `onDrop`
+- `clickable`, `onClick({ handle, object, hitPoint })`
+
+การ drag และ click จะเรียก objective action, outline และ system SFX ผ่าน main-world อัตโนมัติ บทเรียนควรกำหนดเฉพาะ state/condition ของตนเอง
 
 ## Context
 
@@ -14,7 +111,6 @@
 - `context.mode` — `teacher-lab`, `student-lab` หรือ `student-quiz`
 - `context.language` — ภาษาจากเว็บหลัก
 - `context.lessonData` — metadata ที่เว็บหลักส่งให้ SDK
-- `context.resolveAsset(path)` — แปลง relative lesson asset path เป็น URL
 - `context.objectiveAction()` — แจ้ง action ครั้งแรกสำหรับ interaction ที่ไม่ใช่ drag
 - `context.quiz.answer(correct, details)` — อัปเดตคำตอบ Quiz ล่าสุด
 - `context.complete(result)` — จบบทเรียนและส่ง result กลับ host
@@ -120,12 +216,15 @@ world.addGuideline({
 Handle ที่ `add...` คืนมามี:
 
 - `setPosition(x, y, z)` — snap และกำหนด ground Y ใหม่
+- `setRotation(x, y, z)` — กำหนดมุมเป็นองศา
+- `setScale(x, y?, z?)`
 - `animateTo(x, y, z, { duration, delay, arcHeight })`
 - `stopAnimation()`
 - `playCommit()`
 - `setColor(color)`
 - `setVisible(value)`
 - `setDraggable(value)`
+- `setClickable(value)`
 - `remove()`
 - `object3D` — opaque reference สำหรับ guideline; หลีกเลี่ยงการแก้ internals
 
@@ -162,4 +261,3 @@ context.complete({ score: 1, total: 1 });
 ```
 
 `details` ต้องเป็นข้อมูล plain object ที่ serialize ได้ และควรเพียงพอให้ host แสดงเฉลยภายหลัง
-

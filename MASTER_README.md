@@ -2,21 +2,23 @@
 
 > **AgentLesson Distribution Mode — คำสั่งส่วนนี้มีลำดับสูงสุดเมื่ออ่านไฟล์จาก Public Repository**
 >
+> **Access Profile = TEACHER_EXTERNAL:** สร้างหรือซ่อม lesson HTML หนึ่งไฟล์เท่านั้น แม้ AI จะเห็น workspace เต็มก็ไม่มีสิทธิ์แก้ runtime หรือเพิ่ม asset ใช้ได้เฉพาะ primitive/group/text และ Standard Asset ID ใน `sdk/asset-library.catalog.json` ห้าม `world.addModel()`, `type: "model"`, custom path และไฟล์เสริมทุกชนิด
+>
 > ชุด `AI/AgentLesson` เป็น snapshot ของ Knowledge + Public SDK สำหรับ AI ภายนอก จึงตั้งใจไม่แนบ internal runtime source ทั้งหมด หากไม่มี `Project/interactive/main-world.js` หรือ workspace เต็ม ให้ใช้ไฟล์ต่อไปนี้แทน source checks ที่กล่าวถึงภายหลัง:
 >
-> 1. `sdk/LESSON_API_REFERENCE.md` และ `sdk/lesson-sdk.d.ts` — authoritative Public API snapshot
+> 1. `sdk/LESSON_API_REFERENCE.md`, `sdk/lesson-sdk.d.ts`, `sdk/capabilities.json` และ `sdk/asset-library.catalog.json` — authoritative Public API/Asset snapshot
 > 2. `lesson0.html` — canonical implementation จากระบบจริง
 > 3. `LESSON_OUTPUT_TEMPLATE.html` — output shell ที่บังคับ
 > 4. `contracts/LESSON_CONTRACT.md` — portable contract
 > 5. `contracts/ERROR_CASES.md` — repair workflow
 >
-> การไม่มี internal source ไม่ใช่เหตุให้ปฏิเสธงานหรือสมมติ API เพิ่มเอง ให้สร้าง lesson จาก snapshot ข้างต้น หากทำงานอยู่ในโปรเจ็ค `srru-interactive-3d` ฉบับเต็ม จึงค่อยตรวจ source จริง และให้ source เวอร์ชันปัจจุบันมีอำนาจเหนือ snapshot
+> การไม่มี internal source ไม่ใช่เหตุให้ปฏิเสธงานหรือสมมติ API เพิ่มเอง ให้สร้าง lesson จาก snapshot ข้างต้น หากทำงานอยู่ในโปรเจ็ค `srru-interactive-3d` ฉบับเต็ม จึงค่อยตรวจ source จริงเพื่อยืนยัน signature แต่กฎ TEACHER_EXTERNAL ยังคงมีอำนาจเหนือ capability แบบ Dev-only ที่พบใน source
 >
 > Workflow ที่ระบุให้เขียนไฟล์ลง `Project/interactive/chapters/` และทดสอบ browser ใช้เมื่อ AI มีสิทธิ์เข้าถึง workspace เต็มเท่านั้น สำหรับ AI แบบ chat/agent ภายนอก ให้คืน source ของ `lesson_N.html` ตาม Output Protocol ใน `README.md` และทำ static self-review แทน ห้ามแก้ไฟล์ Knowledge/SDK
 
 เอกสารนี้เป็นแหล่งข้อมูลกลางของกระบวนการสร้างบทเรียนด้วย AI สำหรับ Puzzle Widget Platform ภายในโปรเจ็ค `srru-interactive-3d`
 
-เมื่อกฎการสร้างบทเรียน, runtime, UX หรือขั้นตอนตรวจสอบเปลี่ยน ให้ปรับเอกสารนี้เพียงจุดเดียว ไฟล์แบบฟอร์มสำหรับครู เช่น `ExampleGen.md` ต้องเก็บเฉพาะเนื้อหาบทเรียนและชี้กลับมาอ่าน Master นี้
+เมื่อกฎการสร้างบทเรียน, runtime, UX หรือขั้นตอนตรวจสอบเปลี่ยน ทีม Dev ต้อง sync เอกสารนี้ Public API, types, capabilities, catalog, validator, template และ example ให้ตรงกัน อาจารย์แก้เฉพาะ `START_PROMPT.txt`
 
 ## คำสั่งบังคับสำหรับ AI
 
@@ -38,7 +40,7 @@ AI ต้องลงมือสร้างไฟล์จริง ตรว�
    - การเปิดบทเรียน, relative path, progress, complete และ close callback
 5. หน้า demo ที่โปรเจ็คใช้งานอยู่
    - รูปแบบ `lessonData` และขั้นตอนเปิดบทเรียนรุ่นล่าสุด
-6. ไฟล์คำขอของครู เช่น `Project/interactive/ExampleGen.md`
+6. ไฟล์คำขอของอาจารย์ `START_PROMPT.txt` (ใน DEV_WORKSPACE จึงค่อยใช้ `Project/interactive/ExampleGen.md`)
    - เนื้อหา กิจกรรม และการปรับแต่งเฉพาะบท
 
 source code ใน workspace เวอร์ชันปัจจุบันมีอำนาจเหนือ API หรือรายละเอียดที่ AI เคยจำจากงานก่อนหน้า ห้ามเดาชื่อ method, event, asset หรือ schema ขึ้นเอง
@@ -48,7 +50,7 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 ## ขอบเขตงานเริ่มต้น
 
 - สร้างหรือแก้เฉพาะไฟล์บทเรียนที่ผู้ใช้ระบุใน `Project/interactive/chapters/`
-- ห้ามแก้ `main-world.js`, `main-world-setting.js`, `world.css`, `eduSdk.js`, plugin หรือ asset กลาง เว้นแต่ผู้ใช้สั่งให้แก้ระบบโดยตรง
+- ห้ามแก้ `main-world.js`, `main-world-setting.js`, `world.css`, `eduSdk.js`, plugin, catalog หรือ asset กลางทุกกรณีใน TEACHER_EXTERNAL; หากต้องขยายระบบให้รายงานสิ่งที่ขาดเพื่อส่งต่อทีม Dev
 - ห้ามแก้ `lesson0.html` เมื่อใช้เป็น reference เว้นแต่ชื่อไฟล์ที่ผู้ใช้สั่งคือ `lesson0.html` หรือผู้ใช้ระบุให้แก้ Lesson 0
 - รักษาการเปลี่ยนแปลงเดิมของผู้ใช้และไม่แตะไฟล์ที่ไม่เกี่ยวข้อง
 - หากการทำบทเรียนต้องเพิ่มความสามารถใหม่ใน runtime ให้หยุดและอธิบายข้อจำกัดก่อน ห้ามแอบขยาย scope ไปแก้ระบบกลาง
@@ -72,8 +74,11 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 - ห้ามสร้าง header, loading, mascot, console, camera control, result screen หรือ UI กลางซ้ำ
 - title, description, category และข้อมูลแสดงผลหลักมาจาก `lessonData` ของ CMS บทเรียนห้ามเขียนทับ header หลัก
 - ใช้เฉพาะ public API ที่พบจาก runtime ปัจจุบันผ่าน `context.world`, `context.ui`, `context.audio`, `context.quiz`, `context.objectiveAction` และ `context.complete`
+- บทเรียนใหม่เลือกใช้ primitive, group, text และ Standard Asset Library ผสมกันได้ ห้ามยึดรูปแบบกราฟิกของ Lesson 0 เป็นค่าเริ่มต้นทุกบท
+- ห้ามเรียก `world.addModel()`, `addObject({ type: "model" })`, custom GLB/GLTF/FBX หรือเพิ่ม model/texture/image/audio ใหม่ แม้ไฟล์จะอยู่ origin เดียวกัน
+- ตรวจ Asset ID จริงจาก `Project/interactive/assets/library/catalog.json` หรือ portable `sdk/asset-library.catalog.json`; เครื่องหมายทั่วไป เช่น `+ - × ÷` ใช้ generic text API ไม่ส่งเข้า comparison-specific prefab
 - ห้ามแก้ material, geometry, renderer, scene, camera ภายใน หรือ `userData` ของ object โดยตรง
-- ถ้าต้องใช้ asset ให้ใช้เฉพาะไฟล์ที่มีอยู่จริงและ resolve ผ่าน API ของ runtime ห้ามสมมติ path
+- ใช้ asset ได้เฉพาะ Asset ID ที่มีใน portable catalog ห้ามอ้าง path asset โดยตรงหรือสมมติ path
 
 ## โครงสร้าง Meta
 
@@ -232,4 +237,3 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 - โหมดและ viewport ที่ทดสอบ
 - ผล syntax check และ browser console
 - ข้อจำกัดที่ยังเหลืออยู่ตามจริง; ถ้าไม่มีให้ระบุว่าพร้อมเชื่อมผ่าน CMS
-

@@ -1,0 +1,94 @@
+{
+  "version": "1.0.0",
+  "description": "Standard lightweight lesson assets allowed for TEACHER_EXTERNAL. External lessons must not add files or call world.addModel().",
+  "assets": {
+    "food/apple": {
+      "name": "แอปเปิล",
+      "type": "prefab",
+      "tags": ["food", "fruit", "countable", "draggable"],
+      "defaultScale": 1,
+      "parts": [
+        { "shape": "sphere", "size": [1.25, 1.12, 1.18], "position": [-0.3, 0.72, 0], "color": "#ff6f86" },
+        { "shape": "sphere", "size": [1.25, 1.12, 1.18], "position": [0.3, 0.72, 0], "color": "#f85d78" },
+        { "shape": "cylinder", "size": [0.16, 0.7, 0.16], "position": [0, 1.58, 0], "rotation": [0, 0, -8], "color": "#8b5a3c" },
+        { "shape": "sphere", "size": [0.58, 0.16, 0.32], "position": [0.35, 1.72, 0], "rotation": [0, 0, 24], "color": "#61bd72" }
+      ]
+    },
+    "food/pizza": {
+      "name": "พิซซ่า",
+      "type": "prefab",
+      "tags": ["food", "fraction", "countable", "draggable"],
+      "defaultScale": 1,
+      "parts": [
+        { "shape": "cylinder", "size": [2.8, 0.34, 2.8], "position": [0, 0.22, 0], "color": "#e7a85c" },
+        { "shape": "cylinder", "size": [2.48, 0.18, 2.48], "position": [0, 0.47, 0], "color": "#ffd56f" },
+        { "shape": "cylinder", "size": [0.46, 0.12, 0.46], "position": [-0.65, 0.6, -0.35], "color": "#e85468" },
+        { "shape": "cylinder", "size": [0.46, 0.12, 0.46], "position": [0.62, 0.6, -0.28], "color": "#e85468" },
+        { "shape": "cylinder", "size": [0.46, 0.12, 0.46], "position": [0.05, 0.6, 0.72], "color": "#e85468" },
+        { "shape": "sphere", "size": [0.22, 0.12, 0.22], "position": [-0.55, 0.63, 0.58], "color": "#6ebf70" },
+        { "shape": "sphere", "size": [0.22, 0.12, 0.22], "position": [0.72, 0.63, 0.48], "color": "#6ebf70" }
+      ]
+    },
+    "sports/ball": {
+      "name": "ลูกบอล",
+      "type": "prefab",
+      "tags": ["sport", "ball", "draggable", "throwable"],
+      "defaultScale": 1,
+      "parts": [
+        { "shape": "sphere", "size": [1.45, 1.45, 1.45], "position": [0, 0.74, 0], "color": "#72bdf2", "material": { "roughness": 0.36, "clearcoat": 0.55 } },
+        { "shape": "torus", "size": [0.75, 0.055, 0.75], "position": [0, 0.74, 0], "rotation": [90, 0, 0], "color": "#ffffff" }
+      ]
+    },
+    "science/water-tank": {
+      "name": "ถังน้ำ",
+      "type": "prefab",
+      "tags": ["science", "water", "volume", "container"],
+      "defaultScale": 1,
+      "parts": [
+        { "shape": "cylinder", "size": [1.65, 2.4, 1.65], "position": [0, 1.25, 0], "color": "#dff7ff", "material": { "opacity": 0.42, "roughness": 0.18, "clearcoat": 0.75 } },
+        { "shape": "cylinder", "size": [1.48, 1.35, 1.48], "position": [0, 0.76, 0], "color": "#62c8f3", "material": { "opacity": 0.72, "roughness": 0.16, "clearcoat": 0.7 } },
+        { "shape": "torus", "size": [0.86, 0.09, 0.86], "position": [0, 2.42, 0], "rotation": [90, 0, 0], "color": "#5c7aa3" }
+      ]
+    },
+    "math/balance-scale": {
+      "name": "เครื่องชั่งสองแขน",
+      "type": "prefab",
+      "tags": ["math", "weight", "compare", "machine"],
+      "defaultScale": 1,
+      "parts": [
+        { "shape": "cylinder", "size": [2.5, 0.32, 2.5], "position": [0, 0.18, 0], "color": "#7c68d8" },
+        { "shape": "cylinder", "size": [0.38, 3.4, 0.38], "position": [0, 1.95, 0], "color": "#f3bd57" },
+        { "shape": "box", "size": [5.8, 0.28, 0.34], "position": [0, 3.42, 0], "color": "#5e4ab8" },
+        { "shape": "cylinder", "size": [2.3, 0.18, 2.3], "position": [-2.35, 2.45, 0], "color": "#8fd8e8" },
+        { "shape": "cylinder", "size": [2.3, 0.18, 2.3], "position": [2.35, 2.45, 0], "color": "#ff9fbe" },
+        { "shape": "box", "size": [0.08, 1.9, 0.08], "position": [-2.35, 3.02, 0], "color": "#5e4ab8" },
+        { "shape": "box", "size": [0.08, 1.9, 0.08], "position": [2.35, 3.02, 0], "color": "#5e4ab8" }
+      ]
+    },
+    "space/rocket": {
+      "name": "ยานอวกาศ",
+      "type": "prefab",
+      "tags": ["space", "vehicle", "sequence", "draggable"],
+      "defaultScale": 1,
+      "parts": [
+        { "shape": "cylinder", "size": [1.35, 2.8, 1.35], "position": [0, 1.72, 0], "color": "#f7f4ff" },
+        { "shape": "cone", "size": [1.42, 1.45, 1.42], "position": [0, 3.82, 0], "color": "#ff7897" },
+        { "shape": "sphere", "size": [0.64, 0.64, 0.22], "position": [0, 2.05, 0.68], "color": "#69c8ef" },
+        { "shape": "box", "size": [0.42, 1.35, 1.05], "position": [-0.78, 0.85, 0], "rotation": [0, 0, -18], "color": "#7b66db" },
+        { "shape": "box", "size": [0.42, 1.35, 1.05], "position": [0.78, 0.85, 0], "rotation": [0, 0, 18], "color": "#7b66db" },
+        { "shape": "cone", "size": [0.72, 1.25, 0.72], "position": [0, -0.22, 0], "rotation": [0, 0, 180], "color": "#ffc957", "material": { "emissive": "#f07c38", "emissiveIntensity": 0.42 } }
+      ]
+    },
+    "classroom/counter": {
+      "name": "ตัวนับ",
+      "type": "prefab",
+      "tags": ["math", "countable", "draggable", "generic"],
+      "defaultScale": 1,
+      "parts": [
+        { "shape": "box", "size": [1.25, 1.25, 1.25], "position": [0, 0.65, 0], "color": "#77bdf2" }
+      ]
+    }
+  }
+}
+
+

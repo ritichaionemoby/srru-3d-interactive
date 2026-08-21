@@ -1,6 +1,8 @@
-# Lesson Contract 1.0.0
+# Lesson Contract 1.1.0
 
 เอกสารนี้กำหนดรูปแบบบังคับของ `lesson_N.html` สำหรับ World Runtime
+
+สัญญานี้ใช้กับ **TEACHER_EXTERNAL**: ผลลัพธ์เป็น lesson HTML หนึ่งไฟล์ ใช้ได้เฉพาะ primitive/group/text และ Standard Asset ID ที่ประกาศไว้ ห้ามเพิ่ม asset หรือโหลด custom model โดยตรง
 
 ## 1. ขอบเขตไฟล์
 
@@ -33,6 +35,8 @@ Lesson Package เป็น HTML UTF-8 ไฟล์เดียวเพื่�
 - ไม่มี `<style>`, `<link>`, `<script src>`, iframe, canvas หรือ form
 - ไม่มี network request, dynamic import, CDN, npm หรือ `THREE` โดยตรง
 - ใช้เฉพาะ API ที่ประกาศใน `sdk/LESSON_API_REFERENCE.md`
+- ออกแบบฉากจากเนื้อหาของบทเรียน ไม่บังคับใช้โครงซ้าย/ขวาหรือกล่องจาก Lesson 0
+- ใช้เฉพาะ Standard Asset ID จาก `sdk/asset-library.catalog.json` ห้าม custom model relative path, `world.addModel()` และ `type: "model"`
 
 ## 2. Lesson Definition
 
@@ -57,6 +61,8 @@ PuzzleLesson.define({
 - lifecycle อาจเป็น `async` ได้ แต่ error ต้องถูก throw ออกไปให้ runtime รายงาน
 
 Runtime เป็นเจ้าของการ clear world ก่อน reset ดังนั้น lesson ไม่ต้องลบ object ทีละชิ้น แต่ต้องล้าง Map, array, timer และ handle ของรอบก่อน
+
+`reset` สามารถเป็น `async` ได้เมื่อตรรกะบทเรียนจำเป็น แต่ TEACHER_EXTERNAL ห้ามโหลด custom model; Standard Library prefab และ primitive สร้างได้ทันที
 
 ## 3. Metadata
 
@@ -162,7 +168,6 @@ false                              // เหมือน accepted: false
 
 ## 7. Output ของ AI
 
-AI ต้องตอบชื่อไฟล์หนึ่งบรรทัดและ HTML code block หนึ่ง blockเท่านั้น ห้ามส่ง runtime patch, asset หรือไฟล์เสริม หาก API ไม่รองรับสิ่งที่ขอ ให้รายงานข้อจำกัดแทนการประดิษฐ์ API
+AI ต้องตอบชื่อไฟล์หนึ่งบรรทัดและ HTML code block หนึ่ง blockเท่านั้น ห้ามส่ง runtime patch, custom asset หรือไฟล์เสริม หาก API/Standard Library ไม่รองรับสิ่งที่ขอ ให้รายงาน capability หรือ Asset ID ที่ต้องให้ทีม Dev เพิ่ม แทนการประดิษฐ์ API/path
 
 ก่อนส่งต้องเปรียบเทียบกับ `LESSON_OUTPUT_TEMPLATE.html`, `lesson0.html` และผ่าน `validator/validate-lesson.mjs`
-
