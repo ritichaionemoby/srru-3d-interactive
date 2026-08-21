@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>เปรียบเทียบจำนวนด้วย &lt; &gt; =</title>
+</head>
+
+<body>
+  <script data-lesson-app>
+    (() => {
+      const quiz = [
+        { question: "ด้านซ้ายมี 4 กล่อง จงวางด้านขวาให้ 4 > จำนวนด้านขวา", data: [{ key: "givenSide", value: "left" }, { key: "givenCount", value: 4 }, { key: "operator", value: ">" }, { key: "answerCount", value: 2 }] },
+        { question: "ด้านขวามี 5 กล่อง จงวางด้านซ้ายให้จำนวนน้อยกว่า 5", data: [{ key: "givenSide", value: "right" }, { key: "givenCount", value: 5 }, { key: "operator", value: "<" }, { key: "answerCount", value: 3 }] },
+        { question: "ทำให้ทั้งสองด้านมีจำนวนเท่ากัน", data: [{ key: "givenSide", value: "left" }, { key: "givenCount", value: 3 }, { key: "operator", value: "=" }, { key: "answerCount", value: 3 }] },
+        { question: "ด้านขวามี 2 กล่อง จงทำให้ด้านซ้ายมากกว่า", data: [{ key: "givenSide", value: "right" }, { key: "givenCount", value: 2 }, { key: "operator", value: ">" }, { key: "answerCount", value: 4 }] },
+        { question: "ด้านซ้ายมี 1 กล่อง จงทำให้ด้านซ้ายน้อยกว่าด้านขวา", data: [{ key: "givenSide", value: "left" }, { key: "givenCount", value: 1 }, { key: "operator", value: "<" }, { key: "answerCount", value: 4 }] },
+        { question: "ด้านขวามี 4 กล่อง จงวางจำนวนที่เท่ากันทางซ้าย", data: [{ key: "givenSide", value: "right" }, { key: "givenCount", value: 4 }, { key: "operator", value: "=" }, { key: "answerCount", value: 4 }] },
+        { question: "ด้านซ้ายมี 5 กล่อง จงทำให้ด้านซ้ายมากกว่าด้านขวา", data: [{ key: "givenSide", value: "left" }, { key: "givenCount", value: 5 }, { key: "operator", value: ">" }, { key: "answerCount", value: 3 }] },
+        { question: "ด้านขวามี 6 กล่อง จงทำให้ด้านซ้ายน้อยกว่า", data: [{ key: "givenSide", value: "right" }, { key: "givenCount", value: 6 }, { key: "operator", value: "<" }, { key: "answerCount", value: 4 }] },
+        { question: "ด้านซ้ายมี 2 กล่อง จงสร้างจำนวนที่เท่ากัน", data: [{ key: "givenSide", value: "left" }, { key: "givenCount", value: 2 }, { key: "operator", value: "=" }, { key: "answerCount", value: 2 }] },
+        { question: "ด้านขวามี 1 กล่อง จงทำให้ด้านซ้ายมากกว่า", data: [{ key: "givenSide", value: "right" }, { key: "givenCount", value: 1 }, { key: "operator", value: ">" }, { key: "answerCount", value: 3 }] }
+      ];
+
+      PuzzleLesson.define({
+        id: "lesson0-comparison",
+        version: "2.0.0",
+        meta: {
+          worldType: "3d-world-space",
+          lessonId: "lesson0-comparison",
+          description: "ฝึกอ่านและสร้างประโยคเปรียบเทียบจำนวน โดยลากกล่องให้จำนวนทั้งสองฝั่งสัมพันธ์กับเครื่องหมาย < > หรือ =",
+          keyResult: "ผู้เรียนแยกความหมายของ มากกว่า น้อยกว่า และเท่ากับ และตรวจสอบความสมเหตุสมผลของประโยคเปรียบเทียบได้",
+          background: "green",
+          // แต่ละ lesson ปรับ framing ของกล้องเองได้ โดยไม่กระทบ lesson อื่น
+          camera: {
+            fov: 43,
+            startYaw: 25,
+            startPitch: 44,
+            startDistance: 21.8,
+            minDistance: 10,
+            maxDistance: 32,
+            minPitch: 18,
+            maxPitch: 76,
+            // จุดหมุนอยู่กลางเกาะเสมอ; ปรับความสูงของ framing ด้วยค่า Y เท่านั้น
+            target: [0, 0.25, 0]
+          },
+          welcomeMessage: ["สังเกตจำนวนกล่องด้านที่กำหนด", "อ่านเครื่องหมายตรงกลางจากซ้ายไปขวา", "ลากกล่องลงพื้นที่ว่างให้เงื่อนไขเป็นจริง"],
+          tooltip: "ลากกล่องสีชมพูจากแถวพัก ไปวางบนพื้นที่ว่างที่มีเส้นประนำทาง",
+          defaultValue: { givenSide: "left", givenCount: 4, operator: ">", answerCount: 2 },
+          editSchema: [
+            { key: "givenSide", name: "ด้านที่กำหนดกล่องไว้", type: "dropdown", option: ["left", "right"] },
+            { key: "givenCount", name: "จำนวนกล่องที่กำหนด", type: "slider", option: [1, 6] },
+            { key: "answerCount", name: "จำนวนกล่องตัวอย่าง", type: "slider", option: [1, 6], step: 1 },
+            { key: "operator", name: "เครื่องหมาย", type: "dropdown", option: [">", "<", "="] }
+          ],
+          howto: [
+            { index: 0, title: "สำรวจจำนวนที่มีอยู่", type: "sequence", desc: "เริ่มจากนับกล่องสีน้ำเงินในพื้นที่ที่กำหนดให้", option: { type: "instruction", header: "เทคนิคการนับ", message: "นับทีละกล่องจากหน้าไปหลัง และตรวจซ้ำอีกครั้งก่อนดูเครื่องหมาย" } },
+            { index: 1, title: "อ่านเครื่องหมาย", type: "sequence", desc: "อ่านประโยคจากด้านซ้ายไปขวา ปากกว้างของเครื่องหมายจะหันเข้าหาจำนวนที่มากกว่า" },
+            { index: 2, title: "วางแผนคำตอบ", type: "sequence", desc: "มองตามเส้นประไปยังพื้นที่ว่าง แล้วคิดว่าควรใช้กล่องกี่ใบ", option: { type: "hint", header: "จำง่าย ๆ", message: "เครื่องหมาย = ต้องเท่ากัน ส่วน < และ > ต้องมีจำนวนด้านหนึ่งมากกว่าอีกด้าน" } },
+            { index: 3, title: "ลองสร้างประโยคจริง", type: "freestyle", desc: "ลากกล่องสีชมพูไปยังพื้นที่ว่างให้ครบตามเงื่อนไข ลองผิดลองถูกได้ไม่จำกัด" }
+          ],
+          quiz
+        },
+
+        mount(context) {
+          this.context = context;
+          this.handles = [];
+          this.placement = new Map();
+          this.startPositions = [];
+          this.demoTimers = [];
+        },
+
+        reset({ values, mode, question }) {
+          this.demoTimers.forEach(clearTimeout);
+          this.demoTimers = [];
+          this.values = { ...values };
+          this.mode = mode;
+          this.placement = new Map();
+          this.handles = [];
+          this.startPositions = [];
+          const world = this.context.world;
+          const leftX = -5.1;
+          const rightX = 5.1;
+          const targetX = values.givenSide === "left" ? rightX : leftX;
+          const givenX = values.givenSide === "left" ? leftX : rightX;
+          this.targetX = targetX;
+
+          world.addZone({ name: "left-zone", size: [7.4, .28, 6.6], position: [leftX, .15, -1], color: values.givenSide === "left" ? "#c8e5ff" : "#d8f5df" });
+          world.addZone({ name: "right-zone", size: [7.4, .28, 6.6], position: [rightX, .15, -1], color: values.givenSide === "right" ? "#c8e5ff" : "#d8f5df" });
+          this.operatorSign = world.addOperatorSign({ text: values.operator, position: [0, .24, -1], scale: [2.45, 2.45] });
+          this.targetFocus = world.addTargetFocus({ position: [targetX, .34, -.8], radius: 2.05 });
+          this.targetFocus.setVisible(false);
+          const targetRelation = values.operator === "="
+            ? "เท่ากับ"
+            : values.givenSide === "left"
+              ? (values.operator === ">" ? "น้อยกว่า" : "มากกว่า")
+              : (values.operator === ">" ? "มากกว่า" : "น้อยกว่า");
+          const answerLabel = mode === "student-quiz" ? "พื้นที่คำตอบ" : `วางให้${targetRelation} ${values.givenCount}`;
+          world.addCallout({ text: values.givenSide === "left" ? "จำนวนที่กำหนด" : answerLabel, position: [leftX, 4.35, .35], anchor: [leftX, .28, -1], scale: [2.85, .82] });
+          world.addCallout({ text: values.givenSide === "right" ? "จำนวนที่กำหนด" : answerLabel, position: [rightX, 4.35, .35], anchor: [rightX, .28, -1], scale: [2.85, .82] });
+
+          for (let index = 0; index < values.givenCount; index += 1) {
+            const column = index % 3;
+            const row = Math.floor(index / 3);
+            world.addBox({ name: `given-${index}`, size: [1.35, 1.35, 1.35], position: [givenX + (column - 1) * 1.65, .82, -1.5 + row * 1.75], color: "#75b9ee", hoverMessage: "กล่องฝั่งที่กำหนดให้" });
+          }
+
+          const supply = 6;
+          for (let index = 0; index < supply; index += 1) {
+            const startX = -4.5 + index * 1.8;
+            const startPosition = [startX, .72, 4.05];
+            const handle = world.addBox({
+              name: `answer-${index}`,
+              size: [1.25, 1.25, 1.25],
+              position: startPosition,
+              color: "#ff91b2",
+              draggable: mode === "student-quiz",
+              dragAxis: "xz",
+              guideTarget: [targetX, .35, -.8],
+              hoverMessage: "ลากกล่องนี้ไปยังพื้นที่คำตอบ",
+              onDrop: (position, droppedHandle) => this.handleDrop(index, position, droppedHandle, targetX)
+            });
+            this.handles[index] = handle;
+            this.startPositions[index] = startPosition;
+          }
+
+          if (mode !== "student-quiz") {
+            this.guideline = world.addGuideline({ fromObject: this.handles[0].object3D, to: [targetX, .35, -.8] });
+            this.guideline.setVisible(false);
+          }
+
+          const equation = `${values.givenSide === "left" ? values.givenCount : "?"} ${values.operator} ${values.givenSide === "right" ? values.givenCount : "?"}`;
+          this.context.ui.setObjective(`เป้าหมาย: ทำให้ ${equation} เป็นจริง`);
+        },
+
+        handleDrop(index, position, handle, targetX) {
+          const inside = Math.abs(position.x - targetX) < 3.3 && position.z > -4.1 && position.z < 2.2;
+          const wasPlaced = this.placement.has(index);
+
+          if (!inside && !wasPlaced) {
+            return false;
+          }
+
+          if (inside) {
+            if (!wasPlaced) {
+              const usedSlots = new Set(this.placement.values());
+              let slot = 0;
+              while (usedSlots.has(slot)) slot += 1;
+              this.placement.set(index, slot);
+            }
+            const slot = this.placement.get(index);
+            handle.setPosition(targetX + ((slot % 3) - 1) * 1.65, .72, -1.5 + Math.floor(slot / 3) * 1.75);
+          } else {
+            this.placement.delete(index);
+            handle.setPosition(...this.startPositions[index]);
+          }
+
+          const placedCount = this.placement.size;
+          const leftCount = this.values.givenSide === "left" ? this.values.givenCount : placedCount;
+          const rightCount = this.values.givenSide === "right" ? this.values.givenCount : placedCount;
+          const valid = this.values.operator === "=" ? leftCount === rightCount : this.values.operator === ">" ? leftCount > rightCount : leftCount < rightCount;
+          const correct = valid;
+
+          if (this.mode === "student-quiz") {
+            this.context.quiz.answer(correct, { leftCount, rightCount, operator: this.values.operator });
+          } else {
+            this.operatorSign?.setState(correct);
+            if (correct) {
+              this.context.audio.play("success");
+              this.context.ui.toast(`${leftCount} ${this.values.operator} ${rightCount} เป็นจริง ถูกต้อง!`, "success");
+            }
+          }
+          return { accepted: true, commit: inside };
+        },
+
+        onStep(index, step) {
+          const messages = ["เริ่มจากนับกล่องสีน้ำเงิน", `อ่านเครื่องหมาย ${this.values.operator} จากซ้ายไปขวา`, "เส้นประสีเข้มชี้ไปยังพื้นที่คำตอบ", "ถึงเวลาลองลากกล่องด้วยตัวเองแล้ว"];
+          const canPractice = step.type === "freestyle";
+          this.demoTimers.forEach(clearTimeout);
+          this.demoTimers = [];
+          this.context.world.hideDragCue();
+          this.handles.forEach((handle, boxIndex) => {
+            handle.stopAnimation();
+            handle.setDraggable(false);
+            if (index <= 1) handle.setPosition(...this.startPositions[boxIndex]);
+          });
+          this.guideline?.setVisible(index === 2);
+          this.targetFocus?.setVisible(index === 1 || index === 2);
+          const later = (callback, delay) => this.demoTimers.push(setTimeout(callback, delay));
+          if (index === 1) {
+            this.handles.forEach((handle, boxIndex) => {
+              handle.animateTo(...this.startPositions[boxIndex], { delay: boxIndex * 55, duration: 520, arcHeight: .24 });
+            });
+          } else if (index === 2) {
+            this.handles.slice(0, Number(this.values.answerCount)).forEach((handle, boxIndex) => {
+              handle.animateTo(this.targetX + ((boxIndex % 3) - 1) * 1.65, .72, -1.5 + Math.floor(boxIndex / 3) * 1.75, { delay: boxIndex * 120, duration: 720 });
+            });
+          } else if (canPractice) {
+            this.placement.clear();
+            this.handles.forEach((handle, boxIndex) => handle.animateTo(...this.startPositions[boxIndex], { delay: boxIndex * 55, duration: 520, arcHeight: .35 }));
+            later(() => {
+              this.handles.forEach(handle => handle.setDraggable(true));
+              this.context.world.showDragCue(this.handles[0], [this.targetX, .72, -.8]);
+            }, 720);
+          }
+          this.context.ui.toast(messages[index] || step.title, "success");
+        },
+
+        dispose() {
+          this.demoTimers.forEach(clearTimeout);
+          this.context.world.hideDragCue();
+          this.handles = [];
+          this.placement?.clear();
+          this.startPositions = [];
+        }
+      });
+    })();
+  </script>
+</body>
+
+</html>
+
+

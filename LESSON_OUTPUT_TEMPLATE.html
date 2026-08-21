@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lesson output template</title>
+</head>
+<body>
+  <script data-lesson-app>
+    (() => {
+      const quiz = [
+        {
+          question: "ลากกล่องหนึ่งกล่องไปยังพื้นที่คำตอบ",
+          data: [{ key: "boxTheme", value: "blue" }]
+        }
+      ];
+
+      PuzzleLesson.define({
+        id: "lesson-template",
+        version: "1.0.0",
+
+        meta: {
+          worldType: "3d-world-space",
+          lessonId: "lesson-template",
+          description: "Template สำหรับกิจกรรมลากกล่องไปยังพื้นที่คำตอบ",
+          keyResult: "ผู้เรียนเข้าใจวิธีลากและวางวัตถุใน World",
+          background: "green",
+          camera: {
+            fov: 43,
+            startYaw: 22,
+            startPitch: 46,
+            startDistance: 22,
+            minDistance: 10,
+            maxDistance: 34,
+            minPitch: 18,
+            maxPitch: 76,
+            target: [0, 0.4, 0]
+          },
+          welcomeMessage: [
+            "เรียนรู้วิธีลากวัตถุ",
+            "ลองนำกล่องไปวางในพื้นที่คำตอบ"
+          ],
+          tooltip: "ลากกล่องไปยังพื้นที่สีเขียว",
+          defaultValue: {
+            boxTheme: "blue"
+          },
+          editSchema: [
+            { key: "boxTheme", name: "สีของกล่อง", type: "dropdown", option: ["blue", "pink", "green"] }
+          ],
+          howto: [
+            { index: 0, title: "สังเกตวัตถุ", type: "sequence", desc: "สังเกตกล่องสีฟ้าทางซ้าย" },
+            { index: 1, title: "ดูพื้นที่เป้าหมาย", type: "sequence", desc: "วงแสงแสดงพื้นที่สำหรับวางคำตอบ" },
+            { index: 2, title: "ลองลากด้วยตนเอง", type: "freestyle", desc: "ลากกล่องไปวางในพื้นที่คำตอบ" }
+          ],
+          quiz
+        },
+
+        mount(context) {
+          this.context = context;
+          this.handles = [];
+          this.timers = [];
+          this.placed = false;
+        },
+
+        reset({ values, mode }) {
+          this.timers.forEach(clearTimeout);
+          this.timers = [];
+          this.handles = [];
+          this.values = { ...values };
+          this.mode = mode;
+          this.placed = false;
+
+          const world = this.context.world;
+          const source = [-4.2, 0.82, 0];
+          const target = [4.2, 0.82, 0];
+          const boxColors = { blue: "#75b9ee", pink: "#ff9fbe", green: "#8bd7ad" };
+
+          world.addZone({
+            name: "source-zone",
+            size: [5.4, 0.24, 5.4],
+            position: [source[0], 0.14, source[2]],
+            color: "#c8e5ff"
+          });
+          world.addZone({
+            name: "target-zone",
+            size: [5.4, 0.24, 5.4],
+            position: [target[0], 0.14, target[2]],
+            color: "#d8f5df"
+          });
+          world.addCallout({
+            text: "พื้นที่คำตอบ",
+            position: [target[0], 4.1, 0.3],
+            anchor: [target[0], 0.28, target[2]],
+            scale: [2.8, 0.82]
+          });
+
+          this.targetFocus = world.addTargetFocus({
+            position: [target[0], 0.34, target[2]],
+            radius: 1.9
+          });
+          this.targetFocus.setVisible(false);
+
+          const box = world.addBox({
+            name: "answer-box",
+            size: [1.5, 1.5, 1.5],
+            position: source,
+            color: boxColors[values.boxTheme] || boxColors.blue,
+            draggable: mode === "student-quiz",
+            hoverMessage: "ลากไปยังพื้นที่คำตอบ",
+            guideTarget: [target[0], 0.35, target[2]],
+            onDrop: position => {
+              const insideTarget = Math.abs(position.x - target[0]) <= 2.45 && Math.abs(position.z - target[2]) <= 2.45;
+              const insideSource = Math.abs(position.x - source[0]) <= 2.45 && Math.abs(position.z - source[2]) <= 2.45;
+
+              if (insideTarget) {
+                box.setPosition(...target);
+                this.placed = true;
+                this.updateResult();
+                return { accepted: true, commit: true };
+              }
+
+              if (insideSource) {
+                box.setPosition(...source);
+                this.placed = false;
+                this.updateResult();
+                return { accepted: true, commit: false };
+              }
+
+              return { accepted: false };
+            }
+          });
+
+          this.box = box;
+          this.handles.push(box);
+          this.context.ui.setObjective("เป้าหมาย: ลากกล่องไปยังพื้นที่คำตอบ");
+
+          if (mode === "student-quiz") {
+            this.targetFocus.setVisible(true);
+            this.updateResult();
+          }
+        },
+
+        updateResult() {
+          const correct = this.placed;
+          if (this.mode === "student-quiz") {
+            this.context.quiz.answer(correct, {
+              placedCount: this.placed ? 1 : 0,
+              targetCount: 1
+            });
+            return;
+          }
+
+          if (correct) {
+            this.context.audio.play("success");
+            this.context.ui.toast("วางถูกตำแหน่งแล้ว!", "success");
+          }
+        },
+
+        onStep(index, step) {
+          this.context.world.hideDragCue();
+          this.box.stopAnimation();
+          this.box.setDraggable(false);
+          this.targetFocus.setVisible(index >= 1);
+
+          if (step.type === "freestyle") {
+            this.box.setDraggable(true);
+            this.context.world.showDragCue(this.box, [4.2, 0.82, 0]);
+          } else if (index === 0) {
+            this.box.animateTo(-4.2, 1.18, 0, { duration: 420, arcHeight: 0.3 });
+            this.timers.push(setTimeout(() => this.box.animateTo(-4.2, 0.82, 0, { duration: 360, arcHeight: 0.2 }), 460));
+          }
+
+          this.context.ui.setObjective(step.desc);
+        },
+
+        dispose() {
+          this.timers.forEach(clearTimeout);
+          this.context.world.hideDragCue();
+          this.handles.forEach(handle => handle.stopAnimation());
+          this.handles = [];
+          this.timers = [];
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
