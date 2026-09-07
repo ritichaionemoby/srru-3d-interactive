@@ -36,7 +36,8 @@
   const hostEventTypes = new Set([
     "host.openLesson",
     "host.closeLesson",
-    "host.toggleRuntimeSetting"
+    "host.toggleRuntimeSetting",
+    "host.showRuntimeFailure"
   ]);
 
   function createError(code, message) {
@@ -165,7 +166,7 @@
     const activeLesson = state.activeLesson;
     if (!state.lessonFrame || !activeLesson || !lessonEventTypes.has(type)) return false;
 
-    if (type === "runtime.ready" && state.status === "opening") {
+    if (type === "runtime.ready" && ["opening", "opening-error"].includes(state.status)) {
       global.clearTimeout(state.openTimer);
       state.openTimer = null;
       state.status = "open";
@@ -173,7 +174,10 @@
     }
 
     if (type === "runtime.setupError") {
-      failOpen(createError("RUNTIME_ASSET_ERROR", payload.message));
+      global.clearTimeout(state.openTimer);
+      state.openTimer = null;
+      state.status = "opening-error";
+      notifyError(createError("RUNTIME_ASSET_ERROR", payload?.message || "main-world เริ่มทำงานไม่สำเร็จ"));
     }
 
     if (type === "lesson.progress") {
@@ -447,12 +451,19 @@
     global.requestAnimationFrame(() => state.overlay?.classList.add("is-visible"));
 
     state.openTimer = global.setTimeout(() => {
-      failOpen(createError(
-        isExternal ? "EXTERNAL_LESSON_TIMEOUT" : "RUNTIME_TIMEOUT",
-        isExternal
-          ? "ไม่สามารถเปิดบทเรียนภายนอกได้: หน้า HTML ไม่ได้แจ้ง runtime.ready ภายในเวลาที่กำหนด"
-          : "ไม่สามารถเปิดบทเรียนได้ เนื่องจาก main-world โหลดไม่สำเร็จ"
-      ));
+      const code = isExternal ? "EXTERNAL_LESSON_TIMEOUT" : "RUNTIME_TIMEOUT";
+      const message = isExternal
+        ? "ไม่สามารถเปิดบทเรียนภายนอกได้: หน้า HTML ไม่ได้แจ้ง runtime.ready ภายในเวลาที่กำหนด"
+        : "main-world ใช้เวลาเตรียมนานเกินกำหนดและยังไม่พร้อมเปิดบทเรียน";
+      if (isExternal) { failOpen(createError(code, message)); return; }
+      state.status = "opening-error";
+      sendToLesson("host.showRuntimeFailure", {
+        title: "เปิดบทเรียนไม่สำเร็จ",
+        message: "ระบบรอการเริ่มทำงานนานเกินไป จึงหยุดรอเพื่อให้ตรวจปัญหาได้ทันที",
+        location: "การเริ่ม main-world, dependency หรือ WebGL",
+        log: `${code}: ${message}\nLesson: ${lessonData.path}\nMode: ${lessonData.mode}`
+      });
+      notifyError(createError(code, message));
     }, setupTimeoutMs);
   }
 

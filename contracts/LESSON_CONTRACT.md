@@ -1,4 +1,4 @@
-# Lesson Contract 1.2.1
+# Lesson Contract 1.2.2
 
 เอกสารนี้กำหนดรูปแบบบังคับของ `lesson_N.html` สำหรับ World Runtime
 
@@ -167,6 +167,23 @@ false                              // เหมือน accepted: false
 หลังวางที่ยอมรับ ควรเรียก `handle.setPosition(...)` เพื่อ snap ไปยังตำแหน่งที่แน่นอน
 
 ## 6. Cleanup
+
+### Helper ภายใน lesson object
+
+`this.someHelper()` ไม่ใช่คำสั่งของ Runtime หรือ Public API แต่เป็นการเรียก method ของ lesson object เอง ทุกชื่อที่เรียกต้องประกาศอยู่ใน object ที่ส่งให้ `PuzzleLesson.define(...)` และสะกดตรงกัน เช่น:
+
+```js
+PuzzleLesson.define({
+  reset() {
+    this.updateCounter();
+  },
+  updateCounter() {
+    // อัปเดต state/UI ของบทเรียน
+  }
+});
+```
+
+ห้ามเรียก `this.updateCounter()` โดยไม่มี `updateCounter()` ใน object เดียวกัน หากต้องใช้ฟังก์ชันภายนอก object ให้เรียกชื่อฟังก์ชันนั้นตรง ๆ และต้องประกาศไว้จริง Validator จะคืน `LESSON_HELPER_MISSING` เมื่อพบรูปแบบนี้
 
 ก่อน reset และใน dispose:
 

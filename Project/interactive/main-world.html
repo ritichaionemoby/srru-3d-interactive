@@ -175,11 +175,104 @@
           <p id="entry-status">กำลังตรวจสอบระบบ…</p>
         </div>
       </div>
+      <section class="runtime-failure" id="runtime-failure" role="alertdialog" aria-modal="true" aria-labelledby="runtime-failure-title" hidden>
+        <div class="runtime-failure-mark" aria-hidden="true">!</div>
+        <div class="runtime-failure-heading">
+          <span>FAILED</span>
+          <h2 id="runtime-failure-title">เปิดบทเรียนไม่สำเร็จ</h2>
+          <p id="runtime-failure-message">พบปัญหาระหว่างเตรียมบทเรียน</p>
+        </div>
+        <div class="runtime-failure-location"><strong>จุดที่ควรตรวจ</strong><span id="runtime-failure-location">โครงสร้างและ JavaScript ของบทเรียน</span></div>
+        <div class="runtime-failure-log-head"><strong>รายละเอียดสำหรับส่งให้ AI ซ่อม</strong><button id="runtime-failure-copy" type="button">Copy log</button></div>
+        <pre id="runtime-failure-log" tabindex="0"></pre>
+        <p class="runtime-failure-copy-status" id="runtime-failure-copy-status" role="status"></p>
+        <div class="runtime-failure-actions">
+          <button id="runtime-failure-back" type="button">กลับ</button>
+          <button class="primary" id="runtime-failure-retry" type="button">Retry</button>
+        </div>
+      </section>
     </section>
     <div class="celebration-fireworks" id="celebration-fireworks" aria-hidden="true"></div>
     <div class="celebration" id="celebration" aria-hidden="true"></div>
   </main>
 
+  <script>
+    (() => {
+      const panel = document.querySelector("#runtime-failure");
+      const log = document.querySelector("#runtime-failure-log");
+      const copyStatus = document.querySelector("#runtime-failure-copy-status");
+      const originalConsoleError = console.error.bind(console);
+      window.eduRuntimeConsoleErrors = [];
+      const formatConsoleValue = value => {
+        if (value instanceof Error) return value.stack || value.message;
+        if (typeof value === "string") return value;
+        try { return JSON.stringify(value); } catch { return String(value); }
+      };
+      console.error = (...values) => {
+        const message = values.map(formatConsoleValue).join(" ").slice(0, 4000);
+        window.eduRuntimeConsoleErrors.push(message);
+        window.eduRuntimeConsoleErrors = window.eduRuntimeConsoleErrors.slice(-8);
+        originalConsoleError(...values);
+      };
+      window.eduRuntimeRetryHandler = () => {
+        const url = new URL(location.href);
+        url.searchParams.set("v", Date.now());
+        location.replace(url.href);
+      };
+      window.eduHideRuntimeFailure = () => { panel.hidden = true; copyStatus.textContent = ""; };
+      window.eduShowRuntimeFailure = (detail = {}) => {
+        document.documentElement.classList.remove("world-css-pending");
+        document.documentElement.classList.add("world-css-ready");
+        document.querySelector("#entry-screen")?.classList.remove("is-leaving");
+        document.querySelector("#runtime-failure-title").textContent = detail.title || "เปิดบทเรียนไม่สำเร็จ";
+        document.querySelector("#runtime-failure-message").textContent = detail.message || "พบปัญหาระหว่างเตรียมบทเรียน กรุณาคัดลอก log ส่งให้ AI ช่วยตรวจ";
+        document.querySelector("#runtime-failure-location").textContent = detail.location || "JavaScript หรือโครงสร้างไฟล์บทเรียน";
+        const baseLog = detail.log || detail.error || "ไม่พบรายละเอียดเพิ่มเติม";
+        const consoleLog = window.eduRuntimeConsoleErrors.length
+          ? `\n\nConsole error ล่าสุด:\n${window.eduRuntimeConsoleErrors.join("\n---\n")}`
+          : "";
+        log.textContent = `${baseLog}${consoleLog}`;
+        panel.hidden = false;
+        panel.querySelector("#runtime-failure-retry")?.focus();
+      };
+      async function copyFailureLog() {
+        const text = log.textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+          copyStatus.textContent = "คัดลอก log แล้ว นำไปส่งให้ AI ซ่อมได้เลย";
+        } catch {
+          const field = document.createElement("textarea");
+          field.value = text; field.style.cssText = "position:fixed;left:-9999px;top:0";
+          document.body.append(field); field.select();
+          let copied = false;
+          try { copied = document.execCommand("copy"); } catch {}
+          field.remove();
+          copyStatus.textContent = copied ? "คัดลอก log แล้ว นำไปส่งให้ AI ซ่อมได้เลย" : "คัดลอกอัตโนมัติไม่ได้ กรุณาเลือกข้อความในช่อง log แล้วคัดลอก";
+        }
+      }
+      document.querySelector("#runtime-failure-copy").addEventListener("click", copyFailureLog);
+      document.querySelector("#runtime-failure-back").addEventListener("click", () => window.parent.postMessage({ channel: "edu-widget", type: "lesson.closeRequested", payload: {} }, location.origin));
+      document.querySelector("#runtime-failure-retry").addEventListener("click", () => { panel.hidden = true; copyStatus.textContent = ""; window.eduRuntimeRetryHandler?.(); });
+      window.addEventListener("message", event => {
+        if (event.origin !== location.origin || event.source !== window.parent || event.data?.channel !== "edu-widget" || event.data?.type !== "host.showRuntimeFailure") return;
+        window.eduShowRuntimeFailure(event.data.payload);
+      });
+      window.addEventListener("error", event => {
+        const error = event.error instanceof Error ? event.error : new Error(event.message || "JavaScript error");
+        window.eduRuntimeLastError = error;
+        window.eduShowRuntimeFailure({
+          message: "JavaScript ของบทเรียนหยุดทำงานระหว่างโหลดหรือใช้งาน",
+          location: [event.filename?.split("/").pop(), event.lineno ? `บรรทัด ${event.lineno}` : ""].filter(Boolean).join(" · ") || "JavaScript ของบทเรียน",
+          log: `${error.stack || event.message}\n\nส่ง log นี้พร้อมไฟล์ HTML ให้ AI ตรวจสอบ`
+        });
+      });
+      window.addEventListener("unhandledrejection", event => {
+        const error = event.reason instanceof Error ? event.reason : new Error(String(event.reason || "Unhandled Promise rejection"));
+        window.eduRuntimeLastError = error;
+        window.eduShowRuntimeFailure({ message: "งานเบื้องหลังของบทเรียนทำงานไม่สำเร็จ", location: "Promise หรือ async function ในบทเรียน", log: `${error.stack || error.message}\n\nส่ง log นี้พร้อมไฟล์ HTML ให้ AI ตรวจสอบ` });
+      });
+    })();
+  </script>
   <script type="module">
     try {
       await window.eduRuntimeStyleReady;
@@ -189,6 +282,11 @@
       document.documentElement.classList.remove("world-css-pending");
       document.documentElement.classList.add("world-css-ready");
     } catch (error) {
+      window.eduShowRuntimeFailure({
+        message: "ระบบกลางเริ่มทำงานไม่สำเร็จ จึงยังเปิดบทเรียนไม่ได้",
+        location: "ไฟล์ runtime, CSS หรือ dependency ที่ใช้เริ่มระบบ",
+        log: `${error.stack || error.message}\n\nRuntime URL: ${location.href}`
+      });
       window.parent.postMessage({
         channel: "edu-widget",
         type: "runtime.setupError",

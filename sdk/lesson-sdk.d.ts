@@ -94,6 +94,12 @@ export interface WorldGuiHandle extends LessonHandle {
   getText(): string;
 }
 
+export interface WorldGuiActionEvent {
+  handle: WorldGuiHandle;
+  object: unknown;
+  sourceEvent: unknown;
+}
+
 export interface LessonWorld {
   clear(): void;
   readonly capabilities: {
@@ -140,10 +146,15 @@ export interface LessonWorld {
   addWorldGui(options?: {
     name?: string; position?: Vec3; compactPosition?: Vec3; rotation?: Vec3; scale?: number | Vec3; compactScale?: number | Vec3;
     text?: string; size?: Vec2; maxLines?: number; fontSize?: number; fontWeight?: number;
-    textColor?: string; backgroundColor?: string | number; borderColor?: string | number; accentColor?: string;
+    color?: string; textColor?: string; backgroundColor?: string | number; backgroundOpacity?: number; borderColor?: string | number; accentColor?: string;
+    insight?: InsightOptions | string | ((event: WorldGuiActionEvent) => InsightOptions | string | void);
+    onClick?: (event: WorldGuiActionEvent) => void;
+    onHover?: (event: { hovered: boolean; handle: WorldGuiHandle; object: unknown }) => void;
+    objectiveAction?: boolean; hoverMessage?: string; hitArea?: Vec3; hitAreaOffset?: Vec3;
   }): WorldGuiHandle;
   addOperatorSign(options?: { text?: "<" | ">" | "=" | "+" | "-" | "−" | "×" | "÷"; position?: Vec3; scale?: Vec2 }): OperatorHandle;
   addGuideline(options?: { from?: Vec3; fromObject?: unknown; to?: Vec3; color?: string | number }): LessonHandle;
+  addLineRender(options?: { name?: string; from?: Vec3; to?: Vec3; color?: string | number; thickness?: number; opacity?: number; dashed?: boolean; dashSize?: number; gapSize?: number; arrow?: boolean; arrowSize?: number }): LessonHandle;
   addTargetFocus(options?: { position?: Vec3; radius?: number; color?: string | number; opacity?: number; animate?: boolean; rotateSpeed?: number; pulseScale?: number; opacityPulse?: number }): LessonHandle;
   showDragCue(handle: LessonHandle, to: Vec3): void;
   hideDragCue(): void;

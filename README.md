@@ -14,6 +14,8 @@ Repository นี้รวมคู่มือ, Public API, ตัวอย่�
 6. ตรวจ source เฉพาะบริการที่ใช้จาก [main-world.js](Project/interactive/main-world.js), [gui-service.js](Project/interactive/gui-service.js), [settings](Project/interactive/main-world-setting.js) และ [EduSDK](Project/interactive/eduSdk.js)
 7. สร้างไฟล์จริงและทำตาม [TESTING.md](TESTING.md); ใช้ [ERROR_CASES](contracts/ERROR_CASES.md) ช่วยซ่อม
 
+กฎป้องกัน runtime error ที่ต้องตรวจทุกครั้ง: `this.someHelper()` หมายถึง method ภายใน lesson object เท่านั้น ไม่ใช่ Public API ของ Platform จึงต้องมี `someHelper() { ... }` อยู่ใน object ที่ส่งให้ `PuzzleLesson.define(...)` และสะกดตรงกัน Validator จะรายงาน `LESSON_HELPER_MISSING` เมื่อเรียก helper ที่ไม่ได้ประกาศ
+
 หากอ่านผ่านเว็บไม่ครบ ให้ clone repository จาก ข้อความ START_PROMPT ที่ผู้มอบหมายส่งมาแยกต่างหาก หรือใช้ ZIP ที่ได้รับ ไม่ต้องอ่านบทเรียนทุกบททุกครั้ง ห้ามอ้างว่าอ่านหรือทดลองแล้วถ้ายังไม่ได้ทำจริง
 
 ## โครงสร้างภายใน repository นี้
@@ -91,7 +93,7 @@ AI/Github/
 
 ## Self-review และรูปแบบส่งมอบ
 
-ก่อนส่ง ตรวจ HTML/JS ครบ, script และ define อย่างละหนึ่ง, lifecycle ครบ, API ทุกตัวตรง reference/source, keys ของ Teacher Tools ตรงกัน, sequence/freestyle ถูกต้อง, Quiz ไม่ตอบระหว่าง reset และไม่เฉลย, ไปต่อได้หลังลงมือทั้งถูกและผิด, ทุกคำตอบที่ถูกตามกติกาถูกยอมรับ, slot ไม่ทับกัน, ลากออกเพื่อแก้ได้ และล้าง timer/state/GUI scope ครบ
+ก่อนส่ง ตรวจ HTML/JS ครบ, script และ define อย่างละหนึ่ง, lifecycle ครบ, ทุก `this.*()` มี method จริงใน lesson definition, API ทุกตัวตรง reference/source, keys ของ Teacher Tools ตรงกัน, sequence/freestyle ถูกต้อง, Quiz ไม่ตอบระหว่าง reset และไม่เฉลย, ไปต่อได้หลังลงมือทั้งถูกและผิด, ทุกคำตอบที่ถูกตามกติกาถูกยอมรับ, slot ไม่ทับกัน, ลากออกเพื่อแก้ได้ และล้าง timer/state/GUI scope ครบ
 
 รัน validator และแก้ error ที่รายงานทุกข้อ หากรันเครื่องมือไม่ได้ให้รายงานว่าเป็น self-review เท่านั้น ไม่อ้างว่า validator ผ่าน ส่วน browser/mobile checks ทำเมื่อมีระบบปลายทางตาม TESTING.md
 

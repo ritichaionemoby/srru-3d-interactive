@@ -26,7 +26,7 @@ const elements = {
 
 const runtime = {
   sessionId: 0, lesson: null, meta: null, lessonData: null, lessonUrl: null, context: null,
-  mode: "student-lab", language: "th", values: {}, stepIndex: 0, quiz: null, toastTimer: 0, typewriterTimers: new Set(), optionCloseTimer: 0, mascotFlightTimer: 0, mascotLandingTimer: 0, mascotSpeechTimer: 0, mascotHintTimer: 0, mascotBlinkTimer: 0, mascotBlinkReleaseTimer: 0, mascotPoseTimer: 0, pendingMascotOption: null, sceneEntered: false, bgm: null, bgmRequested: false, completed: false, modalReturnFocus: null
+  mode: "student-lab", language: "th", values: {}, stepIndex: 0, quiz: null, toastTimer: 0, typewriterTimers: new Set(), optionCloseTimer: 0, mascotFlightTimer: 0, mascotLandingTimer: 0, mascotSpeechTimer: 0, mascotHintTimer: 0, mascotBlinkTimer: 0, mascotBlinkReleaseTimer: 0, mascotPoseTimer: 0, pendingMascotOption: null, sceneEntered: false, bgm: null, bgmRequested: false, completed: false, modalReturnFocus: null, lastOpenPayload: null
 };
 
 const setUiVariable = (name, value, unit = "") => { if (value !== undefined && value !== null) document.documentElement.style.setProperty(name, typeof value === "number" ? `${value}${unit}` : String(value)); };
@@ -149,6 +149,7 @@ function closeModal() { elements.modal.hidden = true; elements.modal.replaceChil
 window.addEventListener("keydown", event => { if (elements.modal.hidden) return; const focusable = [...elements.modal.querySelectorAll('button:not(:disabled),[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex]:not([tabindex="-1"])')]; if (event.key === "Escape" && elements.modal.querySelector("[data-modal-close]")) { event.preventDefault(); closeModal(); return; } if (event.key !== "Tab" || focusable.length < 2) return; const first = focusable[0], last = focusable.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); } });
 
 function beginEntry(title) {
+  window.eduHideRuntimeFailure?.();
   runtime.entryStartedAt = performance.now();
   elements.entry.classList.remove("is-leaving");
   elements.entryTitle.textContent = title || "กำลังเตรียมพื้นที่เรียนรู้";
@@ -583,6 +584,54 @@ function queueSpawn(object) { if (!setting.object.spawn.enabled) return; object.
 function playWorldEntrance() { let index = 0; lessonGroup.traverse(object => { if (object.userData.spawnable) { object.scale.setScalar(.001); animations.set(object, { kind: "spawn", start: performance.now() + index++ * setting.object.spawn.stagger, duration: setting.object.spawn.duration }); } }); }
 function updateGuideline(line) { const from = line.userData.fromObject ? line.userData.fromObject.getWorldPosition(new THREE.Vector3()) : line.userData.guideFrom.clone(), to = line.userData.guideTo, middle = new THREE.Vector3((from.x + to.x) / 2, Math.max(from.y, to.y) + 2.3, (from.z + to.z) / 2), curve = new THREE.QuadraticBezierCurve3(from, middle, to), points = curve.getPoints(40), direction = points.at(-1).clone().sub(points.at(-2)).normalize(); line.geometry.setFromPoints(points); line.computeLineDistances(); line.userData.arrow.position.copy(to).addScaledVector(direction, -line.userData.arrowOffset); line.userData.arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction); }
 function createGuideline({ from = [0, .2, 0], fromObject = null, to = [0, .2, 0], color = setting.interaction.guideline.color, parent = lessonGroup } = {}) { const style = threeColor(color), guide = setting.interaction.guideline, arrowLength = guide.arrowLength ?? .52, geometry = new THREE.BufferGeometry(), line = new THREE.Line(geometry, new THREE.LineDashedMaterial({ color: style.color, dashSize: guide.dashSize, gapSize: guide.gapSize, transparent: true, opacity: .92 * style.alpha, depthTest: false, toneMapped: false, fog: false })), arrow = new THREE.Mesh(new THREE.ConeGeometry(guide.arrowSize ?? .22, arrowLength, 14), new THREE.MeshBasicMaterial({ color: style.color, transparent: true, opacity: .98 * style.alpha, depthTest: false, depthWrite: false, toneMapped: false, fog: false })); arrow.renderOrder = 951; Object.assign(line.userData, { flowingGuideline: true, fromObject, guideFrom: new THREE.Vector3(...from), guideTo: new THREE.Vector3(...to), arrow, arrowOffset: arrowLength * .46 }); line.add(arrow); line.renderOrder = 950; updateGuideline(line); parent.add(line); activeGuidelines.add(line); return line; }
+function createLineRender({ name = "line-render", from = [0, .24, 0], to = [1, .24, 0], color = "#4f7fe8", opacity = .9, occludedOpacity = .14, dashed = false, arrow = true, parent = lessonGroup } = {}) {
+  const start = new THREE.Vector3(...from), end = new THREE.Vector3(...to), direction = end.clone().sub(start), length = direction.length();
+  if (length < .001) throw new Error("LINE_RENDER_INVALID: from และ to ต้องเป็นคนละตำแหน่ง");
+  direction.normalize();
+  const style = threeColor(color), guide = setting.interaction.guideline;
+  const materialOptions = { color: style.color, transparent: true, opacity: clamp(opacity, 0, 1) * style.alpha, depthTest: true, depthWrite: false, toneMapped: false, fog: false };
+  const lineMaterial = dashed
+    ? new THREE.LineDashedMaterial({ ...materialOptions, dashSize: guide.dashSize, gapSize: guide.gapSize })
+    : new THREE.LineBasicMaterial(materialOptions);
+  const group = new THREE.Group(), lineGeometry = new THREE.BufferGeometry().setFromPoints([start, end]), line = new THREE.Line(lineGeometry, lineMaterial);
+  line.renderOrder = 48;
+  line.raycast = () => { };
+  if (dashed) line.computeLineDistances();
+  group.name = name;
+  group.add(line);
+  if (occludedOpacity > 0) {
+    const ghostOptions = { ...materialOptions, opacity: clamp(occludedOpacity, 0, 1) * style.alpha, depthTest: false };
+    const ghostMaterial = dashed
+      ? new THREE.LineDashedMaterial({ ...ghostOptions, dashSize: guide.dashSize, gapSize: guide.gapSize })
+      : new THREE.LineBasicMaterial(ghostOptions);
+    const ghost = new THREE.Line(lineGeometry.clone(), ghostMaterial);
+    ghost.renderOrder = 47;
+    ghost.raycast = () => { };
+    if (dashed) ghost.computeLineDistances();
+    group.add(ghost);
+  }
+  if (arrow) {
+    const arrowLength = Math.min(guide.arrowLength ?? .52, length * .28), arrowMesh = new THREE.Mesh(
+      new THREE.ConeGeometry(guide.arrowSize ?? .22, arrowLength, 14),
+      new THREE.MeshBasicMaterial({ ...materialOptions, opacity: Math.min(1, materialOptions.opacity + .04) })
+    );
+    arrowMesh.position.copy(end).addScaledVector(direction, -arrowLength * .46);
+    arrowMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+    arrowMesh.renderOrder = 49;
+    arrowMesh.raycast = () => { };
+    group.add(arrowMesh);
+    if (occludedOpacity > 0) {
+      const ghostArrow = arrowMesh.clone();
+      ghostArrow.material = arrowMesh.material.clone();
+      ghostArrow.material.depthTest = false;
+      ghostArrow.material.opacity = clamp(occludedOpacity, 0, 1) * style.alpha;
+      ghostArrow.renderOrder = 47;
+      group.add(ghostArrow);
+    }
+  }
+  parent.add(group);
+  return group;
+}
 let dragGuideline = null, dragCue = null, dragCueResumeTimer = 0;
 function removeDragGuideline() { if (!dragGuideline) return; activeGuidelines.delete(dragGuideline); effectGroup.remove(dragGuideline); disposeObject(dragGuideline); dragGuideline = null; }
 function pauseDragCue() { clearTimeout(dragCueResumeTimer); elements.sceneHandCue.classList.add("is-camera-moving"); }
@@ -746,6 +795,16 @@ function worldGuiSettingPosition(value) {
 
 function addWorldGui(options = {}) {
   const config = { ...worldGuiRenderDefaults, ...(setting.ui.worldGui || {}) };
+  const actionable = Boolean(options.insight || options.onClick);
+  const actionStyle = {
+    faceColor: "#fffdf4", edgeColor: "#6756c9", hoverFaceColor: "#ffffff", hoverEdgeColor: "#ffad32",
+    emissiveColor: "#fff3bf", faceHeight: .1, baseHeight: .16, outerPadding: .08, hoverLift: .045,
+    roughness: .34, clearcoat: .82, backgroundColor: "#fffdf4", hoverBackgroundColor: "#fff7d6",
+    backgroundOpacity: .98, borderColor: "#6756c9", hoverBorderColor: "#ffad32", borderWidth: 22,
+    iconSize: 128, iconBackground: "#6756c9", hoverIconBackground: "#ff9f1f", iconColor: "#ffffff",
+    iconBorderColor: "#ffffff", iconBorderWidth: 7, iconText: "i",
+    ...(config.actionable || {})
+  };
   const size = options.size || config.size || [3.6, .95];
   const width = Math.max(.8, Number(size[0]) || 3.4);
   const height = Math.max(.5, Number(size[1]) || .9);
@@ -794,6 +853,29 @@ function addWorldGui(options = {}) {
   const root = new THREE.Group();
   const visual = new THREE.Group();
   visual.add(label);
+  let actionBaseMaterial = null, actionFaceMaterial = null;
+  if (actionable) {
+    const outerPadding = Number(actionStyle.outerPadding) || 0;
+    const baseHeight = Math.max(.04, Number(actionStyle.baseHeight) || .16);
+    const faceHeight = Math.max(.035, Number(actionStyle.faceHeight) || .1);
+    actionBaseMaterial = new THREE.MeshPhysicalMaterial({
+      color: actionStyle.edgeColor, roughness: actionStyle.roughness, clearcoat: actionStyle.clearcoat,
+      clearcoatRoughness: .16, metalness: .015
+    });
+    actionFaceMaterial = new THREE.MeshPhysicalMaterial({
+      color: actionStyle.faceColor, emissive: actionStyle.emissiveColor, emissiveIntensity: .1,
+      roughness: actionStyle.roughness, clearcoat: actionStyle.clearcoat, clearcoatRoughness: .12, metalness: .01
+    });
+    const base = new THREE.Mesh(new RoundedBoxGeometry(width + outerPadding * 2, baseHeight, height + outerPadding * 2, 8, Math.min(.18, height * .2)), actionBaseMaterial);
+    const face = new THREE.Mesh(new RoundedBoxGeometry(width, faceHeight, height, 8, Math.min(.16, height * .18)), actionFaceMaterial);
+    base.position.y = baseHeight / 2;
+    face.position.y = baseHeight + faceHeight / 2;
+    label.position.y = baseHeight + faceHeight + .012;
+    base.castShadow = base.receiveShadow = face.castShadow = face.receiveShadow = true;
+    base.userData.isLessonDecoration = true;
+    face.userData.isLessonDecoration = true;
+    visual.add(base, face);
+  }
   const displayOptions = {
     ...options,
     position: options.position || worldGuiSettingPosition(config.position),
@@ -812,7 +894,7 @@ function addWorldGui(options = {}) {
     ...displayOptions,
     name: options.name || "world-gui"
   });
-  let text = "";
+  let text = "", hoveredAction = false, handle = null;
 
   const renderText = next => {
     text = String(next ?? "");
@@ -829,24 +911,33 @@ function addWorldGui(options = {}) {
     const lineHeightRatio = options.lineHeight ?? config.lineHeight ?? 1.22;
     const panelInset = (options.panelInset ?? config.panelInset ?? 18) * fontScale;
     const panelRadius = (options.panelRadius ?? config.panelRadius ?? 42) * fontScale;
-    const borderWidth = (options.borderWidth ?? config.borderWidth ?? 2) * fontScale;
-    const availableWidth = Math.max(1, canvasWidth - paddingX * 2);
+    const normalBorderWidth = options.borderWidth ?? config.borderWidth ?? 2;
+    const borderWidth = (actionable ? Math.max(normalBorderWidth, options.actionBorderWidth ?? actionStyle.borderWidth) : normalBorderWidth) * fontScale;
+    const actionIconSize = actionable ? Math.min(canvasHeight * .62, (options.actionIconSize ?? actionStyle.iconSize) * fontScale) : 0;
+    const actionReserve = actionable ? actionIconSize + paddingX * .62 : 0;
+    const availableWidth = Math.max(1, canvasWidth - paddingX * 2 - actionReserve);
     const availableHeight = Math.max(1, canvasHeight - paddingY * 2);
+    const textCenterX = canvasWidth / 2 - actionReserve * .22;
 
     context.clearRect(0, 0, canvasWidth, canvasHeight);
-    const backgroundOpacity = clamp(options.backgroundOpacity ?? config.backgroundOpacity ?? config.faceOpacity ?? 0, 0, 1);
-    const borderOpacity = clamp(options.borderOpacity ?? config.borderOpacity ?? config.baseOpacity ?? .72, 0, 1);
+    const baseBackgroundOpacity = options.backgroundOpacity ?? config.backgroundOpacity ?? config.faceOpacity ?? 0;
+    const backgroundOpacity = clamp(actionable ? Math.max(baseBackgroundOpacity, actionStyle.backgroundOpacity) : baseBackgroundOpacity, 0, 1);
+    const borderOpacity = clamp(actionable ? 1 : (options.borderOpacity ?? config.borderOpacity ?? config.baseOpacity ?? .72), 0, 1);
     context.save();
     context.beginPath();
     context.roundRect(panelInset, panelInset, canvasWidth - panelInset * 2, canvasHeight - panelInset * 2, panelRadius);
     if (backgroundOpacity > 0) {
       context.globalAlpha = backgroundOpacity;
-      context.fillStyle = options.backgroundColor || config.backgroundColor || config.faceColor || "#ffffff";
+      context.fillStyle = hoveredAction
+        ? (options.actionHoverBackgroundColor || actionStyle.hoverBackgroundColor)
+        : (options.actionBackgroundColor || actionStyle.backgroundColor);
       context.fill();
     }
     if (borderOpacity > 0 && borderWidth > 0) {
       context.globalAlpha = borderOpacity;
-      context.strokeStyle = options.borderColor || config.borderColor || config.baseColor || "#ffffff";
+      context.strokeStyle = actionable
+        ? (hoveredAction ? (options.actionHoverBorderColor || actionStyle.hoverBorderColor) : (options.actionBorderColor || actionStyle.borderColor))
+        : (options.borderColor || config.borderColor || config.baseColor || "#ffffff");
       context.lineWidth = borderWidth;
       context.shadowColor = options.borderShadowColor || config.borderShadowColor || "rgba(13,28,34,.58)";
       context.shadowBlur = (options.borderShadowBlur ?? config.borderShadowBlur ?? 5) * fontScale;
@@ -898,16 +989,64 @@ function addWorldGui(options = {}) {
     context.shadowOffsetY = (options.shadowOffsetY ?? options.textShadowOffsetY ?? config.shadowOffsetY ?? config.textShadowOffsetY ?? 1) * fontScale;
     layout.lines.forEach((line, index) => {
       const y = startY + index * lineHeight;
-      if (textStrokeWidth > 0) context.strokeText(line, canvasWidth / 2, y);
-      context.fillText(line, canvasWidth / 2, y);
+      if (textStrokeWidth > 0) context.strokeText(line, textCenterX, y);
+      context.fillText(line, textCenterX, y);
     });
+
+    if (actionable) {
+      const iconX = canvasWidth - panelInset - actionIconSize * .72;
+      const iconY = canvasHeight / 2;
+      context.save();
+      context.beginPath();
+      context.arc(iconX, iconY, actionIconSize * .46, 0, Math.PI * 2);
+      context.fillStyle = hoveredAction ? (options.actionHoverIconBackground || actionStyle.hoverIconBackground) : (options.actionIconBackground || actionStyle.iconBackground);
+      context.fill();
+      context.lineWidth = Math.max(3, (options.actionIconBorderWidth ?? actionStyle.iconBorderWidth) * fontScale);
+      context.strokeStyle = options.actionIconBorderColor || actionStyle.iconBorderColor;
+      context.stroke();
+      context.fillStyle = options.actionIconColor || actionStyle.iconColor;
+      context.font = `900 ${actionIconSize * .62}px ${fontFamily}`;
+      context.textAlign = "center";
+      context.textBaseline = "middle";
+      context.shadowColor = "transparent";
+      context.fillText(options.actionIconText || actionStyle.iconText, iconX, iconY + actionIconSize * .025);
+      context.restore();
+    }
 
     texture.needsUpdate = true;
     markSceneActive();
     return text;
   };
 
-  const handle = Object.freeze({ ...baseHandle, setText: renderText, getText: () => text });
+  const activate = sourceEvent => {
+    const payload = { handle, object: root, sourceEvent };
+    const definition = typeof options.insight === "function" ? options.insight(payload) : options.insight;
+    if (definition) guiService.insight.show(typeof definition === "string" ? { message: definition } : definition);
+    options.onClick?.(payload);
+  };
+  if (actionable) {
+    Object.assign(root.userData, {
+      clickable: true,
+      selectionFeedback: false,
+      interactionStyle: "world-gui",
+      objectiveAction: options.objectiveAction ?? false,
+      hoverMessage: options.hoverMessage || "กดเพื่อดูรายละเอียด",
+      onClick: activate,
+      onHover: value => {
+        hoveredAction = Boolean(value);
+        actionBaseMaterial?.color.set(hoveredAction ? actionStyle.hoverEdgeColor : actionStyle.edgeColor);
+        actionFaceMaterial?.color.set(hoveredAction ? actionStyle.hoverFaceColor : actionStyle.faceColor);
+        actionFaceMaterial.emissiveIntensity = hoveredAction ? .24 : .1;
+        visual.position.y = hoveredAction ? actionStyle.hoverLift : 0;
+        elements.canvas.classList.toggle("is-hovering-world-gui", hoveredAction);
+        renderText(text);
+        options.onHover?.({ hovered: hoveredAction, handle, object: root });
+      }
+    });
+    setInteractionHitArea(root, options.hitArea || [width, .34, height], options.hitAreaOffset || [0, .12, 0]);
+    syncInteractive(root);
+  }
+  handle = Object.freeze({ ...baseHandle, setText: renderText, getText: () => text });
   renderText(options.text ?? "");
   root.userData.lessonHandle = handle;
   return handle;
@@ -938,7 +1077,7 @@ function addConnector({ name = "connector", from = [0, 0, 0], to = [0, 0, 1], co
 }
 const world = Object.freeze({
   clear() { guiService.clearScope("scene", "step", "question"); clearWorld(); },
-  capabilities: Object.freeze({ version: "2.7.0", objects: Object.freeze(["primitive", "group", "text3d", "library", "model", "zone", "callout", "connector", "worldCounter", "worldGui"]), interactions: Object.freeze(["drag", "click", "custom-hit-area", "actionable-callout"]), modelFormats: Object.freeze(["glb", "gltf", "fbx"]) }),
+  capabilities: Object.freeze({ version: "2.9.0", objects: Object.freeze(["primitive", "group", "text3d", "library", "model", "zone", "callout", "connector", "worldCounter", "worldGui", "guideline", "lineRender"]), interactions: Object.freeze(["drag", "click", "custom-hit-area", "actionable-callout", "actionable-world-gui"]), modelFormats: Object.freeze(["glb", "gltf", "fbx"]) }),
   assets: Object.freeze({ version: lessonAssetLibrary.version, list() { return Object.entries(lessonAssetLibrary.assets).map(([id, value]) => ({ id, name: value.name || id, type: value.type, tags: [...(value.tags || [])] })); }, get(id) { const value = libraryAsset(id); return JSON.parse(JSON.stringify({ id, ...value })); }, preloadImages(paths = []) { return preloadLessonTextures(paths, runtime.lessonUrl || import.meta.url); } }),
   addObject,
   addPrimitive,
@@ -1000,6 +1139,7 @@ const world = Object.freeze({
     return Object.freeze({ ...makeHandle(group), pulse() { pulseOperator(group); }, setState(valid) { const next = valid ? "valid" : "neutral", changed = group.userData.operatorState !== next; setOperatorAppearance(group, next); if (changed && valid) pulseOperator(group); } });
   },
   addGuideline(options = {}) { return makeHandle(createGuideline(options)); },
+  addLineRender(options = {}) { return makeHandle(createLineRender(options)); },
   addTargetFocus({ position = [0, .32, 0], radius = setting.interaction.targetFocus.radius, color = null, opacity = null, animate = true, rotateSpeed = null, pulseScale = null, opacityPulse = null } = {}) {
     const config = setting.interaction.targetFocus, style = threeColor(color || config.color || "#ffffff"), dashSize = config.dashSize ?? .38, gapSize = config.gapSize ?? .22, count = Math.max(12, Math.round(Math.PI * 2 * radius / (dashSize + gapSize))), dashHeight = config.dashHeight ?? .055, dashWidth = config.dashWidth ?? .105, geometry = new RoundedBoxGeometry(dashSize, dashHeight, dashWidth, 3, Math.min(dashHeight, dashWidth) * .42), baseOpacity = (opacity ?? config.opacity ?? .54) * style.alpha, material = new THREE.MeshBasicMaterial({ color: style.color, transparent: true, opacity: baseOpacity, depthWrite: false, depthTest: true, toneMapped: false, fog: true }), ring = new THREE.InstancedMesh(geometry, material, count), dummy = new THREE.Object3D(), group = new THREE.Group();
     for (let index = 0; index < count; index++) { const angle = index / count * Math.PI * 2; dummy.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius); dummy.rotation.set(0, -angle - Math.PI / 2, 0); dummy.updateMatrix(); ring.setMatrixAt(index, dummy.matrix); }
@@ -1208,7 +1348,24 @@ function showStepOption(option) {
   elements.stepOption.hidden = true; elements.mascot.classList.remove("is-talking"); elements.mascot.classList.add("is-flying-in"); runtime.mascotSpeechTimer = setTimeout(renderSpeech, messageDelay); runtime.mascotFlightTimer = setTimeout(() => { elements.mascot.classList.remove("is-flying-in"); elements.mascot.classList.add("is-landing"); runtime.mascotLandingTimer = setTimeout(() => { elements.mascot.classList.remove("is-landing"); elements.mascot.classList.add("is-talking"); }, landingDuration); }, flyInDuration);
 }
 function animateConsole() { elements.howto.classList.remove("is-updating"); void elements.howto.offsetWidth; elements.howto.classList.add("is-updating"); }
-async function setStep(index) { const steps = runtime.meta.howto; if (!steps.length) return; guiService.clearScope("step"); clearTypewriters(); runtime.stepIndex = clamp(index, 0, steps.length - 1); const step = steps[runtime.stepIndex], freestyle = step.type === "freestyle"; guiService.console.reset(); elements.howto.classList.toggle("is-freestyle", freestyle); elements.consoleState.classList.toggle("is-hand", freestyle); elements.consoleStateImage.src = iconUrl(freestyle ? "hand.svg" : "book.svg"); elements.stepCounter.textContent = `ขั้นตอน ${runtime.stepIndex + 1} / ${steps.length}${freestyle ? " · ทดลองเอง" : ""}`; typeText(elements.stepTitle, step.title); typeText(elements.stepDescription, step.desc); $("#previous-step").disabled = runtime.stepIndex === 0; $("#next-step").disabled = runtime.stepIndex === steps.length - 1; queueStepOption(step.option); animateConsole(); await runtime.lesson.onStep?.(runtime.stepIndex, step, lessonPayload()); if (!runtime.sceneEntered) { world.playEntrance(); runtime.sceneEntered = true; } }
+function syncLabSkipControl() {
+  const id = "runtime-skip-teaching", steps = runtime.meta?.howto || [];
+  const shouldShow = runtime.mode !== "student-quiz" && steps.length > 1 && runtime.stepIndex < steps.length - 1;
+  const existing = guiService.control.get(id);
+  if (!shouldShow) { existing?.hide(); return; }
+  if (existing) { existing.show(); return; }
+  guiService.control.show({
+    id, scope: "lesson", position: "bottom-right", tone: "info",
+    ariaLabel: "ข้ามขั้นตอนการสอน", objectiveAction: false,
+    items: [{ id: "skip", label: "ข้ามการสอน", icon: "next.svg" }],
+    onAction: event => {
+      if (event.id !== "skip") return;
+      const currentSteps = runtime.meta?.howto || [];
+      if (currentSteps.length) setStep(currentSteps.length - 1);
+    }
+  });
+}
+async function setStep(index) { const steps = runtime.meta.howto; if (!steps.length) return; guiService.clearScope("step"); clearTypewriters(); runtime.stepIndex = clamp(index, 0, steps.length - 1); const step = steps[runtime.stepIndex], freestyle = step.type === "freestyle"; guiService.console.reset(); elements.howto.classList.toggle("is-freestyle", freestyle); elements.consoleState.classList.toggle("is-hand", freestyle); elements.consoleStateImage.src = iconUrl(freestyle ? "hand.svg" : "book.svg"); elements.stepCounter.textContent = `ขั้นตอน ${runtime.stepIndex + 1} / ${steps.length}${freestyle ? " · ทดลองเอง" : ""}`; typeText(elements.stepTitle, step.title); typeText(elements.stepDescription, step.desc); $("#previous-step").disabled = runtime.stepIndex === 0; $("#next-step").disabled = runtime.stepIndex === steps.length - 1; syncLabSkipControl(); queueStepOption(step.option); animateConsole(); await runtime.lesson.onStep?.(runtime.stepIndex, step, lessonPayload()); if (!runtime.sceneEntered) { world.playEntrance(); runtime.sceneEntered = true; } }
 function showInformation() { uiSound(); const tags = Array.isArray(runtime.lessonData.tags) ? runtime.lessonData.tags : [], category = [runtime.lessonData.category, runtime.lessonData.subcategory].filter(Boolean).join(" · ") || "บทเรียนเสริมทักษะ"; showModal(`<div class="info-dialog"><header class="modal-hero">${iconMarkup("book.svg")}<div><span class="mode-badge">${escapeHtml(modeLabel(runtime.mode))}</span><h2>${escapeHtml(runtime.lessonData.title)}</h2></div></header><div class="info-topic">${iconMarkup("book.svg")}<div><h3>เรื่องที่กำลังเรียน</h3><p>${escapeHtml(runtime.meta.description)}</p></div></div><div class="info-topic">${iconMarkup("category.svg")}<div><h3>หมวดการเรียนรู้</h3><p>${escapeHtml(category)}</p><div class="tag-list">${tags.map(tag => `<span>${escapeHtml(tag)}</span>`).join("")}</div></div></div><div class="info-topic is-target">${iconMarkup("target.svg")}<div><h3>เป้าหมายของบทเรียน</h3><p>${escapeHtml(runtime.meta.keyResult)}</p></div></div></div>`); }
 function editorFieldVisible(field, values) { const rule = field.showWhen; if (!rule?.key) return true; const accepted = Array.isArray(rule.values) ? rule.values : [rule.value]; return accepted.some(value => String(value) === String(values[rule.key])); }
 function editorFieldMarkup(field) { const key = escapeHtml(field.key), value = runtime.values[field.key] ?? "", range = field.option || [], min = field.min ?? range[0] ?? 0, max = field.max ?? range[1] ?? 100, help = field.help ? `<em class="editor-help">${escapeHtml(field.help)}</em>` : "", primaryClass = field.key === "problemType" ? " is-primary" : ""; if (field.type === "dropdown") { const options = (field.option || []).map(item => { const option = item && typeof item === "object" ? item : { value: item, label: item }; return `<option value="${escapeHtml(option.value)}" ${String(option.value) === String(value) ? "selected" : ""}>${escapeHtml(option.label)}</option>`; }).join(""); return `<label class="editor-field${primaryClass}" data-editor-field="${key}"><span>${escapeHtml(field.name)}</span><select data-edit="${key}">${options}</select>${help}</label>`; } if (field.type === "slider") return `<label class="editor-field is-slider${primaryClass}" data-editor-field="${key}"><span>${escapeHtml(field.name)}</span><output data-range-output="${key}">${escapeHtml(value)}</output><input data-edit="${key}" type="range" value="${escapeHtml(value)}" min="${escapeHtml(min)}" max="${escapeHtml(max)}" step="${escapeHtml(field.step ?? 1)}"><small><i>${escapeHtml(min)}</i><i>${escapeHtml(max)}</i></small>${help}</label>`; return `<label class="editor-field${primaryClass}" data-editor-field="${key}"><span>${escapeHtml(field.name)}</span><input data-edit="${key}" type="number" value="${escapeHtml(value)}" min="${escapeHtml(min)}" max="${escapeHtml(max)}" step="${escapeHtml(field.step ?? 1)}">${help}</label>`; }
@@ -1249,10 +1406,55 @@ const lessonUi = Object.freeze({
 });
 function createContext(root, language) { return Object.freeze({ world, assets: world.assets, capabilities: world.capabilities, ui: lessonUi, audio: Object.freeze({ play: name => audio.play(name) }), root, lessonData: runtime.lessonData, mode: runtime.mode, language, resolveAsset: path => runtimeAssetUrl(path, runtime.lessonUrl), objectiveAction, quiz: Object.freeze({ answer: answerQuiz }), complete(result = {}) { if (!runtime.completed) { runtime.completed = true; audio.play("completeLesson"); celebrate(); } postToHost("lesson.complete", { lessonId: runtime.lessonData.Id, lessonVersion: runtime.lesson.version || "1.0.0", status: "completed", ...result }); } }); }
 async function closeLesson() { runtime.sessionId += 1; try { await runtime.lesson?.dispose?.(); } catch (error) { console.warn(error); } audio.stopBgm(); clearTypewriters(); guiService.clearAll(); resetMascotTimers(); clearTimeout(runtime.mascotBlinkTimer); clearTimeout(runtime.mascotBlinkReleaseTimer); runtime.pendingMascotOption = null; hideMascotNotice(); quizNextButton.hidden = true; quizNextButton.classList.remove("is-returning"); quizNextButton.classList.add("is-waiting"); quizNextButton.disabled = true; runtime.lesson = null; runtime.meta = null; runtime.lessonData = null; runtime.context = null; runtime.quiz = null; runtime.completed = false; clearWorld(); setLessonQuestion(""); elements.lessonUi.replaceChildren(); elements.webRoot.replaceChildren(); elements.webRoot.hidden = true; elements.stepOption.hidden = true; elements.stepOption.replaceChildren(); elements.celebration.replaceChildren(); elements.mascot.hidden = true; elements.mascot.className = "mascot-guide"; elements.mascotCharacter.classList.remove("is-blinking"); closeModal(); configureCamera(); elements.runtime.className = ""; elements.title.textContent = "World Runtime"; elements.taxonomy.textContent = "กำลังรอบทเรียนจาก Platform"; }
-async function openLesson({ lessonData, language, lessonHtml }) {
+const lessonFailureStages = {
+  receive: ["การรับไฟล์บทเรียน", "ตรวจว่าไฟล์ HTML ที่เลือกอ่านได้ครบและไม่ว่าง"],
+  fetch: ["การโหลดไฟล์บทเรียน", "ตรวจ path, ชื่อไฟล์, ตัวพิมพ์เล็ก–ใหญ่ และ HTTP status"],
+  structure: ["การตรวจโครงสร้าง HTML", "ตรวจ script[data-lesson-app], HTML shell และจำนวน lesson definition"],
+  execute: ["การรัน JavaScript ของบทเรียน", "ตรวจ syntax, ชื่อฟังก์ชัน ตัวแปร และบรรทัดแรกใน stack trace"],
+  register: ["การลงทะเบียนบทเรียน", "ตรวจ PuzzleLesson.define(...) และ lifecycle โดยเฉพาะ mount(context)"],
+  metadata: ["การตรวจข้อมูลบทเรียน", "ตรวจ meta, defaultValue, editSchema, howto และ quiz"],
+  assets: ["การเตรียมฉากและสื่อ", "ตรวจ background, Asset ID, path ของสื่อ และชนิดไฟล์"],
+  mount: ["การเริ่มบทเรียน", "ตรวจ mount(context) และ Public API ที่เรียกขณะเริ่มงาน"],
+  reset: ["การสร้างฉากเริ่มต้น", "ตรวจ reset(payload), values, handle และ object ที่สร้างในฉาก"],
+  finish: ["การแสดงบทเรียน", "ตรวจ onStep, Quiz setup และ state หลังสร้างฉาก"],
+  unknown: ["การเตรียมบทเรียน", "ตรวจข้อความ Error และบรรทัดแรกของ stack trace"]
+};
+function createLessonFailure(error, stage, lessonData) {
+  const rawMessage = String(error?.message || error || "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ");
+  const missingHelper = rawMessage.match(/this\.([A-Za-z_$][\w$]*) is not a function/i)?.[1];
+  const [defaultTopic, defaultHint] = lessonFailureStages[stage] || lessonFailureStages.unknown;
+  const topic = missingHelper ? ` helper ของบทเรียนที่ไม่ได้ประกาศ (${missingHelper})` : defaultTopic;
+  const hint = missingHelper
+    ? `เพิ่ม method ${missingHelper}() ใน object ที่ส่งให้ PuzzleLesson.define(...) หรือแก้ชื่อที่เรียกให้ตรงกัน; this.${missingHelper}() ไม่ใช่ Public API ของระบบ`
+    : defaultHint;
+  const stack = String(error?.stack || rawMessage);
+  const line = stack.split("\n").find(value => /(?:\.html|lesson|<anonymous>).*:\d+(?::\d+)?/i.test(value));
+  const location = line ? `${hint} · ${line.trim()}` : hint;
+  const log = [
+    "LESSON_LOAD_FAILED",
+    `Stage: ${stage} (${topic})`,
+    `Lesson: ${lessonData?.path || "unknown"}`,
+    `Mode: ${lessonData?.mode || "unknown"}`,
+    `Error: ${rawMessage}`,
+    ...(missingHelper ? [`Missing lesson helper: ${missingHelper}()`] : []),
+    "",
+    "Stack:",
+    stack,
+    "",
+    "สิ่งที่ต้องการให้ AI ทำ:",
+    "ตรวจและซ่อมไฟล์บทเรียน HTML จาก error นี้ โดยรักษา Public API และคืนไฟล์ฉบับเต็ม"
+  ].join("\n");
+  return { title: "เปิดบทเรียนไม่สำเร็จ", message: `พบปัญหาเกี่ยวกับ${topic}: ${rawMessage}`, location, log, stage };
+}
+
+async function openLesson(payload) {
+  const { lessonData, language, lessonHtml } = payload;
   const sessionId = runtime.sessionId + 1;
   await closeLesson();
+  runtime.lastOpenPayload = payload;
+  window.eduRuntimeConsoleErrors = [];
   runtime.sessionId = sessionId; runtime.language = language || "th"; beginEntry(lessonData.title);
+  let failureStage = lessonHtml ? "receive" : "fetch";
   try {
     updateEntry(18, lessonHtml ? "กำลังรับเนื้อหาบทเรียน…" : "กำลังโหลดเนื้อหาบทเรียน…");
     const lessonUrl = new URL(lessonData.path);
@@ -1263,32 +1465,49 @@ async function openLesson({ lessonData, language, lessonHtml }) {
       if (!response.ok) throw new Error(`ไม่พบไฟล์บทเรียน (${response.status})`);
       html = await response.text();
     }
+    failureStage = "structure";
     updateEntry(36, "กำลังตรวจสอบโครงสร้างบทเรียน…");
     const doc = new DOMParser().parseFromString(html, "text/html"), script = doc.querySelector("script[data-lesson-app]");
     if (!script) throw new Error("ไม่พบ script[data-lesson-app] ภายในไฟล์บทเรียน");
     let registered = null; const previous = window.PuzzleLesson;
     window.PuzzleLesson = Object.freeze({ define(app) { if (registered) throw new Error("หนึ่งไฟล์กำหนด lessonApp ได้เพียงหนึ่งตัว"); registered = app; } });
-    try { const executable = document.createElement("script"); executable.textContent = `${script.textContent}\n//# sourceURL=${lessonUrl.href}`; document.head.append(executable); executable.remove(); }
+    failureStage = "execute";
+    window.eduRuntimeLastError = null;
+    try { const executable = document.createElement("script"); executable.textContent = `${script.textContent}\n//# sourceURL=${lessonUrl.href}`; document.head.append(executable); executable.remove(); if (window.eduRuntimeLastError) throw window.eduRuntimeLastError; }
     finally { if (previous === undefined) delete window.PuzzleLesson; else window.PuzzleLesson = previous; }
+    failureStage = "register";
     if (!registered?.mount) throw new Error("lessonApp ต้องมี mount(context)");
+    failureStage = "metadata";
     runtime.lesson = registered; runtime.lessonUrl = lessonUrl; runtime.mode = lessonData.mode; runtime.meta = normalizeMeta(registered.meta, lessonData); runtime.lessonData = resolveLessonDisplayData(lessonData, runtime.meta); runtime.values = { ...runtime.meta.defaultValue }; configureCamera(runtime.meta.camera || {}); elements.entryTitle.textContent = runtime.lessonData.title;
     updateEntry(55, "กำลังเตรียมสื่อและคำแนะนำ…", runtime.meta.welcomeMessage);
     if (runtime.mode === "student-quiz" && !runtime.meta.quiz.length) throw new Error("บทเรียน Quiz ต้องมีคำถามอย่างน้อย 1 ข้อ");
+    failureStage = "assets";
     const preset = setBackground(runtime.meta.background);
     await audio.preload(preset);
     updateEntry(76, "กำลังจัดฉากและระบบเสียง…"); applyRuntimeUi();
     const root = runtime.meta.worldType === "webPage" ? elements.webRoot : document.createElement("div"); root.className = "lesson-html-root";
     for (const child of [...doc.body.children]) if (!child.matches("script")) root.append(document.importNode(child, true));
     if (runtime.meta.worldType !== "webPage") elements.lessonUi.append(root);
+    failureStage = "mount";
     runtime.context = createContext(root, language); await runtime.lesson.mount(runtime.context);
     if (sessionId !== runtime.sessionId) return;
+    failureStage = "reset";
     await resetLessonScene(); requestShadowUpdate(); markSceneActive();
+    failureStage = "finish";
     updateEntry(92, "ตรวจสอบความพร้อมครั้งสุดท้าย…"); await finishEntry();
     if (runtime.mode === "student-quiz") readyQuiz(); else await setStep(0);
   } catch (error) {
-    console.error(error); elements.entryTitle.textContent = "เปิดบทเรียนไม่สำเร็จ"; updateEntry(100, error.message); elements.title.textContent = "เปิดบทเรียนไม่สำเร็จ"; elements.taxonomy.textContent = error.message; postToHost("lesson.error", { message: error.message });
+    const failure = createLessonFailure(error, failureStage, lessonData);
+    console.error(error); elements.entryTitle.textContent = "เปิดบทเรียนไม่สำเร็จ"; updateEntry(100, error.message); elements.title.textContent = "เปิดบทเรียนไม่สำเร็จ"; elements.taxonomy.textContent = error.message; window.eduShowRuntimeFailure?.(failure); postToHost("lesson.error", failure);
   }
 }
+
+window.eduRuntimeRetryHandler = () => {
+  const payload = runtime.lastOpenPayload;
+  if (!payload) return;
+  window.eduHideRuntimeFailure?.();
+  openLesson(payload);
+};
 
 $("#close-runtime").addEventListener("click", () => postToHost("lesson.closeRequested")); $("#show-information").addEventListener("click", showInformation); $("#edit-lesson").addEventListener("click", showEditor); $("#previous-step").addEventListener("click", () => setStep(runtime.stepIndex - 1)); $("#next-step").addEventListener("click", () => setStep(runtime.stepIndex + 1)); $("#reset-lesson").addEventListener("click", async () => { uiSound(); runtime.values = { ...runtime.meta.defaultValue }; if (runtime.mode === "student-quiz") readyQuiz(); else { await resetLessonScene(); await setStep(0); } }); $("#next-question").addEventListener("click", async () => { hideQuizNext(); uiSound(); commitQuizAnswer(); await playQuizMascotReaction(); await showQuestion(runtime.quiz.index + 1); });
 $("#entry-close").addEventListener("click", () => postToHost("lesson.closeRequested"));

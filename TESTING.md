@@ -16,7 +16,7 @@ node validator/validate-lesson.mjs path/to/your-lesson.html
 
 Exit 0 หมายถึงผ่าน static checks; exit 1 มี JSON error และ repairPrompt ห้ามใช้ผลนี้ยืนยัน interaction, rendering หรือความถูกต้องการสอนทั้งหมด
 
-ตรวจเพิ่มจากโค้ด: id ไม่ซ้ำ, values/editSchema/quiz data ใช้ key ตรงกัน, reset ล้าง state/timer, ไม่เรียก quiz.answer ใน reset, ไม่เฉลย Quiz, ยอมรับทุกคำตอบที่ตรง predicate และทุกโจทย์มีคำตอบที่เป็นไปได้
+ตรวจเพิ่มจากโค้ด: id ไม่ซ้ำ, values/editSchema/quiz data ใช้ key ตรงกัน, ทุก `this.someHelper()` มี `someHelper()` ประกาศจริงใน lesson object, ทุก `world.*()` ตรง Public API, reset ล้าง state/timer, ไม่เรียก quiz.answer ใน reset, ไม่เฉลย Quiz, ยอมรับทุกคำตอบที่ตรง predicate และทุกโจทย์มีคำตอบที่เป็นไปได้
 
 ## ทดสอบในระบบปลายทางเมื่อมีให้ใช้
 

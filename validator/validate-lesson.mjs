@@ -110,6 +110,51 @@ function stripArrowCallbacks(source) {
   return result;
 }
 
+function maskCommentsAndStrings(source) {
+  let result = "", quote = "", lineComment = false, blockComment = false, escaped = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index], next = source[index + 1];
+    if (lineComment) {
+      if (char === "\n") { lineComment = false; result += "\n"; }
+      else result += " ";
+      continue;
+    }
+    if (blockComment) {
+      if (char === "*" && next === "/") { result += "  "; blockComment = false; index += 1; }
+      else result += char === "\n" ? "\n" : " ";
+      continue;
+    }
+    if (quote) {
+      result += char === "\n" ? "\n" : " ";
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) quote = "";
+      continue;
+    }
+    if (char === "/" && next === "/") { result += "  "; lineComment = true; index += 1; continue; }
+    if (char === "/" && next === "*") { result += "  "; blockComment = true; index += 1; continue; }
+    if (char === "\"" || char === "'" || char === "`") { result += " "; quote = char; continue; }
+    result += char;
+  }
+  return result;
+}
+
+function findMissingLessonHelpers(source) {
+  const code = maskCommentsAndStrings(source);
+  const called = new Set([...code.matchAll(/\bthis\s*\.\s*([A-Za-z_$][\w$]*)\s*\(/g)].map(match => match[1]));
+  const declared = new Set();
+  const declarationPatterns = [
+    /^\s*(?:async\s+)?([A-Za-z_$][\w$]*)\s*\(/gm,
+    /(?:^|[,{}]\s*)([A-Za-z_$][\w$]*)\s*:\s*(?:async\s+)?function(?:\s+[A-Za-z_$][\w$]*)?\s*\(/gm,
+    /(?:^|[,{}]\s*)([A-Za-z_$][\w$]*)\s*:\s*(?:async\s+)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>/gm,
+    /\bthis\s*\.\s*([A-Za-z_$][\w$]*)\s*=\s*(?:async\s+)?(?:function\b|(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>)/gm
+  ];
+  for (const pattern of declarationPatterns) {
+    for (const match of code.matchAll(pattern)) declared.add(match[1]);
+  }
+  return [...called].filter(name => !declared.has(name)).sort();
+}
+
 try {
   const catalogText = await readFile(new URL("../sdk/asset-library.catalog.json", import.meta.url), "utf8");
   const catalog = JSON.parse(catalogText);
@@ -149,6 +194,24 @@ if (html) {
   ];
   for (const [pattern, label] of forbidden) {
     if (pattern.test(html)) add("LESSON_API_NOT_SUPPORTED", "validate", `ห้ามใช้ ${label}`);
+  }
+
+  const publicWorldMethods = new Set([
+    "clear", "addObject", "addPrimitive", "addGroup", "addConnector", "addText3D", "addWorldCounter", "addWorldGui",
+    "addLibraryObject", "addModel", "addBox", "addZone", "addCallout", "addLabel", "addOperatorSign", "addGuideline",
+    "addLineRender", "addTargetFocus", "showDragCue", "hideDragCue", "playEntrance", "getObject"
+  ]);
+  const lessonCode = scripts.map(script => maskCommentsAndStrings(script[1])).join("\n");
+  const worldCalls = new Set([...lessonCode.matchAll(/\bworld\s*\.\s*([A-Za-z_$][\w$]*)\s*\(/g)].map(match => match[1]));
+  for (const name of worldCalls) {
+    if (!publicWorldMethods.has(name)) {
+      add(
+        "LESSON_API_NOT_SUPPORTED",
+        "validate",
+        `ไม่พบ world.${name}() ใน Public API`,
+        "เลือก method จาก sdk/LESSON_API_REFERENCE.md และยืนยัน signature ใน sdk/lesson-sdk.d.ts; ห้ามสร้างชื่อ API จากการคาดเดา"
+      );
+    }
   }
 
   if (profile === "teacher-external") {
@@ -204,6 +267,14 @@ if (html) {
 
   if (scripts.length === 1) {
     const lessonSource = scripts[0][1], resetBody = methodBody(lessonSource, "reset");
+    for (const name of findMissingLessonHelpers(lessonSource)) {
+      add(
+        "LESSON_HELPER_MISSING",
+        "validate",
+        `เรียก this.${name}() แต่ไม่พบ method ${name} ใน lesson definition`,
+        `this.${name}() ไม่ใช่ Runtime/Public API; ต้องประกาศ ${name}() ใน object ที่ส่งให้ PuzzleLesson.define(...) หรือแก้ให้เรียก helper ที่มีจริง`
+      );
+    }
     const immediateResetBody = stripArrowCallbacks(resetBody);
     const resetHelpers = [...immediateResetBody.matchAll(/\bthis\s*\.\s*([A-Za-z_$][\w$]*)\s*\(/g)]
       .map(match => match[1]);
@@ -228,7 +299,7 @@ if (html) {
 const report = {
   ok: errors.length === 0,
   file: basename(file),
-  contractVersion: "1.2.1",
+  contractVersion: "1.2.2",
   profile,
   errors
 };

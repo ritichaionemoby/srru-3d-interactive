@@ -13,6 +13,7 @@
 | `LESSON_DEFINE_DUPLICATE` | register | register มากกว่าหนึ่ง lesson | เหลือ define ครั้งเดียว |
 | `LESSON_META_INVALID` | validate | meta หรือค่าบังคับไม่ครบ | ตรวจ id, lessonId, worldType, title, category, subcategory และ arrays |
 | `LESSON_LIFECYCLE_MISSING` | validate | ขาด mount/reset/onStep/dispose | เพิ่ม lifecycle ให้ครบ |
+| `LESSON_HELPER_MISSING` | validate | เรียก `this.someHelper()` แต่ไม่มี method นี้ใน lesson object | เพิ่ม method ใน object ที่ส่งให้ `PuzzleLesson.define(...)` หรือแก้ชื่อที่เรียกให้ตรง; อย่าถือว่า `this.*` เป็น Public API |
 | `LESSON_QUIZ_ANSWER_DURING_RESET` | validate | บันทึกคำตอบ Quiz ระหว่าง reset ก่อนผู้เรียนลงมือ | ย้าย `context.quiz.answer(...)` ไปไว้หลัง click/drag/drop/control action เท่านั้น |
 | `LESSON_API_NOT_SUPPORTED` | runtime | เรียก API ที่ไม่มี | ใช้เฉพาะ Public API reference |
 | `LESSON_MOUNT_FAILED` | mount | error ระหว่าง mount | ตรวจ context access และ state เริ่มต้น |
@@ -47,6 +48,16 @@ Details: [DETAILS]
 ข้อความสำหรับผู้ใช้งาน runtime:
 
 > นำข้อความนี้ส่งต่อให้ผู้พัฒนาบทเรียน หรือส่งเข้า AI Agent เพื่อแก้ไขข้อผิดพลาด
+
+## กล่อง FAILED ในระบบทดสอบ
+
+เมื่อบทเรียนพังระหว่างโหลด ระบบปลายทางจะแสดงกล่อง `FAILED` แทนการค้างอยู่ที่หน้า Loading โดยระบุหัวข้อที่พัง lifecycle หรือบรรทัดที่ควรตรวจ และรวบรวม stack trace กับ `console.error` ล่าสุดไว้ใน log
+
+1. กด `Copy log` แล้วส่งข้อความทั้งหมดให้ AI พร้อมไฟล์ HTML ต้นฉบับ
+2. หลังแก้ไฟล์แล้วเปิดทดสอบใหม่ หรือกด `Retry` เพื่อรัน payload เดิมซ้ำ
+3. กด `กลับ` เพื่อปิดบทเรียนที่เสียหายและกลับไปเลือกไฟล์อื่น
+
+บรรทัด `Stage` ใน log ตรงกับช่วงสำคัญของ loader ได้แก่ `receive`, `fetch`, `structure`, `execute`, `register`, `metadata`, `assets`, `mount`, `reset` และ `finish` ให้เริ่มตรวจจาก stage และ stack frame แรกที่ชี้เข้า lesson HTML
 
 
 

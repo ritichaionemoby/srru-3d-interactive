@@ -45,7 +45,7 @@
 
 - Gizmo เป็น Screen-space GUI อ่านตรงและมีขนาดคงที่ ใช้กับ object/value/status
 - World Callout เป็น GUI ที่อ่านตรงและล็อกเข้าหาจอ โดยฉายตำแหน่ง `position` จาก World มายังหน้าจอและเชื่อมกับ `anchor` ด้วย leader line/ring ในฉาก ใช้ชี้ “พื้นที่” ไม่ใช่ติดตามค่าของ object เมื่อใส่ `insight` ป้ายจะมี icon และสถานะกดได้เพื่อเปิด Insight Dialog
-- World Counter และ World GUI เป็นวัตถุอธิบายแบบ world-space ที่วางบนพื้นและ **กด/ลากไม่ได้**: Counter ใช้เฉพาะตัวเลข ส่วน World GUI ใช้ข้อความรายละเอียด
+- World Counter เป็นวัตถุแสดงตัวเลขบนพื้นแบบ display-only ส่วน World GUI แสดงข้อความและเป็น display-only โดยค่าเริ่มต้น; หากกำหนด `insight` หรือ `onClick` Runtime จะทำให้ World GUI กดได้พร้อม hover/hit area กลาง
 - `world.addTargetFocus()` ใช้ `animate: false` ได้เมื่อต้องการวงเส้นประนิ่งสำหรับสเกลหรือขอบเขตอ้างอิง เพื่อไม่ให้วงหมุนหรือ pulse จนตำแหน่งคลาดจากวัตถุ
 
 ## Question

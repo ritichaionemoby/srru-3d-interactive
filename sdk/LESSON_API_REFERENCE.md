@@ -242,7 +242,7 @@ counter.getValue();
 
 ### `world.addWorldGui(options)`
 
-กรอบข้อความแบบ 3D ที่วางราบบนพื้น ใช้อธิบายบริเวณโดยไม่บังหน้าจอและไม่รับ interaction:
+กรอบข้อความแบบ 3D ที่วางราบบนพื้น ใช้อธิบายบริเวณโดยไม่บังหน้าจอ ค่าเริ่มต้นเป็น display-only:
 
 ```js
 const instruction = world.addWorldGui({
@@ -259,6 +259,22 @@ instruction.getText();
 ```
 
 ใช้ `compactPosition`/`compactScale` เมื่อต้องจัดตำแหน่งเฉพาะมือถือ ปรับเฉพาะงานจำเป็นด้วย `textColor`, `backgroundColor`, `borderColor`, `accentColor`, `fontSize` และ `size`; รูปลักษณ์หลักควรใช้ค่ากลางจาก Runtime Setting
+
+เมื่อต้องการให้ผู้เรียนกดอ่านข้อความเพิ่ม ให้ส่ง `insight` หรือ `onClick`; Runtime จะสร้างพื้นผิวแบบปุ่ม, hover และ hit area ให้เอง ห้ามสร้างปุ่ม HTML ซ้ำ:
+
+```js
+world.addWorldGui({
+  text: "ทำไมจึงยกกำลังสอง?",
+  position: [0, 0.24, 5.8],
+  insight: {
+    title: "พื้นที่รูปสี่เหลี่ยมจัตุรัส",
+    message: "จำนวนช่องทั้งหมดเท่ากับด้าน × ด้าน"
+  },
+  hoverMessage: "กดเพื่อดูรายละเอียด"
+});
+```
+
+ใช้ `objectiveAction: true` เฉพาะเมื่อการกดเป็นการลงมือหลักของกิจกรรม `onClick` และ callback ของ `insight` ได้ event `{ handle, object, sourceEvent }`
 
 ### `world.addTargetFocus(options)`
 
@@ -287,6 +303,23 @@ world.addGuideline({
 ```
 
 ใช้ `object3D` เพื่อส่งเป็น `fromObject` เท่านั้น ห้ามแก้ material/geometry/internal userData โดยตรง
+
+### `world.addLineRender(options)`
+
+สร้างเส้นตรงสำหรับแกนวัด ระยะ และเส้นพรีวิวบนพื้นที่ พร้อมหัวลูกศรที่ปลายเส้น:
+
+```js
+world.addLineRender({
+  name: "axis-x",
+  from: [-2, 0.24, 1],
+  to: [2, 0.24, 1],
+  color: "#ef6a58",
+  dashed: false,
+  arrow: true
+});
+```
+
+ใช้ `dashed: true` สำหรับเส้นช่วยที่ต้องการลดความเด่น และ `arrow: false` สำหรับเส้นแบ่งระยะที่ไม่มีทิศทาง
 
 ### Cue และ entrance
 

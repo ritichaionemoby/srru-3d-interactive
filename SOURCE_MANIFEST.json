@@ -48,7 +48,7 @@
     {
       "path": "Project/interactive/chapters/ep10/lesson3.html",
       "sourcePath": "Project/interactive/chapters/ep10/lesson3.html",
-      "sha256": "0b130a3ea28f655670b951247c96fb9614cc5305bd68e14d8e2d7cdc48ecfff6"
+      "sha256": "4810ef58cb7e4c608930b8047d407b5e0c38d2098d9acf0a3c86343a8dfc921e"
     },
     {
       "path": "Project/interactive/chapters/leesonExternal.html",
@@ -73,27 +73,27 @@
     {
       "path": "Project/interactive/eduSdk.js",
       "sourcePath": "Project/interactive/eduSdk.js",
-      "sha256": "f0bc070a5042a0a5e8a0c589435f92674906f4024413270df68212a9319dc070"
+      "sha256": "7f7ca1bc924980b60467a7eb4dcd2e47286887ff119f1067a3b921cd62a9284d"
     },
     {
       "path": "Project/interactive/gui-service.js",
       "sourcePath": "Project/interactive/gui-service.js",
-      "sha256": "41c57eb2f8b38d2a5a28b262a4729905b6a968f473c4ead0587038a344ee3652"
+      "sha256": "480fdf2d006e068e11b0c294f0f08d02347cc7421a1fe69d9852f92698548c06"
     },
     {
       "path": "Project/interactive/main-world-setting.js",
       "sourcePath": "Project/interactive/main-world-setting.js",
-      "sha256": "36fd42bd0f9055d81349b283dd1dff6f13dfee6eaa8e396c3e139aa997c09921"
+      "sha256": "2002518f14a951438f1baab2b42cb098a53ccc30eee6c6029e9fe00bc27a5370"
     },
     {
       "path": "Project/interactive/main-world.html",
       "sourcePath": "Project/interactive/main-world.html",
-      "sha256": "003eed8783a65327952c05473cf891add137ddd0981d6c9224c935065b8b401e"
+      "sha256": "970535cbf6d1465fe75130172d7d40456c9fa2c22d9f7d5fadfb58d7e3972419"
     },
     {
       "path": "Project/interactive/main-world.js",
       "sourcePath": "Project/interactive/main-world.js",
-      "sha256": "322c6526b239f59dacb21dccdedd024b544eb797076c2f6ea85b6408044bb5b5"
+      "sha256": "ce00599dedd0a49a5369198f0d0c6e6e301151988d13739c423293acc229efde"
     },
     {
       "path": "Project/interactive/runtime-setting-menu.js",
@@ -103,7 +103,7 @@
     {
       "path": "Project/interactive/world.css",
       "sourcePath": "Project/interactive/world.css",
-      "sha256": "0bb4a38a13275b597a522f12e70e5e2377465d5bc109d3ffab7fe8376855f1ab"
+      "sha256": "145e040f1fd552413ca7469b7afc879a14cbc68f75d1a00225ee3649e90c77d7"
     }
   ]
 }

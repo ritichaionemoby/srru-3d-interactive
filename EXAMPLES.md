@@ -71,7 +71,7 @@ Insight รองรับเนื้อหาภายใน Dialog กลา�
 อ่านโค้ดตัวอย่าง `world.addCallout` ใน GUI reference และ `world.addWorldCounter`, `world.addWorldGui`, `world.addTargetFocus`, `world.addGuideline`, `world.addOperatorSign` ใน [Public API Reference](sdk/LESSON_API_REFERENCE.md)
 
 - Callout ชี้พื้นที่ด้วยเส้น และใส่ Insight ได้; Gizmo ติดตามวัตถุ/ค่า จึงใช้คนละหน้าที่
-- World Counter แสดงจำนวนบนพื้น; World GUI แสดงข้อความบนพื้น ทั้งสองเป็น display-only
+- World Counter แสดงจำนวนบนพื้นแบบ display-only; World GUI แสดงข้อความบนพื้นและกดเปิด Insight ได้เมื่อกำหนด `insight` หรือ `onClick`
 - Target Focus/Guideline/Drag Cue ชี้ตำแหน่งหรือสาธิต ใช้ของกลางและหยุดเมื่อเปลี่ยนขั้น
 - เครื่องหมายคำนวณ/เปรียบเทียบใช้ Operator Sign ไม่สร้างด้วย Text3D ทดแทน
 - Topbar, Mode/Quiz Badge, Camera Controls, Loading, Mascot และ Celebration เป็น system-owned ดูการตั้งค่าใน UI Catalog ไม่สร้างซ้ำ

@@ -87,7 +87,7 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 - GUI ใหม่ให้ใช้ Service กลาง `context.ui.question`, `console`, `topMessage`, `choice`, `gizmo`, `feedback`, `dialog`, `insight`, `control`, `hint`, `busy` ห้ามสร้าง UI ซ้ำด้วย HTML/CSS หาก Public API รองรับแล้ว โดย `control.position` รองรับ `top-right`, `middle-right`, `bottom-right`
 - `context.ui.choice.show()` ใช้สร้างตัวเลือกเหนือ Console และแจ้ง objective action ให้อัตโนมัติ ส่วน `context.ui.gizmo.attach()`/`at()` ใช้ข้อความ ตัวเลข icon หรือภาพ Screen-space ที่ติดตาม object/พิกัด World
 - `world.addCallout()` ใช้สำหรับป้ายพร้อมเส้นชี้ "พื้นที่" ในฉาก และใส่ `insight` ได้เพื่อให้ป้ายเป็นจุดกดเปิดคำอธิบายมาตรฐาน ห้ามซ่อน click action ไว้บนพื้นผิวที่มองไม่ออกว่ากดได้; Callout กับ Gizmo ยังมีหน้าที่ต่างกัน
-- ใช้ `world.addWorldCounter()` เมื่อต้องแสดงตัวเลขนับบนพื้น และใช้ `world.addWorldGui()` เมื่อต้องวางข้อความอธิบายลงบนพื้น ทั้งคู่เป็น service กลางแบบ display-only ห้ามสร้างซ้ำเองหรือผูก interaction
+- ใช้ `world.addWorldCounter()` เมื่อต้องแสดงตัวเลขนับบนพื้นแบบ display-only และใช้ `world.addWorldGui()` เมื่อต้องวางข้อความอธิบายลงบนพื้น World GUI กดเปิด Insight ได้เมื่อกำหนด `insight` หรือ `onClick`; ใช้ interaction กลางนี้แทนการสร้างปุ่มซ้ำเอง
 - ใช้ GUI scope ให้เหมาะสม (`scene`, `step`, `question`, `lesson`, `manual`) เพื่อให้ runtime ล้าง UI ตาม lifecycle ได้เอง ดู signature และตัวอย่างล่าสุดใน `sdk/GUI_SERVICE_REFERENCE.md`
 - ห้ามสร้างป้ายโจทย์หลักด้วย `addText3D`, callout, group หรือ DOM ของบทเรียน เพราะจะซ้ำกับ UI กลางและอาจกลับด้านเมื่อหมุนกล้อง
 - runtime ล้าง Question UI ก่อน reset/close อัตโนมัติ บทเรียนเรียก `context.ui.clearQuestion()` เฉพาะเมื่อต้องการซ่อนระหว่างกิจกรรม
@@ -191,6 +191,8 @@ Topbar, Mode Badge, Quiz Badge, System Popup, Camera Controls, World Hint, Loadi
 
 ## Lifecycle และ Cleanup
 
+- `this.someHelper()` เรียกได้เมื่อมี `someHelper() { ... }` อยู่ใน object เดียวกับที่ส่งให้ `PuzzleLesson.define(...)` เท่านั้น `this.*` ไม่ใช่ Runtime/Public API ห้ามคิดชื่อ helper แล้วเรียกโดยไม่เขียน implementation
+- ก่อนส่งให้ค้นหา `this.` ทั้งไฟล์และเทียบชื่อที่ถูกเรียกกับ method ที่ประกาศ Validator ต้องไม่รายงาน `LESSON_HELPER_MISSING`
 - `mount` ใช้เก็บ context และสร้าง state container เท่านั้น
 - runtime จะล้าง world ก่อนเรียก `reset`; reset ต้องสร้างฉากจาก payload ปัจจุบันใหม่ทั้งหมด
 - clear timer เดิมก่อนสร้าง timer ใหม่ทุกครั้งใน reset
@@ -208,7 +210,7 @@ Topbar, Mode Badge, Quiz Badge, System Popup, Camera Controls, World Hint, Loadi
 3. แปลงข้อความครูเป็น values, editable fields, steps, interactions และ quiz conditions
 4. ตรวจความสมเหตุสมผลของโจทย์ทุกแบบ โดยเฉพาะช่วงคำตอบและกรณีศูนย์
 5. สร้างไฟล์ HTML จริงใน `Project/interactive/chapters/`
-6. ตรวจ HTML/JavaScript syntax และค้นหาการใช้ API ที่ไม่มีใน runtime
+6. ตรวจ HTML/JavaScript syntax ค้นหาการใช้ API ที่ไม่มีใน runtime และยืนยันว่าทุก `this.someHelper()` มี `someHelper()` ประกาศจริงใน lesson definition
 7. เปิดผ่านหน้า demo และ EduSDK ด้วย relative path จริง
 8. ทดสอบ `teacher-lab`, `student-lab` และ `student-quiz`
 9. ทดสอบ Teacher Tools ว่าทุกช่องเปลี่ยนฉากจริง
