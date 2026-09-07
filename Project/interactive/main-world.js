@@ -794,15 +794,15 @@ function worldGuiSettingPosition(value) {
 }
 
 function addWorldGui(options = {}) {
-  const config = { ...worldGuiRenderDefaults, ...(setting.ui.worldGui || {}) };
+  const worldGuiSetting = setting.ui.worldGui || {};
+  const config = { ...worldGuiRenderDefaults, ...worldGuiSetting, ...(worldGuiSetting.normal || {}) };
   const actionable = Boolean(options.insight || options.onClick);
   const actionStyle = {
-    faceColor: "#fffdf4", edgeColor: "#6756c9", hoverFaceColor: "#ffffff", hoverEdgeColor: "#ffad32",
-    emissiveColor: "#fff3bf", faceHeight: .1, baseHeight: .16, outerPadding: .08, hoverLift: .045,
-    roughness: .34, clearcoat: .82, backgroundColor: "#fffdf4", hoverBackgroundColor: "#fff7d6",
-    backgroundOpacity: .98, borderColor: "#6756c9", hoverBorderColor: "#ffad32", borderWidth: 22,
-    iconSize: 128, iconBackground: "#6756c9", hoverIconBackground: "#ff9f1f", iconColor: "#ffffff",
-    iconBorderColor: "#ffffff", iconBorderWidth: 7, iconText: "i",
+    textColor: "#ffffff", fontSize: 150,
+    backgroundColor: "#000000", backgroundOpacity: .35, hoverBackgroundColor: "#000000", hoverBackgroundOpacity: .5,
+    borderColor: "#ffffff", hoverBorderColor: "#ffffff", borderWidth: 18,
+    iconSize: 96, iconInset: 18, iconBackground: "#000000", hoverIconBackground: "#000000", iconColor: "#ffffff",
+    iconBorderColor: "#ffffff", iconBorderWidth: 5, iconText: "i",
     ...(config.actionable || {})
   };
   const size = options.size || config.size || [3.6, .95];
@@ -853,29 +853,6 @@ function addWorldGui(options = {}) {
   const root = new THREE.Group();
   const visual = new THREE.Group();
   visual.add(label);
-  let actionBaseMaterial = null, actionFaceMaterial = null;
-  if (actionable) {
-    const outerPadding = Number(actionStyle.outerPadding) || 0;
-    const baseHeight = Math.max(.04, Number(actionStyle.baseHeight) || .16);
-    const faceHeight = Math.max(.035, Number(actionStyle.faceHeight) || .1);
-    actionBaseMaterial = new THREE.MeshPhysicalMaterial({
-      color: actionStyle.edgeColor, roughness: actionStyle.roughness, clearcoat: actionStyle.clearcoat,
-      clearcoatRoughness: .16, metalness: .015
-    });
-    actionFaceMaterial = new THREE.MeshPhysicalMaterial({
-      color: actionStyle.faceColor, emissive: actionStyle.emissiveColor, emissiveIntensity: .1,
-      roughness: actionStyle.roughness, clearcoat: actionStyle.clearcoat, clearcoatRoughness: .12, metalness: .01
-    });
-    const base = new THREE.Mesh(new RoundedBoxGeometry(width + outerPadding * 2, baseHeight, height + outerPadding * 2, 8, Math.min(.18, height * .2)), actionBaseMaterial);
-    const face = new THREE.Mesh(new RoundedBoxGeometry(width, faceHeight, height, 8, Math.min(.16, height * .18)), actionFaceMaterial);
-    base.position.y = baseHeight / 2;
-    face.position.y = baseHeight + faceHeight / 2;
-    label.position.y = baseHeight + faceHeight + .012;
-    base.castShadow = base.receiveShadow = face.castShadow = face.receiveShadow = true;
-    base.userData.isLessonDecoration = true;
-    face.userData.isLessonDecoration = true;
-    visual.add(base, face);
-  }
   const displayOptions = {
     ...options,
     position: options.position || worldGuiSettingPosition(config.position),
@@ -901,7 +878,7 @@ function addWorldGui(options = {}) {
     const context = canvas.getContext("2d");
     const referenceHeight = config.referenceCanvasHeight ?? 320;
     const fontScale = canvasHeight / referenceHeight;
-    const requestedFontSize = (options.fontSize ?? config.fontSize ?? 56) * fontScale;
+    const requestedFontSize = (options.fontSize ?? (actionable ? actionStyle.fontSize : config.fontSize) ?? 56) * fontScale;
     const minimumFontSize = (options.minFontSize ?? config.minFontSize ?? 82) * fontScale;
     const fontWeight = options.fontWeight ?? config.fontWeight ?? 700;
     const fontFamily = options.fontFamily || config.fontFamily || '"Noto Sans Thai", "Leelawadee UI", Tahoma, system-ui, sans-serif';
@@ -913,7 +890,7 @@ function addWorldGui(options = {}) {
     const panelRadius = (options.panelRadius ?? config.panelRadius ?? 42) * fontScale;
     const normalBorderWidth = options.borderWidth ?? config.borderWidth ?? 2;
     const borderWidth = (actionable ? Math.max(normalBorderWidth, options.actionBorderWidth ?? actionStyle.borderWidth) : normalBorderWidth) * fontScale;
-    const actionIconSize = actionable ? Math.min(canvasHeight * .62, (options.actionIconSize ?? actionStyle.iconSize) * fontScale) : 0;
+    const actionIconSize = actionable ? Math.min(canvasHeight * .5, (options.actionIconSize ?? actionStyle.iconSize) * fontScale) : 0;
     const actionReserve = actionable ? actionIconSize + paddingX * .62 : 0;
     const availableWidth = Math.max(1, canvasWidth - paddingX * 2 - actionReserve);
     const availableHeight = Math.max(1, canvasHeight - paddingY * 2);
@@ -921,16 +898,20 @@ function addWorldGui(options = {}) {
 
     context.clearRect(0, 0, canvasWidth, canvasHeight);
     const baseBackgroundOpacity = options.backgroundOpacity ?? config.backgroundOpacity ?? config.faceOpacity ?? 0;
-    const backgroundOpacity = clamp(actionable ? Math.max(baseBackgroundOpacity, actionStyle.backgroundOpacity) : baseBackgroundOpacity, 0, 1);
+    const backgroundOpacity = clamp(actionable
+      ? (hoveredAction ? (options.actionHoverBackgroundOpacity ?? actionStyle.hoverBackgroundOpacity) : (options.actionBackgroundOpacity ?? actionStyle.backgroundOpacity))
+      : baseBackgroundOpacity, 0, 1);
     const borderOpacity = clamp(actionable ? 1 : (options.borderOpacity ?? config.borderOpacity ?? config.baseOpacity ?? .72), 0, 1);
     context.save();
     context.beginPath();
     context.roundRect(panelInset, panelInset, canvasWidth - panelInset * 2, canvasHeight - panelInset * 2, panelRadius);
     if (backgroundOpacity > 0) {
       context.globalAlpha = backgroundOpacity;
-      context.fillStyle = hoveredAction
-        ? (options.actionHoverBackgroundColor || actionStyle.hoverBackgroundColor)
-        : (options.actionBackgroundColor || actionStyle.backgroundColor);
+      context.fillStyle = actionable
+        ? (hoveredAction
+          ? (options.actionHoverBackgroundColor || actionStyle.hoverBackgroundColor)
+          : (options.actionBackgroundColor || actionStyle.backgroundColor))
+        : (options.backgroundColor || config.backgroundColor || config.faceColor || "#ffffff");
       context.fill();
     }
     if (borderOpacity > 0 && borderWidth > 0) {
@@ -982,7 +963,9 @@ function addWorldGui(options = {}) {
     const textStrokeWidth = (options.strokeWidth ?? options.textStrokeWidth ?? config.strokeWidth ?? config.textStrokeWidth ?? 2) * fontScale;
     context.strokeStyle = options.strokeColor || options.textStrokeColor || config.strokeColor || config.textStrokeColor || "rgba(255,255,255,.72)";
     context.lineWidth = textStrokeWidth;
-    context.fillStyle = options.color || options.fontColor || options.textColor || config.fontColor || config.textColor || "#294238";
+    context.fillStyle = actionable
+      ? (options.actionTextColor || options.color || actionStyle.textColor)
+      : (options.color || options.fontColor || options.textColor || config.fontColor || config.textColor || "#294238");
     context.shadowColor = options.shadowColor || options.textShadowColor || config.shadowColor || config.textShadowColor || "rgba(255,255,255,.62)";
     context.shadowBlur = (options.shadowBlur ?? options.textShadowBlur ?? config.shadowBlur ?? config.textShadowBlur ?? 2) * fontScale;
     context.shadowOffsetX = (options.shadowOffsetX ?? options.textShadowOffsetX ?? config.shadowOffsetX ?? config.textShadowOffsetX ?? 0) * fontScale;
@@ -994,7 +977,8 @@ function addWorldGui(options = {}) {
     });
 
     if (actionable) {
-      const iconX = canvasWidth - panelInset - actionIconSize * .72;
+      const iconInset = (options.actionIconInset ?? actionStyle.iconInset) * fontScale;
+      const iconX = canvasWidth - panelInset - actionIconSize * .72 - iconInset;
       const iconY = canvasHeight / 2;
       context.save();
       context.beginPath();
@@ -1034,10 +1018,6 @@ function addWorldGui(options = {}) {
       onClick: activate,
       onHover: value => {
         hoveredAction = Boolean(value);
-        actionBaseMaterial?.color.set(hoveredAction ? actionStyle.hoverEdgeColor : actionStyle.edgeColor);
-        actionFaceMaterial?.color.set(hoveredAction ? actionStyle.hoverFaceColor : actionStyle.faceColor);
-        actionFaceMaterial.emissiveIntensity = hoveredAction ? .24 : .1;
-        visual.position.y = hoveredAction ? actionStyle.hoverLift : 0;
         elements.canvas.classList.toggle("is-hovering-world-gui", hoveredAction);
         renderText(text);
         options.onHover?.({ hovered: hoveredAction, handle, object: root });
@@ -1509,8 +1489,32 @@ window.eduRuntimeRetryHandler = () => {
   openLesson(payload);
 };
 
-$("#close-runtime").addEventListener("click", () => postToHost("lesson.closeRequested")); $("#show-information").addEventListener("click", showInformation); $("#edit-lesson").addEventListener("click", showEditor); $("#previous-step").addEventListener("click", () => setStep(runtime.stepIndex - 1)); $("#next-step").addEventListener("click", () => setStep(runtime.stepIndex + 1)); $("#reset-lesson").addEventListener("click", async () => { uiSound(); runtime.values = { ...runtime.meta.defaultValue }; if (runtime.mode === "student-quiz") readyQuiz(); else { await resetLessonScene(); await setStep(0); } }); $("#next-question").addEventListener("click", async () => { hideQuizNext(); uiSound(); commitQuizAnswer(); await playQuizMascotReaction(); await showQuestion(runtime.quiz.index + 1); });
-$("#entry-close").addEventListener("click", () => postToHost("lesson.closeRequested"));
+function bindLessonCloseButton(button) {
+  if (!button) return;
+  let touchRequestPending = false;
+  const requestClose = () => postToHost("lesson.closeRequested");
+  button.addEventListener("pointerdown", event => {
+    if (event.pointerType === "mouse" || event.isPrimary === false) return;
+    event.preventDefault();
+    event.stopPropagation();
+    touchRequestPending = true;
+    requestClose();
+    window.setTimeout(() => { touchRequestPending = false; }, 800);
+  }, { passive: false });
+  button.addEventListener("click", event => {
+    if (touchRequestPending) {
+      event.preventDefault();
+      event.stopPropagation();
+      touchRequestPending = false;
+      return;
+    }
+    requestClose();
+  });
+}
+
+bindLessonCloseButton($("#close-runtime"));
+bindLessonCloseButton($("#entry-close"));
+$("#show-information").addEventListener("click", showInformation); $("#edit-lesson").addEventListener("click", showEditor); $("#previous-step").addEventListener("click", () => setStep(runtime.stepIndex - 1)); $("#next-step").addEventListener("click", () => setStep(runtime.stepIndex + 1)); $("#reset-lesson").addEventListener("click", async () => { uiSound(); runtime.values = { ...runtime.meta.defaultValue }; if (runtime.mode === "student-quiz") readyQuiz(); else { await resetLessonScene(); await setStep(0); } }); $("#next-question").addEventListener("click", async () => { hideQuizNext(); uiSound(); commitQuizAnswer(); await playQuizMascotReaction(); await showQuestion(runtime.quiz.index + 1); });
 elements.mascotNotice.addEventListener("click", () => { uiSound(); revealPendingMascotOption(); });
 window.addEventListener("message", event => { if (event.origin !== location.origin || event.source !== window.parent || event.data?.channel !== "edu-widget") return; if (event.data.type === "host.openLesson") openLesson(event.data.payload); if (event.data.type === "host.closeLesson") closeLesson(); if (event.data.type === "host.toggleRuntimeSetting") runtimeSettingMenu?.toggle(); });
 postToHost("runtime.ready");

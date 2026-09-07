@@ -604,37 +604,34 @@ export const mainWorldSetting = {
       },
 
       size: [3.6, 0.95],       // [ความกว้าง, ความลึก] ของกรอบบนพื้น (หน่วย World)
-      textColor: "#ffffff",   // สีตัวหนังสือ
-      fontSize: 150,           // ขนาดตัวหนังสือ แนะนำประมาณ 120–180
-      borderColor: "#ffffff", // สีเส้นกรอบแคปซูล
-      backgroundColor: "#000000", // สีพื้นด้านในกรอบ
-      backgroundOpacity: 0.35,   // ความทึบพื้นหลัง: 0 = โปร่งใส, 1 = ทึบเต็ม
 
-      // ใช้เฉพาะ worldGui ที่มี insight หรือ onClick ให้ดูเหมือนปุ่มนูนและรู้ว่ากดได้
+      // สีเดิมของ worldGui ปกติที่ไม่มี insight/onClick
+      normal: {
+        textColor: "#ffffff",
+        fontSize: 150,
+        borderColor: "#ffffff",
+        backgroundColor: "#000000",
+        backgroundOpacity: 0.35
+      },
+
+      // worldGui แบบกดได้เป็นป้าย 2D เช่นกัน แต่แยกสีและขนาด icon เพื่อให้ปรับได้โดยไม่กระทบแบบปกติ
       actionable: {
-        faceColor: "#fffdf4",          // สีหน้าปุ่ม 3D ในสถานะปกติ
-        edgeColor: "#6756c9",          // สีฐาน/ขอบล่างของปุ่ม
-        hoverFaceColor: "#ffffff",     // สีหน้าปุ่มเมื่อชี้เมาส์
-        hoverEdgeColor: "#ffad32",     // สีขอบเมื่อชี้เมาส์
-        emissiveColor: "#fff3bf",      // แสงอ่อนบนหน้าปุ่ม
-        faceHeight: 0.10,               // ความหนาของแผ่นหน้าปุ่ม
-        baseHeight: 0.16,               // ความหนาของฐาน 3D
-        outerPadding: 0.08,             // ระยะฐานที่ยื่นพ้นกรอบข้อความ
-        hoverLift: 0.045,               // ระยะยกขึ้นเมื่อ Hover
-        roughness: 0.34,
-        clearcoat: 0.82,
-        backgroundColor: "#fffdf4",    // สีพื้น Canvas ด้านบน
-        hoverBackgroundColor: "#fff7d6",
-        backgroundOpacity: 0.98,
-        borderColor: "#6756c9",
-        hoverBorderColor: "#ffad32",
-        borderWidth: 22,
-        iconSize: 128,
-        iconBackground: "#6756c9",
-        hoverIconBackground: "#ff9f1f",
+        textColor: "#ffffff",
+        fontSize: 180,
+        backgroundColor: "#6485ff",
+        backgroundOpacity: 0.85,
+        hoverBackgroundColor: "#0049c6",
+        hoverBackgroundOpacity: 0.85,
+        borderColor: "#ffffff",
+        hoverBorderColor: "#ffffff",
+        borderWidth: 18,
+        iconSize: 140,
+        iconInset: 28, // ระยะขยับ icon เข้าจากขอบขวา ป้องกันวงกลมตกขอบ
+        iconBackground: "#000000",
+        hoverIconBackground: "#000000",
         iconColor: "#ffffff",
         iconBorderColor: "#ffffff",
-        iconBorderWidth: 7,
+        iconBorderWidth: 5,
         iconText: "i"
       }
     },

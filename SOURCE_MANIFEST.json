@@ -48,7 +48,7 @@
     {
       "path": "Project/interactive/chapters/ep10/lesson3.html",
       "sourcePath": "Project/interactive/chapters/ep10/lesson3.html",
-      "sha256": "4810ef58cb7e4c608930b8047d407b5e0c38d2098d9acf0a3c86343a8dfc921e"
+      "sha256": "16205985abacabb83148db71065708930eb0a8e36d50a74e5a609ccfdb3bf3c1"
     },
     {
       "path": "Project/interactive/chapters/leesonExternal.html",
@@ -83,7 +83,7 @@
     {
       "path": "Project/interactive/main-world-setting.js",
       "sourcePath": "Project/interactive/main-world-setting.js",
-      "sha256": "2002518f14a951438f1baab2b42cb098a53ccc30eee6c6029e9fe00bc27a5370"
+      "sha256": "50f29a1d0ea779c1ce23a889444002df5b4ac5b2b76eaecf9d4170d0aaed3b8e"
     },
     {
       "path": "Project/interactive/main-world.html",
@@ -93,7 +93,7 @@
     {
       "path": "Project/interactive/main-world.js",
       "sourcePath": "Project/interactive/main-world.js",
-      "sha256": "ce00599dedd0a49a5369198f0d0c6e6e301151988d13739c423293acc229efde"
+      "sha256": "fdbaa8bf26c316c9e98e9a61a6c330efa551304615e76cae92a4d8211bf91e4f"
     },
     {
       "path": "Project/interactive/runtime-setting-menu.js",
@@ -103,7 +103,7 @@
     {
       "path": "Project/interactive/world.css",
       "sourcePath": "Project/interactive/world.css",
-      "sha256": "145e040f1fd552413ca7469b7afc879a14cbc68f75d1a00225ee3649e90c77d7"
+      "sha256": "71ddc8bcce560b22f5ec73da6658fc9d42125e72b7511da10deb62ccd6c31608"
     }
   ]
 }

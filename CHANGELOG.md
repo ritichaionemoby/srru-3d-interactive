@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-09-07 — 0.0.6 แยก Connection ออกจาก Lesson
+
+- คำสั่ง Introduction ใช้เพียง Repository และ `git/DEVGEN`
+- ย้าย `[ Lesson ]` ไปถามเมื่อเริ่ม `--CREATE` หรือแสดงผ่าน `--TEMPLATE`
+- คำตอบแรกยืนยันโครงสร้างและพร้อมรับคำสั่ง โดยยังไม่กำหนดไฟล์ปลายทาง
+
+## 2026-09-07 — 0.0.5 เพิ่ม DEVGEN MENU
+
+- คำตอบแรกของ session แสดง `--CREATE`, `--TEMPLATE`, `--TOOLS` และ `--HELP`
+- `--TEMPLATE` ส่ง Brief แบบ copy ได้ ส่วน `--TOOLS` และ `--HELP` อ้างจากไฟล์จริง
+- ข้อความทั่วไปที่ไม่มีชื่อเมนูถูกตีความเป็น `--CREATE` โดยอัตโนมัติ
+
+## 2026-09-07 — 0.0.4 เพิ่ม DEVGEN สำหรับทีมภายนอก
+
+- เพิ่ม `git/DEVGEN` สำหรับตรวจ Repository, อ่าน Master และถาม Brief ก่อนสร้าง
+- เพิ่ม `DEVGEN` ที่ root เป็น entrypoint สำรองเพื่อช่วยให้ค้นพบคำสั่งได้ง่าย
+- ลด START_PROMPT ภายนอกเหลือ Repository, Introduction และ Lesson path
+
+## 2026-09-07 — 0.0.3 แก้ปุ่ม Back ของ UI บนมือถือ
+
+- ปุ่ม Back มุมซ้ายบนรับการแตะตั้งแต่ `pointerdown` จึงไม่ค้างเมื่อ browser ยกเลิก `click` ระหว่าง gesture
+- กัน event `click` ที่ตามหลัง touch ไม่ให้ส่งคำสั่งปิดซ้ำ
+- ขยายพื้นที่แตะของปุ่มโดยไม่เปลี่ยนขนาดที่มองเห็น และใช้ได้ทั้งหน้า Loading กับหน้าบทเรียน
+
 ## 2026-09-07 — 0.0.2 ตรวจ helper ที่ไม่มีจริง
 
 - เพิ่ม `LESSON_HELPER_MISSING` ใน validator เพื่อจับ `this.someHelper()` ที่ไม่มี method ใน lesson definition ก่อนเปิด runtime

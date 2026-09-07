@@ -246,6 +246,15 @@ button.is-ui-pressed {
   flex: 0 0 auto;
   pointer-events: auto;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+#close-runtime::after,
+.entry-close::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
 }
 
 .next-button {
@@ -2861,6 +2870,9 @@ button.is-ui-pressed {
   font-size: 20px;
   font-weight: 900;
   backdrop-filter: blur(12px);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .entry-screen.is-leaving {

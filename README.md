@@ -6,6 +6,15 @@ Repository นี้รวมคู่มือ, Public API, ตัวอย่�
 
 ## จุดเริ่มต้นสำหรับ AI
 
+หากได้รับคำสั่งสั้นที่มี `[ Introduction ] : git/DEVGEN` ให้เปิด
+[git/DEVGEN](git/DEVGEN) และทำเฉพาะรอบ Introduction ก่อน ไฟล์นี้จะบังคับให้ตรวจ
+`VERSION.txt`, อ่านโครงสร้างจริง ตอบหลักฐานการเชื่อมต่อ และถาม Brief กลับมา
+เพื่อให้ผู้ใช้กรอกในข้อความถัดไป
+
+คำตอบแรกจะแสดง `DEVGEN MENU`: `--CREATE`, `--TEMPLATE`, `--TOOLS` และ `--HELP`
+ถ้าข้อความถัดไปไม่ขึ้นต้นด้วยคำสั่งเหล่านี้ DEVGEN จะใช้ข้อความนั้นเป็นคำอธิบาย
+สำหรับ `--CREATE` โดยอัตโนมัติ
+
 1. อ่าน [MASTER_README.md](MASTER_README.md) ทั้งไฟล์ — กฎหลัก, lifecycle, Lab, Quiz และขอบเขตงาน
 2. อ่าน [contract](contracts/LESSON_CONTRACT.md) และ [template](LESSON_OUTPUT_TEMPLATE.html) — รูปแบบ HTML หนึ่งไฟล์
 3. อ่าน [Public API](sdk/LESSON_API_REFERENCE.md), [UI Catalog](sdk/UI_CATALOG.md), [ตัวอย่าง GUI Service ครบทุกกลุ่ม](sdk/GUI_SERVICE_REFERENCE.md) และตรวจ signature ใน [types](sdk/lesson-sdk.d.ts)
@@ -23,6 +32,8 @@ Repository นี้รวมคู่มือ, Public API, ตัวอย่�
 ```text
 <repository-root>/
 ├── README.md
+├── DEVGEN                   ← entrypoint สำรอง; ชี้ไปที่ git/DEVGEN
+├── git/DEVGEN               ← Introduction สำหรับคำสั่งสั้นของทีมภายนอก
 ├── MASTER_README.md
 ├── EXAMPLES.md
 ├── examples.json             ← path อ้างจาก root นี้
@@ -79,7 +90,11 @@ AI/Github/
 └── git/          ← Git repository ที่ sync; README นี้อยู่ที่ root ของ repo
 ```
 
-ผู้มอบหมายเติม [REPO] และเนื้อหาใน START_PROMPT.txt แล้วส่งข้อความให้ทีมแยกต่างหาก AI ภายนอกจึงไม่ต้องค้นไฟล์ prompt ใน repository นี้ ให้ใช้โจทย์ที่ได้รับมาเป็นข้อมูลเนื้อหา ส่วนกฎการสร้างอยู่ใน Master และ SDK เมื่ออ่านเว็บไม่ได้ให้ใช้ clone หรือ ZIP ของ repository นี้
+ผู้มอบหมายส่งคำสั่งสั้นจาก START_PROMPT.txt ให้ทีมภายนอก โดยระบุเพียง Repository
+และ `git/DEVGEN` รอบแรกใช้เชื่อมต่อ ตรวจ VERSION อ่านกฎ และแสดงเมนูเท่านั้น
+Lesson path จะส่งภายหลังพร้อม `--CREATE`, แบบฟอร์ม `--TEMPLATE` หรือคำอธิบาย
+บทเรียนในข้อความถัดไป แล้ว AI จึงเริ่มสร้างตาม Master และ SDK
+เมื่ออ่านเว็บไม่ได้ให้ใช้ clone หรือ ZIP ของ repository นี้
 
 ## CREATE — สร้างบทเรียนใหม่
 

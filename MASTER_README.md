@@ -248,6 +248,7 @@ Topbar, Mode Badge, Quiz Badge, System Popup, Camera Controls, World Hint, Loadi
 - [ ] วัตถุหลายชิ้นไม่ทับ slot และลากกลับได้
 - [ ] reset/open/close ไม่มี state หรือ timer ค้าง
 - [ ] desktop และ mobile มองเห็น objective ครบ
+- [ ] ปุ่ม Back ของ UI มุมซ้ายบนกดได้ทั้งระหว่าง Loading และหลังเข้าบทเรียน โดยปิด lesson overlay และกลับหน้า Host
 - [ ] browser console ไม่มี error
 
 ## ข้อผิดพลาดที่พบบ่อย
