@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>สวนผลไม้คณิตศาสตร์ บวกและลบ</title>
+</head>
+
+<body>
+  <script data-lesson-app>
+    (() => {
+      const quiz = [
+        { question: "มีแอปเปิล 3 ผล ได้มาเพิ่มอีก 2 ผล รวมเป็นกี่ผล", data: [{ key: "operation", value: "+" }, { key: "firstNumber", value: 3 }, { key: "secondNumber", value: 2 }] },
+        { question: "มีแอปเปิล 5 ผล ได้มาเพิ่มอีก 3 ผล รวมเป็นกี่ผล", data: [{ key: "operation", value: "+" }, { key: "firstNumber", value: 5 }, { key: "secondNumber", value: 3 }] },
+        { question: "มีแอปเปิล 6 ผล เก็บออกไป 2 ผล เหลือกี่ผล", data: [{ key: "operation", value: "-" }, { key: "firstNumber", value: 6 }, { key: "secondNumber", value: 2 }] },
+        { question: "มีแอปเปิล 4 ผล เก็บออกไป 1 ผล เหลือกี่ผล", data: [{ key: "operation", value: "-" }, { key: "firstNumber", value: 4 }, { key: "secondNumber", value: 1 }] },
+        { question: "มีผลไม้ 7 ผล ได้มาเพิ่มอีก 2 ผล รวมเป็นกี่ผล", data: [{ key: "operation", value: "+" }, { key: "firstNumber", value: 7 }, { key: "secondNumber", value: 2 }] },
+        { question: "มีผลไม้ 8 ผล นำออกไป 3 ผล เหลือกี่ผล", data: [{ key: "operation", value: "-" }, { key: "firstNumber", value: 8 }, { key: "secondNumber", value: 3 }] },
+        { question: "มีส้ม 4 ผล ได้มาเพิ่มอีก 3 ผล รวมเป็นกี่ผล", data: [{ key: "operation", value: "+" }, { key: "firstNumber", value: 4 }, { key: "secondNumber", value: 3 }] },
+        { question: "มีส้ม 7 ผล นำออกไป 1 ผล เหลือกี่ผล", data: [{ key: "operation", value: "-" }, { key: "firstNumber", value: 7 }, { key: "secondNumber", value: 1 }] },
+        { question: "มีผลไม้ 6 ผล ได้มาเพิ่มอีก 3 ผล รวมเป็นกี่ผล", data: [{ key: "operation", value: "+" }, { key: "firstNumber", value: 6 }, { key: "secondNumber", value: 3 }] },
+        { question: "มีผลไม้ 5 ผล นำออกไป 2 ผล เหลือกี่ผล", data: [{ key: "operation", value: "-" }, { key: "firstNumber", value: 5 }, { key: "secondNumber", value: 2 }] }
+      ];
+
+      PuzzleLesson.define({
+        id: "lesson1-fruit-arithmetic",
+        version: "1.1.0",
+        meta: {
+          worldType: "3d-world-space",
+          lessonId: "lesson1-fruit-arithmetic",
+          title: "การบวกและการลบในสวนผลไม้",
+          category: "คณิตศาสตร์",
+          subcategory: "การบวกและการลบ",
+          description: "เรียนรู้การบวกและการลบจำนวนไม่เกิน 11 ผ่านสวนผลไม้สามมิติ แล้วกดเลือกคำตอบที่ถูกต้อง",
+          keyResult: "ผู้เรียนอธิบายความหมายของการเพิ่มและการนำออก พร้อมหาผลบวกหรือผลลบจากภาพและประโยคสัญลักษณ์ได้",
+          background: "green",
+          camera: {
+            fov: 43,
+            startYaw: 18,
+            startPitch: 43,
+            startDistance: 22.5,
+            minDistance: 11,
+            maxDistance: 34,
+            minPitch: 20,
+            maxPitch: 76,
+            target: [0, 0.45, 0]
+          },
+          welcomeMessage: [
+            "นับผลไม้ในแปลงแรก",
+            "ดูว่าโจทย์ให้เพิ่มหรือนำออก",
+            "กดแผ่นตัวเลขที่เป็นคำตอบ"
+          ],
+          tooltip: "สังเกตผลไม้ทั้งสองฝั่ง แล้วกดแผ่นตัวเลขด้านหน้าเพื่อเลือกคำตอบ",
+          defaultValue: { operation: "+", firstNumber: 4, secondNumber: 2 },
+          editSchema: [
+            { key: "operation", name: "การคำนวณ", type: "dropdown", option: ["+", "-"] },
+            { key: "firstNumber", name: "จำนวนเริ่มต้น", type: "slider", option: [3, 8], step: 1 },
+            { key: "secondNumber", name: "จำนวนที่เพิ่มหรือนำออก", type: "slider", option: [1, 3], step: 1 }
+          ],
+          howto: [
+            { index: 0, title: "นับจำนวนเริ่มต้น", type: "sequence", desc: "นับผลไม้สีแดงในแปลงด้านซ้ายให้ครบทีละผล", option: { type: "instruction", header: "เริ่มจากสิ่งที่มี", message: "จำนวนฝั่งซ้ายคือจำนวนตั้งต้นของประโยคคำนวณ" } },
+            { index: 1, title: "ดูการเปลี่ยนแปลง", type: "sequence", desc: "ฝั่งขวาบอกจำนวนที่นำมาเพิ่ม หรือจำนวนที่ต้องนำออก", option: { type: "hint", header: "สังเกตเครื่องหมาย", message: "เครื่องหมาย + หมายถึงเพิ่มเข้ามา ส่วนเครื่องหมาย - หมายถึงนำออก" } },
+            { index: 2, title: "คิดผลลัพธ์", type: "sequence", desc: "รวมจำนวนเมื่อเป็นการบวก หรือนับสิ่งที่เหลือเมื่อเป็นการลบ" },
+            { index: 3, title: "เลือกคำตอบด้วยตัวเอง", type: "freestyle", desc: "กดแผ่นตัวเลขด้านหน้าที่คิดว่าเป็นคำตอบ สามารถลองใหม่ได้เสมอ" }
+          ],
+          quiz
+        },
+
+        mount(context) {
+          this.context = context;
+          this.fruits = [];
+          this.answerPads = [];
+          this.demoTimers = [];
+        },
+
+        reset({ values, mode }) {
+          this.clearTimers();
+          this.values = { ...values };
+          this.mode = mode;
+          this.fruits = [];
+          this.answerPads = [];
+          this.selectedAnswer = null;
+
+          const world = this.context.world;
+          const operation = values.operation === "-" ? "-" : "+";
+          const firstNumber = Number(values.firstNumber);
+          const secondNumber = Number(values.secondNumber);
+          const result = operation === "+" ? firstNumber + secondNumber : firstNumber - secondNumber;
+          this.result = result;
+
+          world.addZone({ name: "starting-orchard", size: [6.7, .2, 5.1], position: [-4.25, .12, -1], color: "#dff3bf", opacity: .72 });
+          world.addZone({ name: "change-orchard", size: [6.7, .2, 5.1], position: [4.25, .12, -1], color: operation === "+" ? "#fff0ad" : "#eadcff", opacity: .72 });
+
+          world.addCallout({ text: `มีอยู่ ${firstNumber} ผล`, position: [-4.25, 4.1, -.1], anchor: [-4.25, .25, -1], scale: [2.6, .78] });
+          world.addCallout({ text: operation === "+" ? `เพิ่ม ${secondNumber} ผล` : `นำออก ${secondNumber} ผล`, position: [4.25, 4.1, -.1], anchor: [4.25, .25, -1], scale: [2.6, .78] });
+
+          // ใช้ prefab เครื่องหมายกลางของระบบเดียวกับ lesson0: ฐานและตัวเครื่องหมายเป็น polygon 3D
+          this.operatorSign = world.addOperatorSign({ text: operation, position: [0, .24, -1], scale: [2.45, 2.45] });
+          // โจทย์เป็น screen-space UI กลาง จึงอ่านตรงเสมอแม้ผู้เรียนหมุนกล้อง
+          this.context.ui.setQuestion(`${firstNumber} ${operation} ${secondNumber} = ?`);
+
+          this.leftFocus = world.addTargetFocus({ position: [-4.25, .3, -1], radius: 2.05, color: "#76bd55", secondaryColor: "#d8ef7b" });
+          this.rightFocus = world.addTargetFocus({ position: [4.25, .3, -1], radius: 2.05, color: operation === "+" ? "#ffb943" : "#956fe2", secondaryColor: "#ffe58a" });
+          this.answerFocus = world.addTargetFocus({ position: [0, .28, 4], radius: 3.7, color: "#6553d6", secondaryColor: "#7bd7c5" });
+          this.leftFocus.setVisible(false);
+          this.rightFocus.setVisible(false);
+          this.answerFocus.setVisible(false);
+
+          for (let index = 0; index < firstNumber; index += 1) {
+            const position = this.fruitPosition(-4.25, index);
+            const handle = this.addFruit(position, "#f16f78", "#8ec85e", `ผลไม้เริ่มต้นชิ้นที่ ${index + 1}`);
+            this.fruits.push({ handle, position, side: "left" });
+          }
+
+          for (let index = 0; index < secondNumber; index += 1) {
+            const position = this.fruitPosition(4.25, index);
+            const handle = this.addFruit(position, operation === "+" ? "#ffbd55" : "#b89be9", operation === "+" ? "#74bd63" : "#8b72bd", operation === "+" ? "ผลไม้ที่เพิ่มเข้ามา" : "ผลไม้ที่นำออก");
+            this.fruits.push({ handle, position, side: "right" });
+          }
+
+          const choices = this.answerChoices(result, firstNumber, secondNumber, operation);
+          const answerXs = [-2.55, 0, 2.55];
+          choices.forEach((answer, index) => {
+            const position = [answerXs[index], .18, 4];
+            const baseColor = ["#6f8ee8", "#8c70db", "#e47dad"][index];
+            const handle = world.addGroup({
+              name: `answer-pad-${answer}`,
+              position,
+              clickable: mode === "student-quiz",
+              hoverMessage: `เลือกคำตอบ ${answer}`,
+              onClick: () => this.chooseAnswer(answer),
+              parts: [
+                { shape: "cylinder", size: [2.15, .42, 2.15], color: baseColor, material: { roughness: .3, clearcoat: .62, clearcoatRoughness: .18 } },
+                { shape: "cylinder", position: [0, .28, 0], size: [1.72, .22, 1.72], color: "#fffaf0", material: { roughness: .38, clearcoat: .4 } },
+                { shape: "torus", position: [0, .43, 0], rotation: [90, 0, 0], size: [1.42, 1.42, 1.42], color: baseColor }
+              ]
+            });
+            const text = world.addText3D({ text: String(answer), position: [position[0], 1.62, position[2]], size: [1.72, 1.06], color: "#3c315f", fontSize: 220 });
+            const visible = mode === "student-quiz";
+            handle.setVisible(visible);
+            text.setVisible(visible);
+            this.answerPads.push({ answer, handle, text, position, baseColor });
+          });
+
+          const verb = operation === "+" ? "รวมทั้งหมด" : "เหลืออยู่";
+          this.context.ui.setObjective(`เป้าหมาย: ${firstNumber} ${operation} ${secondNumber} ${verb}กี่ผล?`);
+        },
+
+        addFruit(position, fruitColor, leafColor, hoverMessage) {
+          return this.context.world.addGroup({
+            name: `fruit-${this.fruits.length}`,
+            position,
+            hoverMessage,
+            parts: [
+              { shape: "sphere", position: [0, .58, 0], size: [1.08, 1, 1.02], color: fruitColor, material: { roughness: .46, clearcoat: .22 } },
+              { shape: "sphere", position: [-.27, .72, .38], size: [.2, .28, .12], color: "#ffd8d2", material: { roughness: .34, emissiveIntensity: .08 } },
+              { shape: "cylinder", position: [0, 1.08, 0], rotation: [0, 0, -12], size: [.12, .38, .12], color: "#7b5438", material: { roughness: .72 } },
+              { shape: "sphere", position: [.27, 1.14, .02], rotation: [0, 0, -20], size: [.5, .18, .28], color: leafColor, material: { roughness: .64 } }
+            ]
+          });
+        },
+
+        fruitPosition(centerX, index) {
+          const column = index % 4;
+          const row = Math.floor(index / 4);
+          return [centerX + (column - 1.5) * 1.22, .22, -1.65 + row * 1.55];
+        },
+
+        answerChoices(result, firstNumber, secondNumber, operation) {
+          const candidates = [result, result + 1, Math.max(0, result - 1)];
+          if (new Set(candidates).size < 3) candidates[2] = result + 2;
+          const shift = (firstNumber + secondNumber + (operation === "+" ? 1 : 2)) % 3;
+          return candidates.slice(shift).concat(candidates.slice(0, shift));
+        },
+
+        chooseAnswer(answer) {
+          this.selectedAnswer = answer;
+          const correct = answer === this.result;
+          this.answerPads.forEach(pad => {
+            pad.handle.setColor(pad.answer === answer ? (this.mode === "student-quiz" ? "#516fc8" : correct ? "#3fbd83" : "#e47c91") : pad.baseColor);
+          });
+
+          const selectedPad = this.answerPads.find(pad => pad.answer === answer);
+          if (selectedPad) {
+            selectedPad.handle.animateTo(...selectedPad.position, { duration: 460, arcHeight: .34 });
+            if (correct && this.mode !== "student-quiz") selectedPad.handle.playCommit();
+          }
+
+          if (this.mode === "student-quiz") {
+            this.context.quiz.answer(correct, {
+              selectedAnswer: answer,
+              expectedAnswer: this.result,
+              leftCount: answer,
+              operator: "=",
+              rightCount: this.result,
+              operation: this.values.operation,
+              firstNumber: Number(this.values.firstNumber),
+              secondNumber: Number(this.values.secondNumber)
+            });
+            return;
+          }
+
+          this.operatorSign?.setState(correct);
+          if (correct) {
+            this.context.audio.play("success");
+            this.context.ui.toast(`ถูกต้อง! ${this.values.firstNumber} ${this.values.operation} ${this.values.secondNumber} = ${this.result}`, "success");
+          } else {
+            this.context.audio.play("fail");
+            this.context.ui.toast("ลองนับผลไม้ใหม่อีกครั้งนะ", "warning");
+          }
+        },
+
+        onStep(index, step) {
+          this.clearTimers();
+          const freestyle = step.type === "freestyle";
+          this.leftFocus.setVisible(index === 0);
+          this.rightFocus.setVisible(index === 1);
+          this.answerFocus.setVisible(freestyle);
+
+          this.answerPads.forEach(pad => {
+            pad.handle.setClickable(freestyle);
+            pad.handle.setVisible(freestyle);
+            pad.text.setVisible(freestyle);
+          });
+
+          const bounce = items => items.forEach((item, itemIndex) => {
+            item.handle.stopAnimation();
+            item.handle.animateTo(...item.position, { delay: itemIndex * 90, duration: 520, arcHeight: .32 });
+          });
+
+          if (index === 0) bounce(this.fruits.filter(item => item.side === "left"));
+          if (index === 1) bounce(this.fruits.filter(item => item.side === "right"));
+          if (index === 2) {
+            this.operatorSign?.pulse();
+          }
+          if (freestyle) {
+            this.answerPads.forEach((pad, padIndex) => {
+              pad.handle.animateTo(...pad.position, { delay: padIndex * 120, duration: 540, arcHeight: .4 });
+            });
+          }
+
+          const messages = ["นับผลไม้สีแดงทางซ้าย", "ดูจำนวนที่เพิ่มหรือนำออกทางขวา", `คิดตามประโยค ${this.values.firstNumber} ${this.values.operation} ${this.values.secondNumber}`, "กดแผ่นตัวเลขเพื่อเลือกคำตอบได้เลย"];
+          this.context.ui.toast(messages[index] || step.title, "success");
+        },
+
+        clearTimers() {
+          this.demoTimers.forEach(clearTimeout);
+          this.demoTimers = [];
+        },
+
+        dispose() {
+          this.clearTimers();
+          this.fruits = [];
+          this.answerPads = [];
+          this.context = null;
+        }
+      });
+    })();
+  </script>
+</body>
+
+</html>

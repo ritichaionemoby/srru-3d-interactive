@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-07",
+  "pathBase": "repository-root",
+  "note": "Observed call names are search hints, not permission to copy old UI or internal APIs. Read current source and Master.",
+  "lessons": [
+    {
+      "path": "Project/interactive/chapters/ep1/lesson1.html",
+      "linkFromRoot": "Project/interactive/chapters/ep1/lesson1.html",
+      "title": "สัญลักษณ์การดำเนินการ วงเล็บ และลำดับการดำเนินการ",
+      "lessonId": "ep1-lesson1-operation-order",
+      "format": "lesson-package",
+      "observedCalls": [
+        "ui.console",
+        "ui.control",
+        "ui.hint",
+        "ui.question",
+        "world.addCallout",
+        "world.addOperatorSign",
+        "world.addTargetFocus",
+        "world.addWorldCounter",
+        "world.addWorldGui"
+      ],
+      "validation": "source-index-only; not runtime-certified"
+    },
+    {
+      "path": "Project/interactive/chapters/ep1/lesson2.html",
+      "linkFromRoot": "Project/interactive/chapters/ep1/lesson2.html",
+      "title": "สัญลักษณ์แสดงความสัมพันธ์ = ≠ < > ≤ ≥",
+      "lessonId": "lesson0-comparison",
+      "format": "lesson-package",
+      "observedCalls": [
+        "ui.console",
+        "ui.control",
+        "ui.setObjective",
+        "ui.toast",
+        "world.addCallout",
+        "world.addGuideline",
+        "world.addOperatorSign",
+        "world.addTargetFocus"
+      ],
+      "validation": "source-index-only; not runtime-certified"
+    },
+    {
+      "path": "Project/interactive/chapters/ep1/lesson3.html",
+      "linkFromRoot": "Project/interactive/chapters/ep1/lesson3.html",
+      "title": "เซต การเขียนเซต และสัญลักษณ์ ∈ ∉ ⊂",
+      "lessonId": "ep1-lesson3-set-basket",
+      "format": "lesson-package",
+      "observedCalls": [
+        "ui.console",
+        "ui.hint",
+        "ui.question",
+        "world.addCallout",
+        "world.addTargetFocus",
+        "world.addWorldGui"
+      ],
+      "validation": "source-index-only; not runtime-certified"
+    },
+    {
+      "path": "Project/interactive/chapters/ep10/lesson1.html",
+      "linkFromRoot": "Project/interactive/chapters/ep10/lesson1.html",
+      "title": "ความหมายของเลขยกกำลัง ฐานและเลขชี้กำลัง",
+      "lessonId": "ep10-lesson1-power-rings",
+      "format": "lesson-package",
+      "observedCalls": [
+        "ui.console",
+        "ui.control",
+        "ui.gizmo",
+        "ui.question",
+        "world.addTargetFocus"
+      ],
+      "validation": "source-index-only; not runtime-certified"
+    },
+    {
+      "path": "Project/interactive/chapters/ep10/lesson2.html",
+      "linkFromRoot": "Project/interactive/chapters/ep10/lesson2.html",
+      "title": "สมบัติของเลขยกกำลัง คูณ หาร และยกกำลังซ้อน",
+      "lessonId": "ep10-lesson2-exponent-stack",
+      "format": "lesson-package",
+      "observedCalls": [
+        "ui.console",
+        "ui.control",
+        "ui.gizmo",
+        "ui.question",
+        "world.addCallout",
+        "world.addOperatorSign",
+        "world.addWorldGui"
+      ],
+      "validation": "source-index-only; not runtime-certified"
+    },
+    {
+      "path": "Project/interactive/chapters/ep10/lesson3.html",
+      "linkFromRoot": "Project/interactive/chapters/ep10/lesson3.html",
+      "title": "แถว → แผ่น → ก้อน",
+      "lessonId": "ep10-lesson3-square-cube",
+      "format": "lesson-package",
+      "observedCalls": [
+        "ui.console",
+        "ui.control",
+        "ui.gizmo",
+        "ui.question",
+        "world.addCallout",
+        "world.addWorldGui"
+      ],
+      "validation": "source-index-only; not runtime-certified"
+    },
+    {
+      "path": "Project/interactive/chapters/leesonExternal.html",
+      "linkFromRoot": "Project/interactive/chapters/leesonExternal.html",
+      "title": "",
+      "lessonId": "",
+      "format": "external-full-html",
+      "observedCalls": [],
+      "validation": "source-index-only; not runtime-certified"
+    },
+    {
+      "path": "Project/interactive/chapters/lesson-library-demo.html",
+      "linkFromRoot": "Project/interactive/chapters/lesson-library-demo.html",
+      "title": "ทดสอบคลังวัตถุมาตรฐาน",
+      "lessonId": "lesson-library-demo",
+      "format": "lesson-package",
+      "observedCalls": [
+        "ui.setObjective",
+        "ui.toast"
+      ],
+      "validation": "source-index-only; not runtime-certified"
+    },
+    {
+      "path": "Project/interactive/chapters/lesson0.html",
+      "linkFromRoot": "Project/interactive/chapters/lesson0.html",
+      "title": "เปรียบเทียบจำนวนด้วย < > =",
+      "lessonId": "lesson0-comparison",
+      "format": "lesson-package",
+      "observedCalls": [
+        "ui.setObjective",
+        "ui.toast",
+        "world.addCallout",
+        "world.addGuideline",
+        "world.addOperatorSign",
+        "world.addTargetFocus"
+      ],
+      "validation": "source-index-only; not runtime-certified"
+    },
+    {
+      "path": "Project/interactive/chapters/lesson1.html",
+      "linkFromRoot": "Project/interactive/chapters/lesson1.html",
+      "title": "การบวกและการลบในสวนผลไม้",
+      "lessonId": "lesson1-fruit-arithmetic",
+      "format": "lesson-package",
+      "observedCalls": [
+        "ui.setObjective",
+        "ui.setQuestion",
+        "ui.toast",
+        "world.addCallout",
+        "world.addOperatorSign",
+        "world.addTargetFocus"
+      ],
+      "validation": "source-index-only; not runtime-certified"
+    }
+  ]
+}
+
+

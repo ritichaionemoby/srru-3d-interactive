@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>ภารกิจสร้างคำตอบ ทำอะไรก่อน</title>
+</head>
+
+<body>
+  <script data-lesson-app>
+    (() => {
+      const PROBLEM_TYPES = new Set(["addition", "subtraction", "multiplication", "division", "parentheses", "parenthesesBack", "exponent"]);
+      const quiz = [
+        { question: "2 + 3 มีค่าเท่าไร", data: [{ key: "problemType", value: "addition" }, { key: "firstNumber", value: 2 }, { key: "secondNumber", value: 3 }] },
+        { question: "5 − 2 มีค่าเท่าไร", data: [{ key: "problemType", value: "subtraction" }, { key: "firstNumber", value: 5 }, { key: "secondNumber", value: 2 }] },
+        { question: "2 × 3 มีค่าเท่าไร", data: [{ key: "problemType", value: "multiplication" }, { key: "firstNumber", value: 2 }, { key: "secondNumber", value: 3 }] },
+        { question: "6 ÷ 2 มีค่าเท่าไร", data: [{ key: "problemType", value: "division" }, { key: "firstNumber", value: 3 }, { key: "secondNumber", value: 2 }] },
+        { question: "(2 + 3) × 2 มีค่าเท่าไร", data: [{ key: "problemType", value: "parentheses" }, { key: "firstNumber", value: 2 }, { key: "secondNumber", value: 3 }, { key: "thirdNumber", value: 2 }] },
+        { question: "2 × (3 + 2) มีค่าเท่าไร", data: [{ key: "problemType", value: "parenthesesBack" }, { key: "firstNumber", value: 2 }, { key: "secondNumber", value: 3 }, { key: "thirdNumber", value: 2 }] },
+        { question: "2² มีค่าเท่าไร", data: [{ key: "problemType", value: "exponent" }, { key: "powerBase", value: 2 }, { key: "exponent", value: 2 }] },
+        { question: "4 + 2 มีค่าเท่าไร", data: [{ key: "problemType", value: "addition" }, { key: "firstNumber", value: 4 }, { key: "secondNumber", value: 2 }] },
+        { question: "3 × 3 มีค่าเท่าไร", data: [{ key: "problemType", value: "multiplication" }, { key: "firstNumber", value: 3 }, { key: "secondNumber", value: 3 }] },
+        { question: "8 ÷ 2 มีค่าเท่าไร", data: [{ key: "problemType", value: "division" }, { key: "firstNumber", value: 4 }, { key: "secondNumber", value: 2 }] },
+        { question: "2³ มีค่าเท่าไร", data: [{ key: "problemType", value: "exponent" }, { key: "powerBase", value: 2 }, { key: "exponent", value: 3 }] }
+      ];
+
+      PuzzleLesson.define({
+        id: "ep1-lesson1-operation-order",
+        version: "1.0.0",
+
+        meta: {
+          worldType: "3d-world-space",
+          lessonId: "ep1-lesson1-operation-order",
+          title: "สัญลักษณ์การดำเนินการ วงเล็บ และลำดับการดำเนินการ",
+          category: "คณิตศาสตร์",
+          subcategory: "สัญลักษณ์พื้นฐานทางคณิตศาสตร์",
+          description: "เรียนรู้เครื่องหมาย วงเล็บ และเลขยกกำลังด้วยพื้นที่โจทย์ แครอทคำตอบ และคำอธิบายที่เปิดได้จากพื้นที่บนฉาก",
+          keyResult: "ผู้เรียนอ่านโจทย์ ติดตามลำดับการคำนวณ และนับแครอทสร้างคำตอบที่ถูกต้องได้",
+          background: "green",
+          camera: {
+            fov: 43,
+            startYaw: 18,
+            startPitch: 48,
+            startDistance: 31,
+            minDistance: 12,
+            maxDistance: 36,
+            minPitch: 22,
+            maxPitch: 76,
+            target: [0, 0.35, -0.25]
+          },
+          welcomeMessage: [
+            "นับแครอทในพื้นที่โจทย์จากซ้ายไปขวา",
+            "นำเมาส์ไปเหนือพื้นที่แล้วกดเพื่อดูวิธีคิด",
+            "แครอทหนึ่งหัวแทนหนึ่งหน่วย ดึงจากแปลงหรือกดปุ่มหยิบแครอท"
+          ],
+          tooltip: "อ่านโจทย์จากซ้ายไปขวา แล้วนับแครอทให้เท่ากับคำตอบ",
+          defaultValue: {
+            problemType: "parentheses",
+            firstNumber: 2,
+            secondNumber: 3,
+            thirdNumber: 2,
+            powerBase: 2,
+            exponent: 2
+          },
+          editSchema: [
+            {
+              key: "problemType", name: "เลือกแบบโจทย์", type: "dropdown", help: "เริ่มจากแบบวงเล็บซึ่งเป็นตัวอย่างหลักของบทนี้", option: [
+                { value: "parentheses", label: "วงเล็บด้านหน้า  (ก + ข) × ค" },
+                { value: "parenthesesBack", label: "วงเล็บด้านหลัง  ก × (ข + ค)" },
+                { value: "addition", label: "การบวก  ก + ข" },
+                { value: "subtraction", label: "การลบ  ก − ข" },
+                { value: "multiplication", label: "การคูณ  ก × ข" },
+                { value: "division", label: "การหาร  ก ÷ ข" },
+                { value: "exponent", label: "เลขยกกำลัง  ฐานⁿ" }
+              ]
+            },
+            { key: "firstNumber", name: "จำนวน ก", type: "slider", option: [2, 6], step: 1, showWhen: { key: "problemType", values: ["addition", "subtraction", "multiplication", "division", "parentheses", "parenthesesBack"] } },
+            { key: "secondNumber", name: "จำนวน ข", type: "slider", option: [1, 4], step: 1, showWhen: { key: "problemType", values: ["addition", "subtraction", "multiplication", "division", "parentheses", "parenthesesBack"] } },
+            { key: "thirdNumber", name: "จำนวน ค", type: "slider", option: [1, 4], step: 1, help: "วงเล็บหน้าใช้เป็นจำนวนนอกวงเล็บ ส่วนวงเล็บหลังใช้เป็นจำนวนตัวที่สองในวงเล็บ", showWhen: { key: "problemType", values: ["parentheses", "parenthesesBack"] } },
+            { key: "powerBase", name: "ฐาน", type: "slider", option: [2, 3], step: 1, showWhen: { key: "problemType", values: ["exponent"] } },
+            { key: "exponent", name: "เลขชี้กำลัง", type: "slider", option: [2, 3], step: 1, help: "บอกจำนวนครั้งที่นำฐานมาคูณกัน", showWhen: { key: "problemType", values: ["exponent"] } }
+          ],
+          howto: [
+            { index: 0, title: "สำรวจพื้นที่โจทย์", type: "sequence", desc: "นับแครอทที่ปักอยู่ในแต่ละแปลง และอ่านเครื่องหมายจากซ้ายไปขวา" },
+            { index: 1, title: "เปิดดูวิธีคิด", type: "sequence", desc: "กดรั้วไม้เพื่อดูว่าต้องทำข้างในก่อน แล้วลองสลับเป็นวงเล็บด้านหลังใน LAB" },
+            { index: 2, title: "รู้จักแครอทหนึ่งหน่วย", type: "sequence", desc: "แครอทหนึ่งหัวแทนหนึ่งหน่วย ดึงจากแปลงไปยังพื้นที่คำตอบ" },
+            { index: 3, title: "ลองสร้างคำตอบ", type: "freestyle", desc: "หยิบหรือลากแครอทให้มีจำนวนเท่ากับผลลัพธ์" }
+          ],
+          quiz
+        },
+
+        mount(context) {
+          this.context = context;
+          this.timers = [];
+          this.items = [];
+          this.placement = new Map();
+          this.nextItemId = 0;
+        },
+
+        async reset({ values, mode }) {
+          this.clearTimers();
+          this.values = { ...values };
+          this.mode = mode;
+          this.problem = this.buildProblem(values);
+          this.configureActivityLayout();
+          this.items = [];
+          this.placement = new Map();
+          this.nextItemId = 0;
+          this.sourceItems = new Map();
+          this.sourcePromise = null;
+          this.pendingPickups = 0;
+          this.pickupQueue = null;
+          this.pickupEpoch = 0;
+          this.isInteractive = mode === "student-quiz";
+          this.wasCorrect = false;
+
+          if (this.isParenthesesProblem()) await this.renderParenthesesProblem();
+          else if (this.problem.type === "exponent") await this.renderExponentProblem();
+          else await this.renderBasicProblem();
+
+          this.problemFocus = this.context.world.addTargetFocus({
+            position: [this.problemFocusX, .3, -1.55],
+            radius: this.problemFocusRadius,
+            color: "#4f83c5",
+            secondaryColor: "#f0c46a"
+          });
+          this.problemFocus.setVisible(false);
+
+          this.renderAnswerArea();
+          await this.renderSupply();
+          this.createInsightCallouts();
+          this.createControls();
+          // Control เป็นเครื่องมือสำหรับลงมือทำ จึงแสดงทันทีเฉพาะ Quiz
+          // ส่วน Lab จะเปิดเมื่อเข้าสู่ขั้น freestyle ใน onStep() เท่านั้น
+          if (this.mode === "student-quiz") this.answerControls?.show();
+          else this.answerControls?.hide();
+
+          this.context.ui.question.show({ label: "โจทย์", text: `${this.problem.expression} = ?`, tone: "primary" });
+          this.context.ui.console.set({
+            objective: "หยิบแครอทหนึ่งหน่วยมาสร้างคำตอบ",
+            title: this.mode === "student-quiz" ? "สร้างคำตอบของคุณ" : "กดป้ายข้อมูลเพื่อดูวิธีคิด",
+            message: this.mode === "student-quiz" ? "นับแครอททุกหัว และแก้คำตอบได้ก่อนกดไปข้อต่อไป" : "ป้ายที่มีสัญลักษณ์ i สามารถกดเปิดคำอธิบายเพิ่มเติมได้",
+            tone: "info"
+          });
+
+        },
+
+        buildProblem(values) {
+          const clampInt = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, Math.round(Number(value) || minimum)));
+          const type = PROBLEM_TYPES.has(values.problemType) ? values.problemType : "addition";
+          const first = clampInt(values.firstNumber, 2, 6);
+          const second = clampInt(values.secondNumber, 1, 4);
+          const third = clampInt(values.thirdNumber, 1, 4);
+          const powerBase = clampInt(values.powerBase, 2, 3);
+          const exponent = clampInt(values.exponent, 2, 3);
+
+          if (type === "subtraction") {
+            let left = Math.max(first, second);
+            const right = Math.min(first, second);
+            if (left === right) left += 1;
+            return { type, operands: [left, right], operators: ["−"], result: left - right, expression: `${left} − ${right}` };
+          }
+          if (type === "multiplication") return { type, operands: [first, second], operators: ["×"], result: first * second, expression: `${first} × ${second}` };
+          if (type === "division") {
+            const dividend = first * second;
+            return { type, operands: [dividend, second], operators: ["÷"], result: first, expression: `${dividend} ÷ ${second}` };
+          }
+          if (type === "parentheses") {
+            const insideResult = first + second;
+            return { type, operands: [first, second, third], operators: ["+", "×"], insideOperands: [first, second], outsideOperand: third, insideResult, result: insideResult * third, expression: `(${first} + ${second}) × ${third}`, withoutParenthesesExpression: `${first} + ${second} × ${third}`, withoutParenthesesResult: first + second * third };
+          }
+          if (type === "parenthesesBack") {
+            const insideResult = second + third;
+            return { type, operands: [first, second, third], operators: ["×", "+"], insideOperands: [second, third], outsideOperand: first, insideResult, result: first * insideResult, expression: `${first} × (${second} + ${third})`, withoutParenthesesExpression: `${first} × ${second} + ${third}`, withoutParenthesesResult: first * second + third };
+          }
+          if (type === "exponent") {
+            const result = powerBase ** exponent;
+            return { type, operands: [powerBase], operators: [], base: powerBase, exponent, result, expression: `${powerBase}${this.superscript(exponent)}` };
+          }
+          return { type: "addition", operands: [first, second], operators: ["+"], result: first + second, expression: `${first} + ${second}` };
+        },
+
+        superscript(value) {
+          return value === 3 ? "³" : "²";
+        },
+
+        isParenthesesProblem() {
+          return this.problem?.type === "parentheses" || this.problem?.type === "parenthesesBack";
+        },
+
+        configureActivityLayout() {
+          this.answerWidth = 6.4;
+          this.answerDepth = 5.25;
+          this.answerZ = -1.35;
+          this.maxSlots = 48;
+          const operandHalfWidth = 3.35 / 2;
+          const answerHalfWidth = this.answerWidth / 2;
+          let problemLeft;
+          if (this.isParenthesesProblem()) {
+            problemLeft = -7.15 - operandHalfWidth;
+            this.answerBaseX = 10.85;
+          } else if (this.problem.type === "exponent") {
+            problemLeft = -4.1 - operandHalfWidth;
+            this.answerBaseX = 4.45;
+          } else {
+            problemLeft = -5.65 - operandHalfWidth;
+            this.answerBaseX = 6.35;
+          }
+          const activityRight = this.answerBaseX + answerHalfWidth;
+          this.layoutOffsetX = -(problemLeft + activityRight) / 2;
+        },
+
+        layoutX(value) {
+          return value + this.layoutOffsetX;
+        },
+
+        flatExponentParts(value) {
+          const color = "#244f86";
+          const horizontal = z => ({ shape: "box", position: [0, .25, z], size: [.48, .09, .10], color, material: { roughness: .34, clearcoat: .4 } });
+          const vertical = (x, z) => ({ shape: "box", position: [x, .25, z], size: [.10, .09, .29], color, material: { roughness: .34, clearcoat: .4 } });
+          const segments = {
+            top: horizontal(-.29),
+            middle: horizontal(0),
+            bottom: horizontal(.29),
+            upperRight: vertical(.22, -.145),
+            lowerRight: vertical(.22, .145),
+            lowerLeft: vertical(-.22, .145)
+          };
+          const names = value === 3
+            ? ["top", "upperRight", "middle", "lowerRight", "bottom"]
+            : ["top", "upperRight", "middle", "lowerLeft", "bottom"];
+          return names.map(name => segments[name]);
+        },
+
+        async renderBasicProblem() {
+          this.problemFocusX = this.layoutX(-3.15);
+          this.problemFocusRadius = 3.7;
+          const [left, right] = this.problem.operands;
+          const leftArea = this.addOperandArea(this.layoutX(-5.65), left, "problem-left", "operation");
+          this.operatorSign = this.context.world.addOperatorSign({ text: this.problem.operators[0], position: [this.layoutX(-3.15), .24, -1.55], scale: [1.2, 1.2] });
+          const rightArea = this.addOperandArea(this.layoutX(-.65), right, "problem-right", "operation");
+          this.equalsSign = this.context.world.addOperatorSign({ text: "=", position: [this.layoutX(1.85), .24, -1.55], scale: [1.2, 1.2] });
+          await Promise.all([leftArea, rightArea]);
+        },
+
+        async renderParenthesesProblem() {
+          this.problemFocusX = this.layoutX(-1.75);
+          this.problemFocusRadius = 7.5;
+          const isBack = this.problem.type === "parenthesesBack";
+          const [insideLeft, insideRight] = this.problem.insideOperands;
+          const outside = this.problem.outsideOperand;
+          const fenceCenterX = this.layoutX(isBack ? .95 : -4.45);
+          const fenceWidth = 9.4;
+          const fenceDepth = 4.75;
+          this.context.world.addZone({ name: "parentheses-group-zone", size: [fenceWidth, .08, fenceDepth], position: [fenceCenterX, .07, -1.55], color: "#b8d98f", opacity: .48 });
+          this.context.world.addGroup({
+            name: "parentheses-garden-soil",
+            position: [fenceCenterX, .09, -1.55],
+            parts: [{ shape: "box", size: [fenceWidth - .38, .08, fenceDepth - .38], color: "#e5c997", material: { roughness: .92, opacity: .7, depthWrite: false } }]
+          });
+
+          const operandAreas = [];
+          if (isBack) {
+            operandAreas.push(this.addOperandArea(this.layoutX(-7.15), outside, "problem-outside", "parentheses"));
+            this.operatorSign = this.context.world.addOperatorSign({ text: "×", position: [this.layoutX(-4.45), .24, -1.55], scale: [1.2, 1.2] });
+            operandAreas.push(this.addOperandArea(this.layoutX(-1.75), insideLeft, "problem-inside-left", "parentheses"));
+            this.context.world.addOperatorSign({ text: "+", position: [this.layoutX(.95), .24, -1.55], scale: [1.2, 1.2] });
+            operandAreas.push(this.addOperandArea(this.layoutX(3.65), insideRight, "problem-inside-right", "parentheses"));
+          } else {
+            operandAreas.push(this.addOperandArea(this.layoutX(-7.15), insideLeft, "problem-inside-left", "parentheses"));
+            this.context.world.addOperatorSign({ text: "+", position: [this.layoutX(-4.45), .24, -1.55], scale: [1.2, 1.2] });
+            operandAreas.push(this.addOperandArea(this.layoutX(-1.75), insideRight, "problem-inside-right", "parentheses"));
+            this.operatorSign = this.context.world.addOperatorSign({ text: "×", position: [this.layoutX(.95), .24, -1.55], scale: [1.2, 1.2] });
+            operandAreas.push(this.addOperandArea(this.layoutX(3.65), outside, "problem-outside", "parentheses"));
+          }
+          this.equalsSign = this.context.world.addOperatorSign({ text: "=", position: [this.layoutX(6.35), .24, -1.55], scale: [1.2, 1.2] });
+          this.addWoodenGardenFence({
+            name: "parentheses-fence",
+            centerX: fenceCenterX,
+            centerZ: -1.55,
+            width: fenceWidth,
+            depth: fenceDepth
+          });
+          await Promise.all(operandAreas);
+        },
+
+        addWoodenGardenFence({ name, centerX, centerZ, width, depth }) {
+          const railColor = "#ad7442";
+          const postColor = "#7f4d2b";
+          const lightWood = "#c88d52";
+          const parts = [];
+          for (const z of [-depth / 2, depth / 2]) {
+            parts.push({ shape: "box", position: [0, .28, z], size: [width, .16, .18], color: railColor, material: { roughness: .88 } });
+            parts.push({ shape: "box", position: [0, .56, z], size: [width, .13, .16], color: lightWood, material: { roughness: .88 } });
+            for (const x of [-width / 2, 0, width / 2]) {
+              parts.push({ shape: "cylinder", position: [x, .43, z], size: [.28, .86, .28], color: postColor, material: { roughness: .94 } });
+              parts.push({ shape: "cone", position: [x, .92, z], size: [.34, .22, .34], color: lightWood, material: { roughness: .9 } });
+            }
+          }
+          for (const x of [-width / 2, width / 2]) {
+            parts.push({ shape: "box", position: [x, .28, 0], size: [.18, .16, depth], color: railColor, material: { roughness: .88 } });
+            parts.push({ shape: "box", position: [x, .56, 0], size: [.16, .13, depth], color: lightWood, material: { roughness: .88 } });
+          }
+          parts.push(
+            { shape: "sphere", position: [-width / 2 - .28, .18, -depth / 2 + .55], size: [.42, .2, .28], color: "#6fa85a", material: { roughness: .9 } },
+            { shape: "sphere", position: [width / 2 + .28, .18, depth / 2 - .55], size: [.42, .2, .28], color: "#6fa85a", material: { roughness: .9 } }
+          );
+          return this.context.world.addGroup({ name, position: [centerX, .03, centerZ], parts });
+        },
+
+        async renderExponentProblem() {
+          this.problemFocusX = this.layoutX(-4.1);
+          this.problemFocusRadius = 2.15;
+          const baseX = this.layoutX(-4.1);
+          const baseArea = this.addOperandArea(baseX, this.problem.base, "power-base", "exponent");
+          const badgeX = baseX + 1.25;
+          const badgeZ = -2.8;
+          const badge = this.context.world.addGroup({
+            name: "exponent-badge",
+            position: [badgeX, .72, badgeZ],
+            parts: [
+              { shape: "cylinder", size: [1.2, .22, 1.2], color: "#e3ad45", material: { roughness: .38, clearcoat: .45 } },
+              { shape: "cylinder", position: [0, .16, 0], size: [.98, .13, .98], color: "#fffaf0", material: { roughness: .32, clearcoat: .5 } },
+              ...this.flatExponentParts(this.problem.exponent)
+            ]
+          });
+          this.equalsSign = this.context.world.addOperatorSign({ text: "=", position: [this.layoutX(-.05), .24, -1.55], scale: [1.2, 1.2] });
+          await baseArea;
+        },
+
+        async addOperandArea(centerX, count, name, insightKind) {
+          const surfacePattern = "../../assets/image/texture/lesson-surface-dots.svg";
+          const platform = this.context.world.addGroup({
+            name,
+            position: [centerX, .12, -1.55],
+            parts: [
+              { shape: "box", size: [3.35, .22, 3.55], color: "#dcecff", material: { roughness: .56, clearcoat: .22 } },
+              { shape: "box", position: [0, .14, 0], size: [3.05, .08, 3.25], color: "#f8fcff", material: { texture: surfacePattern, roughness: .66 } }
+            ]
+          });
+          const columns = count > 9 ? 4 : 3;
+          const spacing = columns === 4 ? .68 : .82;
+          const rows = Math.ceil(count / columns);
+          const carrotPromises = [];
+          for (let index = 0; index < count; index += 1) {
+            const column = index % columns;
+            const row = Math.floor(index / columns);
+            const x = (column - (columns - 1) / 2) * spacing;
+            const z = (row - (rows - 1) / 2) * spacing;
+            carrotPromises.push(this.context.world.addLibraryObject({
+              asset: "food/carrot",
+              name: `${name}-carrot-${index}`,
+              position: [centerX + x, .22, -1.55 + z],
+              rotation: [0, (index % 3 - 1) * 9, (index % 2 ? 1 : -1) * 3],
+              scale: count > 12 ? .58 : columns === 4 ? .78 : .94
+            }));
+          }
+          await Promise.all(carrotPromises);
+          return platform;
+        },
+
+        renderAnswerArea() {
+          const surfacePattern = "../../assets/image/texture/lesson-surface-dots.svg";
+          this.answerX = this.layoutX(this.answerBaseX);
+          this.context.world.addZone({ name: "answer-zone", size: [this.answerWidth, .2, this.answerDepth], position: [this.answerX, .13, this.answerZ], color: "#d8f5df", opacity: .82 });
+          const answerSurface = this.context.world.addGroup({
+            name: "answer-insight-surface",
+            position: [this.answerX, .08, this.answerZ],
+            parts: [{ shape: "box", size: [this.answerWidth - .3, .09, this.answerDepth - .3], color: "#edf9f1", material: { texture: surfacePattern, roughness: .72, opacity: .46, depthWrite: false } }]
+          });
+          this.answerFocus = this.context.world.addTargetFocus({ position: [this.answerX, .3, this.answerZ], radius: 3.05, color: "#48a879", secondaryColor: "#b6e8cb" });
+          this.answerFocus.setVisible(false);
+          this.createAnswerCounter();
+        },
+
+        createAnswerCounter() {
+          this.answerCounter = this.context.world.addWorldCounter({
+            name: "answer-count-gizmo",
+            position: [this.answerX, .2, this.answerZ + this.answerDepth / 2 + .82],
+            value: 0,
+            digits: 2
+          });
+        },
+
+        updateAnswerCounter(count) {
+          this.answerCounter?.setValue(count);
+        },
+
+        async renderSupply() {
+          this.sourcePosition = [0, -.52, 4.25];
+          this.context.world.addZone({ name: "carrot-garden-zone", size: [3.65, .12, 2.75], position: [0, .08, 4.25], color: "#8cc66b", opacity: .76 });
+          this.context.world.addGroup({
+            name: "carrot-soil-bed",
+            position: [0, .12, 4.25],
+            parts: [
+              { shape: "box", size: [2.7, .28, 1.85], color: "#805333", material: { roughness: .94 } },
+              { shape: "box", position: [0, .2, -.98], size: [2.98, .3, .18], color: "#a66f3f", material: { roughness: .9 } },
+              { shape: "box", position: [0, .2, .98], size: [2.98, .3, .18], color: "#a66f3f", material: { roughness: .9 } },
+              { shape: "box", position: [-1.4, .2, 0], size: [.18, .3, 1.82], color: "#8e5a32", material: { roughness: .92 } },
+              { shape: "box", position: [1.4, .2, 0], size: [.18, .3, 1.82], color: "#8e5a32", material: { roughness: .92 } },
+              { shape: "sphere", position: [-.82, .28, .42], size: [.22, .14, .18], color: "#c19a72" },
+              { shape: "sphere", position: [.74, .28, -.48], size: [.18, .12, .15], color: "#b78a63" },
+              { shape: "sphere", position: [-1.72, .24, -.72], size: [.38, .2, .28], color: "#6fa85a", material: { roughness: .9 } },
+              { shape: "sphere", position: [1.72, .24, .7], size: [.38, .2, .28], color: "#6fa85a", material: { roughness: .9 } }
+            ]
+          });
+          this.context.world.addWorldGui({
+            text: "ลากแครอท"
+          });
+          await this.ensureSource();
+        },
+
+        createInsightCallouts() {
+          const problemKind = this.problem.type === "exponent" ? "exponent" : this.isParenthesesProblem() ? "parentheses" : "problem";
+          const canOpenInsight = this.mode !== "student-quiz";
+          this.context.world.addCallout({
+            text: "โจทย์",
+            position: [this.problemFocusX, 2.8, -3.45],
+            compactPosition: [this.problemFocusX * .68, 2.65, -4.55],
+            anchor: [this.problemFocusX, .3, -1.55],
+            scale: [3.25, .92],
+            compactScale: [2.45, .92],
+            insight: canOpenInsight ? () => this.insightDefinition(problemKind) : null
+          });
+          this.context.world.addCallout({
+            text: "พื้นที่คำตอบ",
+            position: [this.answerX, 2.8, -3.45],
+            compactPosition: [this.answerX * .68, 2.65, -4.55],
+            anchor: [this.answerX, .3, this.answerZ],
+            scale: [3.25, .92],
+            compactScale: [2.45, .92],
+            insight: canOpenInsight ? () => this.insightDefinition("answer") : null
+          });
+        },
+
+        createControls() {
+          this.answerControls = this.context.ui.control.show({
+            id: "answer-tools",
+            scope: "scene",
+            position: "bottom-right",
+            items: [
+              { id: "pickup", label: "หยิบแครอท", icon: "hand.svg" },
+              { id: "clear", label: "ล้างคำตอบ", icon: "reset.svg" }
+            ],
+            onAction: event => {
+              if (event.id === "pickup") this.pickupCarrot();
+              if (event.id === "clear") this.clearAnswer();
+            }
+          });
+        },
+
+        async spawnSourceCarrot() {
+          if (this.sourceItems.has(1)) return this.sourceItems.get(1);
+          if (this.sourcePromise) return this.sourcePromise;
+          const id = this.nextItemId++;
+          const item = { id, value: 1, sourcePosition: [...this.sourcePosition], released: false, placed: false, slot: null, handle: null };
+          this.sourcePromise = this.context.world.addLibraryObject({
+            asset: "food/carrot",
+            name: `answer-carrot-${id}`,
+            position: item.sourcePosition,
+            scale: 1.14,
+            draggable: this.isInteractive,
+            dragAxis: "xz",
+            dragLiftHeight: 1.08,
+            hitArea: [3.0, 1.1, 2.15],
+            hitAreaOffset: [0, .78, 0],
+            dragFromCenter: true,
+            guideTarget: [this.answerX, .3, this.answerZ],
+            hoverMessage: "ดึงแครอทขึ้นจากดิน แล้วลากไปยังพื้นที่คำตอบ",
+            onDrag: position => this.handleDrag(item, position),
+            onDrop: (position, droppedHandle) => this.handleDrop(item, position, droppedHandle)
+          })
+            .then(handle => {
+              item.handle = handle;
+              this.items.push(item);
+              this.sourceItems.set(1, item);
+              return item;
+            })
+            .finally(() => { this.sourcePromise = null; });
+          return this.sourcePromise;
+        },
+
+        handleDrag(item, position) {
+          if (item.released || item.placed) return;
+          const distance = Math.hypot(position.x - item.sourcePosition[0], position.z - item.sourcePosition[2]);
+          if (distance < .95) return;
+          item.released = true;
+          item.handle.setHitArea(null);
+          item.handle.setDragFromCenter(false);
+          if (this.sourceItems.get(item.value) === item) this.sourceItems.delete(item.value);
+          this.ensureSource();
+        },
+
+        handleDrop(item, position, handle) {
+          const inside = Math.abs(position.x - this.answerX) <= this.answerWidth / 2 && Math.abs(position.z - this.answerZ) <= this.answerDepth / 2;
+          if (inside) {
+            if (!item.released) {
+              item.released = true;
+              item.handle.setHitArea(null);
+              item.handle.setDragFromCenter(false);
+              if (this.sourceItems.get(item.value) === item) this.sourceItems.delete(item.value);
+              this.ensureSource();
+            }
+            if (!item.placed) {
+              const slot = this.firstFreeSlot();
+              if (slot < 0) {
+                this.removeItem(item);
+                this.context.ui.console.feedback("พื้นที่คำตอบเต็มแล้ว นำแครอทออกก่อนเพิ่มใหม่", { tone: "warning" });
+                return { accepted: true, commit: false };
+              }
+              item.slot = slot;
+              item.placed = true;
+              this.placement.set(item.id, slot);
+            }
+            this.relayoutAnswer(true);
+            this.scheduleSource();
+            this.updateAnswer(true);
+            return { accepted: true, commit: true };
+          }
+
+          if (item.placed) {
+            this.placement.delete(item.id);
+            item.placed = false;
+            item.slot = null;
+            this.removeItem(item);
+            this.relayoutAnswer(true);
+            this.updateAnswer(true);
+            return { accepted: true, commit: false };
+          }
+
+          if (item.released) {
+            this.removeItem(item);
+            this.scheduleSource();
+            return { accepted: true, commit: false };
+          }
+          return { accepted: false };
+        },
+
+        firstFreeSlot() {
+          const count = this.items.filter(item => item.placed).length;
+          return count < this.maxSlots ? count : -1;
+        },
+
+        answerLayout(count) {
+          const total = Math.max(1, count);
+          const usableWidth = this.answerWidth - .85;
+          const usableDepth = this.answerDepth - .85;
+          const columns = Math.max(1, Math.min(8, Math.ceil(Math.sqrt(total * usableWidth / usableDepth))));
+          const rows = Math.ceil(total / columns);
+          const preferredSpacing = total <= 12 ? 1.02 : (total <= 24 ? .84 : .68);
+          const spacingX = columns > 1 ? Math.min(preferredSpacing, usableWidth / (columns - 1)) : 0;
+          const spacingZ = rows > 1 ? Math.min(preferredSpacing, usableDepth / (rows - 1)) : 0;
+          const scale = total <= 12 ? 1 : (total <= 24 ? .88 : .76);
+          return { columns, rows, spacingX, spacingZ, scale };
+        },
+
+        answerSlot(slot, totalCount = null) {
+          const count = totalCount ?? Math.max(1, this.items.filter(item => item.placed).length);
+          const layout = this.answerLayout(count);
+          const column = slot % layout.columns;
+          const row = Math.floor(slot / layout.columns);
+          return [
+            this.answerX + (column - (layout.columns - 1) / 2) * layout.spacingX,
+            .18,
+            this.answerZ + (row - (layout.rows - 1) / 2) * layout.spacingZ
+          ];
+        },
+
+        relayoutAnswer(animate = true) {
+          const placed = this.items.filter(item => item.placed && item.handle).sort((a, b) => a.id - b.id);
+          const layout = this.answerLayout(placed.length);
+          this.placement.clear();
+          placed.forEach((item, index) => {
+            item.slot = index;
+            this.placement.set(item.id, index);
+            item.handle.setScale(layout.scale);
+            const target = this.answerSlot(index, placed.length);
+            if (animate) item.handle.animateTo(...target, { duration: 360, arcHeight: .42 });
+            else item.handle.setPosition(...target);
+          });
+        },
+
+        removeItem(item) {
+          item.handle.setDraggable(false);
+          item.handle.setVisible(false);
+          if (this.sourceItems.get(item.value) === item) this.sourceItems.delete(item.value);
+          const timer = setTimeout(() => item.handle.remove(), 0);
+          this.timers.push(timer);
+        },
+
+        async ensureSource() {
+          const item = await this.spawnSourceCarrot();
+          item?.handle?.setDraggable(this.isInteractive);
+          return item;
+        },
+
+        scheduleSource() {
+          const timer = setTimeout(() => {
+            this.ensureSource();
+          }, 0);
+          this.timers.push(timer);
+        },
+
+        pickupCarrot() {
+          if (!this.isInteractive) {
+            this.context.ui.console.feedback("ไปถึงขั้นทดลองก่อน แล้วจึงหยิบแครอทได้", { tone: "info" });
+            return;
+          }
+          this.context.world.hideDragCue();
+          this.pendingPickups += 1;
+          if (!this.pickupQueue) this.pickupQueue = this.processPickupQueue().finally(() => { this.pickupQueue = null; });
+        },
+
+        async processPickupQueue() {
+          const epoch = this.pickupEpoch;
+          while (this.pendingPickups > 0 && epoch === this.pickupEpoch) {
+            this.pendingPickups -= 1;
+            const slot = this.firstFreeSlot();
+            if (slot < 0) {
+              this.pendingPickups = 0;
+              this.context.ui.console.feedback("พื้นที่คำตอบเต็มแล้ว นำแครอทออกก่อนเพิ่มใหม่", { tone: "warning" });
+              return;
+            }
+            const item = await this.ensureSource();
+            if (epoch !== this.pickupEpoch || !item || item.placed) return;
+            item.released = true;
+            item.placed = true;
+            item.handle.setHitArea(null);
+            item.handle.setDragFromCenter(false);
+            item.slot = slot;
+            this.sourceItems.delete(1);
+            this.placement.set(item.id, slot);
+            item.handle.setDraggable(true);
+            this.relayoutAnswer(true);
+            await this.ensureSource();
+            this.updateAnswer(true);
+          }
+        },
+
+        clearAnswer() {
+          this.pendingPickups = 0;
+          this.pickupEpoch += 1;
+          for (const item of this.items.filter(value => value.placed)) {
+            item.placed = false;
+            item.slot = null;
+            this.removeItem(item);
+          }
+          this.placement.clear();
+          this.updateAnswerCounter(0);
+          this.wasCorrect = false;
+          this.equalsSign?.setState(false);
+          this.ensureSource();
+          this.updateAnswer(false);
+          if (this.mode !== "student-quiz") this.context.ui.console.feedback("ล้างคำตอบแล้ว เริ่มสร้างใหม่ได้เลย", { tone: "info" });
+        },
+
+        updateAnswer(announce) {
+          const placedItems = this.items.filter(item => item.placed);
+          const answerValue = placedItems.reduce((total, item) => total + item.value, 0);
+          const carrotCount = placedItems.length;
+          this.updateAnswerCounter(answerValue);
+          const correct = answerValue === this.problem.result;
+          if (this.mode === "student-quiz") {
+            this.context.quiz.answer(correct, {
+              answerCount: answerValue,
+              answerValue,
+              carrotCount,
+              carrotValues: placedItems.map(item => item.value),
+              expectedAnswer: this.problem.result,
+              leftCount: answerValue,
+              operator: "=",
+              rightCount: this.problem.result,
+              problemType: this.problem.type,
+              expression: this.problem.expression
+            });
+            return;
+          }
+          this.equalsSign?.setState(correct);
+          if (correct && !this.wasCorrect) {
+            this.context.audio.play("success");
+            this.context.ui.console.set({
+              objective: "นับแครอทให้ตรงกับผลลัพธ์",
+              title: `รวมได้ ${answerValue} หน่วย`,
+              message: `ถูกต้อง! ใช้แครอท ${carrotCount} หัวสร้าง ${this.problem.expression} = ${this.problem.result}`,
+              tone: "success"
+            });
+            this.context.ui.console.feedback(`ถูกต้อง! ${this.problem.expression} = ${this.problem.result}`, { tone: "success" });
+          } else if (announce && !correct) {
+            this.context.ui.console.set({
+              objective: "หยิบแครอทเพิ่มหรือนำออกเพื่อเปลี่ยนคำตอบ",
+              title: `ตอนนี้รวมได้ ${answerValue} หน่วย`,
+              message: `มีแครอท ${carrotCount} หัว — หยิบเพิ่มหรือลากออกเพื่อเปลี่ยนจำนวน`,
+              tone: "info"
+            });
+          }
+          this.wasCorrect = correct;
+        },
+
+        insightDefinition(kind) {
+          const problem = this.problem;
+          let title = "ดูวิธีคิด";
+          let message = "ดูความหมายของพื้นที่นี้ทีละขั้น";
+          let html = "";
+
+          if (kind === "exponent") {
+            const factors = Array(problem.exponent).fill(problem.base).join(" × ");
+            title = "เลขในวงกลมบอกอะไร?";
+            message = `เลข ${problem.exponent} ในวงกลมบอกว่า ใช้เลขฐาน ${problem.base} คูณกัน ${problem.exponent} ครั้ง`;
+            html = `<div class="insight-equation"><strong>${problem.expression}</strong><span class="insight-arrow">→</span><strong>${factors}</strong><span class="insight-arrow">→</span><strong class="insight-result">${problem.result}</strong></div><ol class="insight-steps"><li>เริ่มจากแปลงที่มีแครอท ${problem.base} หัว</li><li>นำจำนวน ${problem.base} มาคูณกัน ${problem.exponent} ครั้ง</li><li>จึงได้คำตอบ ${problem.result}</li></ol><p class="insight-note">เลขชี้กำลังไม่ได้หมายถึงนำ ${problem.base} ไปคูณกับ ${problem.exponent}</p>`;
+          } else if (kind === "parentheses") {
+            const [insideLeft, insideRight] = problem.insideOperands;
+            const afterFence = problem.type === "parenthesesBack" ? `${problem.outsideOperand} × ${problem.insideResult}` : `${problem.insideResult} × ${problem.outsideOperand}`;
+            title = problem.type === "parenthesesBack" ? "วงเล็บอยู่ข้างหลังก็ต้องทำก่อน" : "ทำไมต้องคิดในรั้วก่อน?";
+            message = "รั้วไม้คือภาพแทนวงเล็บ ไม่ว่ารั้วจะอยู่หน้า หรืออยู่หลัง เราต้องทำสิ่งข้างในก่อนเสมอ";
+            html = `<div class="insight-equation"><strong>${problem.expression}</strong><span class="insight-arrow">→</span><strong>${afterFence}</strong><span class="insight-arrow">→</span><strong class="insight-result">${problem.result}</strong></div><ol class="insight-steps"><li>ข้ามสิ่งที่อยู่นอกรั้วไว้ก่อน</li><li>คิด ${insideLeft} + ${insideRight} ในรั้ว ได้ ${problem.insideResult}</li><li>จึงคูณกับ ${problem.outsideOperand} ได้คำตอบ ${problem.result}</li></ol><div class="insight-grid"><div class="insight-card"><strong>ถ้าไม่มีวงเล็บ</strong><p>${problem.withoutParenthesesExpression} = ${problem.withoutParenthesesResult}</p></div><div class="insight-card"><strong>เมื่อมีวงเล็บ</strong><p>${problem.expression} = ${problem.result}</p></div></div><p class="insight-note">${problem.type === "parenthesesBack" ? "เห็นไหมว่า วงเล็บด้านหลังทำให้เราต้องย้อนมาทำด้านในก่อน และคำตอบเปลี่ยนไป" : "โจทย์วงเล็บด้านหน้าช่วยฝึกกฎ ส่วนโจทย์วงเล็บด้านหลังช่วยให้เห็นชัดว่าวงเล็บเปลี่ยนลำดับจริง"}</p>`;
+          } else if (kind === "answer") {
+            title = "พื้นที่คำตอบใช้อย่างไร?";
+            message = "แครอทหนึ่งหัวแทนหนึ่งหน่วย นับให้เท่ากับคำตอบ";
+            html = `<div class="insight-equation"><strong>แครอท 1 หัว</strong><span class="insight-arrow">=</span><strong>1 หน่วย</strong></div><div class="insight-grid"><div class="insight-card"><strong>ดึงจากดิน</strong><p>ลากแครอทจากแปลงไปวางในพื้นที่คำตอบ</p></div><div class="insight-card"><strong>หยิบเร็ว</strong><p>กดปุ่มหยิบแครอทเพื่อเพิ่มทีละหนึ่งหัว</p></div><div class="insight-card"><strong>เปลี่ยนคำตอบ</strong><p>ลากแครอทออก หรือกดล้างคำตอบ</p></div></div>`;
+          } else {
+            const symbol = problem.operators[0];
+            const meanings = { "+": "รวมแครอทจากสองแปลง", "−": "นำจำนวนแครอทฝั่งที่สองออกจากฝั่งแรก", "×": "สร้างหลายกลุ่มที่มีจำนวนเท่ากัน", "÷": "แบ่งแครอทออกเป็นกลุ่มเท่า ๆ กัน" };
+            title = `เครื่องหมาย ${symbol} บอกอะไร?`;
+            message = meanings[symbol] || "อ่านเครื่องหมายจากซ้ายไปขวา";
+            html = `<div class="insight-equation"><strong>${problem.expression}</strong><span class="insight-arrow">→</span><strong class="insight-result">${problem.result}</strong></div><ol class="insight-steps"><li>นับแครอทแปลงแรก ${problem.operands[0]} หัว</li><li>อ่านเครื่องหมาย ${symbol}</li><li>ทำกับแครอทแปลงที่สอง ${problem.operands[1]} หัว จึงได้ ${problem.result}</li></ol>`;
+          }
+
+          return {
+            id: `lesson1-${kind}-insight`,
+            scope: "scene",
+            title,
+            message,
+            html,
+            primaryLabel: "กลับไปทำโจทย์"
+          };
+        },
+
+        onStep(index, step) {
+          this.clearTimers();
+          this.context.world.hideDragCue();
+          const freestyle = step.type === "freestyle";
+          this.isInteractive = freestyle;
+          this.ensureSource();
+          if (freestyle) this.answerControls?.show();
+          else this.answerControls?.hide();
+          this.answerControls?.setDisabled("pickup", !freestyle);
+          for (const item of this.sourceItems.values()) {
+            item.handle.stopAnimation();
+            if (freestyle && !item.released && !item.placed) item.handle.setPosition(...item.sourcePosition);
+            item.handle.setDraggable(freestyle);
+          }
+          this.problemFocus.setVisible(index === 0 || index === 1);
+          this.answerFocus.setVisible(index >= 2);
+
+          if (index === 0) {
+            this.operatorSign?.pulse();
+            this.equalsSign?.pulse();
+          } else if (index === 1 && this.problem.type === "exponent") {
+            this.context.ui.hint.show({ id: "insight-hint", scope: "step", title: "ลองกดดู", message: "นำเมาส์ไปที่พื้นที่ฐานหรือวงกลมเลขชี้กำลัง แล้วกดเพื่อดูที่มาของคำตอบ", type: "instruction" });
+          } else if (index === 1 && this.problem.type === "parentheses") {
+            this.context.ui.hint.show({ id: "insight-hint", scope: "step", title: "ลองกดรั้วไม้", message: "รั้วไม้จะเรืองแสงเมื่อเมาส์อยู่เหนือพื้นที่ กดเพื่อดูว่าทำไมต้องคิดข้างในก่อน แล้วลองสลับเป็นวงเล็บด้านหลังใน LAB", type: "instruction" });
+          } else if (index === 2) {
+            const item = this.sourceItems.get(1);
+            const target = this.answerSlot(0);
+            item?.handle.animateTo(...target, { duration: 680, arcHeight: .75 });
+            if (item) this.timers.push(setTimeout(() => item.handle.animateTo(...item.sourcePosition, { duration: 620, arcHeight: .55 }), 760));
+          } else if (freestyle) {
+            const item = this.sourceItems.get(1);
+            if (item) this.context.world.showDragCue(item.handle, this.answerSlot(0));
+          }
+
+          const messages = [
+            `โจทย์นี้คือ ${this.problem.expression}`,
+            "กดป้ายข้อมูลเหนือพื้นที่โจทย์เพื่อเปิดดูคำอธิบาย",
+            "แครอทหนึ่งหัวแทนหนึ่งหน่วย ลองดึงจากดินไปยังพื้นที่คำตอบ",
+            "หยิบหรือลากแครอทให้มีจำนวนเท่ากับคำตอบ ไม่มีการจับเวลา"
+          ];
+          this.context.ui.console.set({ objective: step.desc, title: step.title, message: messages[index] || step.desc, tone: "info" });
+        },
+
+        clearTimers() {
+          this.timers.forEach(clearTimeout);
+          this.timers = [];
+        },
+
+        dispose() {
+          this.clearTimers();
+          this.context?.world.hideDragCue();
+          this.context?.ui.insight.close();
+          this.items = [];
+          this.placement?.clear();
+          this.sourceItems?.clear();
+          this.context = null;
+        }
+      });
+    })();
+  </script>
+</body>
+
+</html>

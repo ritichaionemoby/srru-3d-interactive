@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EduSDK External Lesson Demo</title>
+  <style>
+    :root {
+      font-family: Inter, "Noto Sans Thai", system-ui, sans-serif;
+      color: #25314f;
+      background: #dff5ff;
+      font-synthesis: none;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 14% 18%, rgba(255,255,255,.9) 0 6%, transparent 7%),
+        radial-gradient(circle at 82% 12%, rgba(255,255,255,.72) 0 8%, transparent 9%),
+        linear-gradient(150deg, #bceeff 0%, #e8e3ff 48%, #fff0c9 100%);
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      width: 32vw;
+      aspect-ratio: 1;
+      border-radius: 45% 55% 58% 42%;
+      filter: blur(2px);
+      opacity: .35;
+      pointer-events: none;
+      animation: float 8s ease-in-out infinite alternate;
+    }
+
+    body::before { left: -10vw; bottom: -14vw; background: #67d7a8; }
+    body::after { right: -9vw; top: -13vw; background: #ff91b9; animation-delay: -3s; }
+
+    button { font: inherit; }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      padding: clamp(14px, 3vw, 30px);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      width: min(960px, 100%);
+      margin: 0 auto;
+      padding: 12px 14px 12px 20px;
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: 22px;
+      background: rgba(255,255,255,.64);
+      box-shadow: 0 16px 40px rgba(71,87,137,.12);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand { min-width: 0; }
+    .eyebrow { color: #725ad8; font-size: 11px; font-weight: 900; letter-spacing: .16em; }
+    h1 { margin: 3px 0 0; overflow: hidden; font-size: clamp(18px, 3vw, 27px); text-overflow: ellipsis; white-space: nowrap; }
+
+    .top-actions { display: flex; align-items: center; gap: 9px; }
+    .mode-pill { padding: 7px 11px; border-radius: 99px; background: #735ddd; color: white; font-size: 11px; font-weight: 900; text-transform: uppercase; }
+
+    .icon-button {
+      width: 42px;
+      height: 42px;
+      border: 0;
+      border-radius: 14px;
+      background: rgba(49,59,91,.08);
+      color: #34405e;
+      font-size: 20px;
+      cursor: pointer;
+      transition: transform .2s ease, background .2s ease;
+    }
+
+    .icon-button:hover { transform: translateY(-2px); background: rgba(49,59,91,.14); }
+
+    .stage {
+      display: grid;
+      place-items: center;
+      width: min(900px, 100%);
+      margin: 0 auto;
+      padding: clamp(22px, 5vh, 60px) 0;
+    }
+
+    .card {
+      width: min(680px, 100%);
+      padding: clamp(22px, 5vw, 44px);
+      border: 1px solid rgba(255,255,255,.88);
+      border-radius: clamp(26px, 5vw, 42px);
+      background: rgba(255,255,255,.82);
+      box-shadow: 0 28px 70px rgba(60,77,130,.18);
+      backdrop-filter: blur(22px);
+      animation: cardIn .48s cubic-bezier(.18,.9,.24,1.18) both;
+    }
+
+    .progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+    .progress-track { flex: 1; height: 10px; overflow: hidden; border-radius: 99px; background: #e8eaf4; }
+    .progress-bar { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #66d6a8, #6f62df); transition: width .45s ease; }
+    .progress-text { min-width: 46px; color: #777f99; font-size: 12px; font-weight: 900; text-align: right; }
+
+    .mascot {
+      display: grid;
+      place-items: center;
+      width: 78px;
+      height: 78px;
+      margin: 0 auto 14px;
+      border-radius: 28px;
+      background: linear-gradient(145deg, #ffe36f, #ff9d79);
+      box-shadow: 0 12px 25px rgba(255,145,99,.26);
+      font-size: 42px;
+      animation: mascot 1.8s ease-in-out infinite;
+    }
+
+    .question-label { margin: 0; color: #725ad8; font-size: 12px; font-weight: 900; letter-spacing: .13em; text-align: center; }
+    h2 { margin: 8px auto 24px; max-width: 520px; font-size: clamp(25px, 5vw, 38px); line-height: 1.28; text-align: center; }
+    .hint { margin: -12px 0 22px; color: #7b8298; line-height: 1.7; text-align: center; }
+
+    .answers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+    .answer {
+      min-height: 68px;
+      border: 2px solid transparent;
+      border-radius: 20px;
+      background: #f5f6fb;
+      color: #303b59;
+      font-size: 22px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .2s ease, border-color .2s ease, background .2s ease;
+    }
+    .answer:hover { transform: translateY(-3px); border-color: #9686ec; background: #f1efff; }
+    .answer:active { transform: scale(.97); }
+    .answer.is-selected { border-color: #6f62df; background: #e9e5ff; box-shadow: 0 8px 18px rgba(111,98,223,.16); }
+
+    .primary {
+      display: block;
+      min-width: 180px;
+      min-height: 54px;
+      margin: 24px auto 0;
+      padding: 0 24px;
+      border: 0;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #46be8d, #268d69);
+      color: #fff;
+      box-shadow: 0 13px 26px rgba(38,141,105,.25);
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform .2s ease, filter .2s ease;
+    }
+    .primary:hover { transform: translateY(-3px); filter: brightness(1.05); }
+    .primary:disabled { opacity: .42; transform: none; cursor: not-allowed; }
+
+    .result-score { margin: 8px 0; color: #6557ce; font-size: clamp(54px, 12vw, 86px); font-weight: 950; line-height: 1; text-align: center; }
+    .result-copy { color: #6f768e; line-height: 1.7; text-align: center; }
+    .error { color: #a3314f; text-align: center; }
+
+    [hidden] { display: none !important; }
+
+    @keyframes float { to { transform: translate3d(2vw, -2vh, 0) rotate(12deg); } }
+    @keyframes cardIn { from { opacity: 0; transform: translateY(22px) scale(.96); } }
+    @keyframes mascot { 50% { transform: translateY(-7px) rotate(3deg); } }
+
+    @media (max-width: 560px) {
+      .app { padding: 10px; }
+      .topbar { border-radius: 18px; padding-left: 14px; }
+      .mode-pill { display: none; }
+      .stage { padding: 18px 0; }
+      .card { border-radius: 28px; }
+      .answers { grid-template-columns: 1fr; }
+      .answer { min-height: 58px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="eyebrow">EXTERNAL LESSON · EDU SDK</div>
+        <h1 id="lesson-title">กำลังเชื่อมต่อ Platform…</h1>
+      </div>
+      <div class="top-actions">
+        <span class="mode-pill" id="mode-pill">WAITING</span>
+        <button class="icon-button" id="close-lesson" type="button" aria-label="ปิดบทเรียน">×</button>
+      </div>
+    </header>
+
+    <section class="stage">
+      <article class="card" id="loading-card">
+        <div class="mascot">🚀</div>
+        <p class="question-label">EXTERNAL ACTIVITY</p>
+        <h2>กำลังรับข้อมูลบทเรียน</h2>
+        <p class="hint">หน้านี้เป็น Full HTML และกำลังรอ event จาก EduSDK</p>
+      </article>
+
+      <article class="card" id="quiz-card" hidden>
+        <div class="progress-row">
+          <div class="progress-track"><div class="progress-bar" id="progress-bar"></div></div>
+          <span class="progress-text" id="progress-text">1 / 3</span>
+        </div>
+        <div class="mascot" id="question-icon">🧠</div>
+        <p class="question-label" id="question-label">คำถามที่ 1</p>
+        <h2 id="question">คำถาม</h2>
+        <p class="hint">เลือกคำตอบหนึ่งข้อ แล้วกด “ข้อต่อไป”</p>
+        <div class="answers" id="answers"></div>
+        <button class="primary" id="next-question" type="button" disabled>ข้อต่อไป</button>
+      </article>
+
+      <article class="card" id="result-card" hidden>
+        <div class="mascot">🏆</div>
+        <p class="question-label">MISSION COMPLETE</p>
+        <h2>ทำแบบทดสอบครบแล้ว!</h2>
+        <div class="result-score"><span id="score">0</span><small> / 3</small></div>
+        <p class="result-copy">คะแนนนี้ยังอยู่ในหน้า External<br />กดปุ่มด้านล่างเพื่อส่งกลับ EduSDK และ Platform</p>
+        <button class="primary" id="submit-result" type="button">ส่งผลและกลับหน้าหลัก</button>
+      </article>
+
+      <article class="card error" id="error-card" hidden>
+        <div class="mascot">⚠️</div>
+        <h2>เชื่อมต่อบทเรียนไม่สำเร็จ</h2>
+        <p id="error-message"></p>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const questions = [
+        { id: "q1", text: "ดาวเคราะห์ดวงใดอยู่ใกล้ดวงอาทิตย์ที่สุด?", icon: "☀️", choices: ["โลก", "ดาวพุธ", "ดาวอังคาร", "ดาวเสาร์"], answer: 1 },
+        { id: "q2", text: "2 + 3 มีค่าเท่ากับเท่าไร?", icon: "➕", choices: ["4", "5", "6", "7"], answer: 1 },
+        { id: "q3", text: "น้ำแข็งเปลี่ยนเป็นน้ำเรียกว่าอะไร?", icon: "🧊", choices: ["การแข็งตัว", "การระเหย", "การหลอมเหลว", "การควบแน่น"], answer: 2 }
+      ];
+
+      const $ = (selector) => document.querySelector(selector);
+      const cards = ["#loading-card", "#quiz-card", "#result-card", "#error-card"];
+      const answers = [];
+      let lessonData = null;
+      let questionIndex = 0;
+      let selectedIndex = null;
+      let startedAt = 0;
+      let resultSubmitted = false;
+      const lessonService = window.parent?.EduSDK?.lesson;
+
+      function sendToEduSDK(type, payload = {}) {
+        return lessonService?.send(window, type, payload) === true;
+      }
+
+      function receiveFromEduSDK(event) {
+        if (!lessonService?.isValidMessage(event, window)) return;
+
+        if (event.data.type === "host.openLesson" && !lessonData) {
+          const payload = event.data.payload || {};
+          lessonData = Object.freeze({ ...(payload.lessonData || {}) });
+          startedAt = Date.now();
+          $("#lesson-title").textContent = lessonData.title;
+          $("#mode-pill").textContent = lessonData.mode;
+          renderQuestion();
+        }
+
+        if (event.data.type === "host.closeLesson") {
+          document.body.classList.add("is-closing");
+        }
+      }
+
+      function showCard(selector) {
+        cards.forEach((card) => { $(card).hidden = card !== selector; });
+      }
+
+      function renderQuestion() {
+        const question = questions[questionIndex];
+        selectedIndex = null;
+        $("#question-icon").textContent = question.icon;
+        $("#question-label").textContent = `คำถามที่ ${questionIndex + 1}`;
+        $("#question").textContent = question.text;
+        $("#progress-text").textContent = `${questionIndex + 1} / ${questions.length}`;
+        $("#progress-bar").style.width = `${(questionIndex + 1) / questions.length * 100}%`;
+        $("#next-question").disabled = true;
+        $("#next-question").textContent = questionIndex === questions.length - 1 ? "ดูสรุปคะแนน" : "ข้อต่อไป";
+        $("#answers").replaceChildren(...question.choices.map((choice, index) => {
+          const button = document.createElement("button");
+          button.className = "answer";
+          button.type = "button";
+          button.textContent = choice;
+          button.addEventListener("click", () => {
+            selectedIndex = index;
+            $("#answers").querySelectorAll(".answer").forEach((item, itemIndex) => {
+              item.classList.toggle("is-selected", itemIndex === index);
+            });
+            $("#next-question").disabled = false;
+          });
+          return button;
+        }));
+        showCard("#quiz-card");
+        sendToEduSDK("lesson.progress", {
+          current: questionIndex + 1,
+          total: questions.length,
+          questionId: question.id
+        });
+      }
+
+      function commitAnswer() {
+        const question = questions[questionIndex];
+        answers.push({
+          questionId: question.id,
+          answerIndex: selectedIndex,
+          answer: question.choices[selectedIndex],
+          correct: selectedIndex === question.answer
+        });
+      }
+
+      window.addEventListener("message", receiveFromEduSDK);
+
+      if (!lessonService) {
+        $("#error-message").textContent = "ไม่พบ EduSDK.lesson กรุณาเปิดบทเรียนผ่าน Platform";
+        showCard("#error-card");
+      } else {
+        sendToEduSDK("runtime.ready");
+      }
+
+      $("#next-question").addEventListener("click", () => {
+        if (selectedIndex === null) return;
+        commitAnswer();
+        questionIndex += 1;
+        if (questionIndex < questions.length) {
+          renderQuestion();
+          return;
+        }
+        $("#score").textContent = String(answers.filter((answer) => answer.correct).length);
+        showCard("#result-card");
+      });
+
+      $("#submit-result").addEventListener("click", () => {
+        if (resultSubmitted) return;
+        resultSubmitted = true;
+        sendToEduSDK("lesson.complete", {
+          score: answers.filter((answer) => answer.correct).length,
+          maxScore: questions.length,
+          durationMs: Date.now() - startedAt,
+          answers,
+          metadata: { lessonVersion: "1.0.0" }
+        });
+        sendToEduSDK("lesson.closeRequested");
+      });
+
+      $("#close-lesson").addEventListener("click", () => sendToEduSDK("lesson.closeRequested"));
+
+      window.addEventListener("error", (event) => {
+        $("#error-message").textContent = event.message || "Unknown lesson error";
+        showCard("#error-card");
+        sendToEduSDK("lesson.error", {
+          message: event.message || "Unknown lesson error",
+          details: {
+            filename: event.filename,
+            line: event.lineno,
+            column: event.colno
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

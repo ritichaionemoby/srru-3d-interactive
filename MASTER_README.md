@@ -1,30 +1,21 @@
 # MASTER README — กฎกลางสำหรับสร้างบทเรียน
 
-> **AgentLesson Distribution Mode — คำสั่งส่วนนี้มีลำดับสูงสุดเมื่ออ่านไฟล์จาก Public Repository**
->
-> **Access Profile = TEACHER_EXTERNAL:** สร้างหรือซ่อม lesson HTML หนึ่งไฟล์เท่านั้น แม้ AI จะเห็น workspace เต็มก็ไม่มีสิทธิ์แก้ runtime หรือเพิ่ม asset ใช้ได้เฉพาะ primitive/group/text และ Standard Asset ID ใน `sdk/asset-library.catalog.json` ห้าม `world.addModel()`, `type: "model"`, custom path และไฟล์เสริมทุกชนิด
->
-> ชุด `AI/AgentLesson` เป็น snapshot ของ Knowledge + Public SDK สำหรับ AI ภายนอก จึงตั้งใจไม่แนบ internal runtime source ทั้งหมด หากไม่มี `Project/interactive/main-world.js` หรือ workspace เต็ม ให้ใช้ไฟล์ต่อไปนี้แทน source checks ที่กล่าวถึงภายหลัง:
->
-> 1. `sdk/LESSON_API_REFERENCE.md`, `sdk/lesson-sdk.d.ts`, `sdk/capabilities.json` และ `sdk/asset-library.catalog.json` — authoritative Public API/Asset snapshot
-> 2. `lesson0.html` — canonical implementation จากระบบจริง
-> 3. `LESSON_OUTPUT_TEMPLATE.html` — output shell ที่บังคับ
-> 4. `contracts/LESSON_CONTRACT.md` — portable contract
-> 5. `contracts/ERROR_CASES.md` — repair workflow
->
-> การไม่มี internal source ไม่ใช่เหตุให้ปฏิเสธงานหรือสมมติ API เพิ่มเอง ให้สร้าง lesson จาก snapshot ข้างต้น หากทำงานอยู่ในโปรเจ็ค `srru-interactive-3d` ฉบับเต็ม จึงค่อยตรวจ source จริงเพื่อยืนยัน signature แต่กฎ TEACHER_EXTERNAL ยังคงมีอำนาจเหนือ capability แบบ Dev-only ที่พบใน source
->
-> Workflow ที่ระบุให้เขียนไฟล์ลง `Project/interactive/chapters/` และทดสอบ browser ใช้เมื่อ AI มีสิทธิ์เข้าถึง workspace เต็มเท่านั้น สำหรับ AI แบบ chat/agent ภายนอก ให้คืน source ของ `lesson_N.html` ตาม Output Protocol ใน `README.md` และทำ static self-review แทน ห้ามแก้ไฟล์ Knowledge/SDK
+เอกสารนี้เป็นแหล่งข้อมูลกลางของกระบวนการสร้างบทเรียนด้วย AI สำหรับ Puzzle Widget Platform ภายในโปรเจ็ค `srru-interactive-3d` สำหรับทีม Dev และ AI ที่ใช้ repository อ้างอิงนี้ อ่านภาพรวมสิทธิ์ที่ `README.md` ก่อนเริ่มงาน
 
-เอกสารนี้เป็นแหล่งข้อมูลกลางของกระบวนการสร้างบทเรียนด้วย AI สำหรับ Puzzle Widget Platform ภายในโปรเจ็ค `srru-interactive-3d`
+เมื่อกฎการสร้างบทเรียน, runtime, UX หรือขั้นตอนตรวจสอบเปลี่ยน ให้ปรับเอกสารนี้และ portable contract ใน `contracts/` ให้ตรงกัน ส่วน ข้อความ START_PROMPT ที่ผู้มอบหมายส่งมาแยกจาก repository เป็นแบบฟอร์มคำขอของทีม Dev/AI ใช้ส่งให้ทีม Dev และ AI ภายนอกที่ได้รับมอบหมายได้
 
-เมื่อกฎการสร้างบทเรียน, runtime, UX หรือขั้นตอนตรวจสอบเปลี่ยน ทีม Dev ต้อง sync เอกสารนี้ Public API, types, capabilities, catalog, validator, template และ example ให้ตรงกัน อาจารย์แก้เฉพาะ `START_PROMPT.txt`
+## Access Profile
+
+- **DEV_WORKSPACE:** ทีม Dev/AI อ่าน source ทั้งโปรเจ็คและมีสิทธิ์เพิ่ม asset หรือขยาย runtime ได้เมื่อผู้ใช้ระบุงานระบบนั้นอย่างชัดเจน
+- **Default scope:** แม้อยู่ใน DEV_WORKSPACE งานจาก ข้อความ START_PROMPT ที่ผู้มอบหมายส่งมาแยกจาก repository เริ่มต้นเป็น lesson-only ห้ามแตะ runtime หรือ asset กลางถ้าไม่ได้รับคำสั่ง
+- **Portable lesson-only:** ค่าเริ่มต้นของชุดนี้ ส่งบทเรียน HTML หนึ่งไฟล์ ใช้ primitive และ Standard Asset ID; ข้อจำกัด teacher-external ใน portable contract ใช้กับงานแบบนี้ หากผู้ใช้อนุญาตงานระบบโดยชัดเจนให้ยึด DEV_WORKSPACE และรายงานไฟล์เพิ่มเติมทั้งหมด
+- **EXTERNAL_FULL_HTML:** เป็นคนละรูปแบบกับ Lesson Package; ดูข้อแยกใน EXAMPLES.md และ source ของ EduSDK ใช้เมื่อผู้ใช้ขอ HTML อิสระโดยชัดเจนเท่านั้น
 
 ## คำสั่งบังคับสำหรับ AI
 
 ก่อนวิเคราะห์ วางแผน สร้าง หรือแก้บทเรียน ต้องอ่านเอกสารนี้ทั้งไฟล์และตรวจ source code ปัจจุบันตามรายการอ้างอิงด้านล่าง ห้ามสร้างจากความจำหรือ pattern ของโปรเจ็คอื่น
 
-AI ต้องลงมือสร้างไฟล์จริง ตรวจโค้ด และทดสอบกับ runtime ไม่ใช่ส่งเพียงตัวอย่างโค้ดหรือคำแนะนำ
+AI ต้องลงมือสร้างไฟล์จริงและตรวจ static ใน repository นี้ ส่วน runtime test ทำเมื่อมีระบบปลายทางพร้อมเท่านั้น ไม่ต้องขอ plugin/asset หรือหยุดสร้างบทเรียนเพราะชุดอ้างอิงนี้รันไม่ได้
 
 ## Source of Truth
 
@@ -34,13 +25,17 @@ AI ต้องลงมือสร้างไฟล์จริง ตรว�
    - canonical example ของบทเรียน 3D, lifecycle, Lab, Quiz, Teacher Tools, drag/drop และ cleanup
 2. `Project/interactive/main-world.js`
    - public API ปัจจุบันจาก `world`, `makeHandle`, `lessonUi`, `createContext`, `normalizeMeta`, `resetLessonScene` และระบบ Quiz
-3. `Project/interactive/main-world-setting.js`
-   - background preset, camera, interaction, VFX, mascot และระบบเสียงที่รองรับ
-4. `Project/interactive/eduSdk.js`
+3. `Project/interactive/gui-service.js`
+   - public GUI API, Choice/Gizmo handles, scope lifecycle และ responsive projection
+4. `sdk/UI_CATALOG.md`
+   - ชื่อมาตรฐานของ UI, ownership, API และ Setting path ที่ใช้คุยกับผู้ใช้/AI ให้ตรงกัน
+5. `Project/interactive/main-world-setting.js`
+   - ฉาก Green กลาง, camera, interaction, VFX, mascot และระบบเสียงที่รองรับ
+6. `Project/interactive/eduSdk.js`
    - การเปิดบทเรียน, relative path, progress, complete และ close callback
-5. หน้า demo ที่โปรเจ็คใช้งานอยู่
+7. `TESTING.md` — static checks ในชุดนี้ และเกณฑ์ runtime test ในระบบปลายทาง
    - รูปแบบ `lessonData` และขั้นตอนเปิดบทเรียนรุ่นล่าสุด
-6. ไฟล์คำขอของอาจารย์ `START_PROMPT.txt` (ใน DEV_WORKSPACE จึงค่อยใช้ `Project/interactive/ExampleGen.md`)
+8. ไฟล์คำขอของทีม Dev เช่น ข้อความ START_PROMPT ที่ผู้มอบหมายส่งมาแยกจาก repository
    - เนื้อหา กิจกรรม และการปรับแต่งเฉพาะบท
 
 source code ใน workspace เวอร์ชันปัจจุบันมีอำนาจเหนือ API หรือรายละเอียดที่ AI เคยจำจากงานก่อนหน้า ห้ามเดาชื่อ method, event, asset หรือ schema ขึ้นเอง
@@ -50,10 +45,11 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 ## ขอบเขตงานเริ่มต้น
 
 - สร้างหรือแก้เฉพาะไฟล์บทเรียนที่ผู้ใช้ระบุใน `Project/interactive/chapters/`
-- ห้ามแก้ `main-world.js`, `main-world-setting.js`, `world.css`, `eduSdk.js`, plugin, catalog หรือ asset กลางทุกกรณีใน TEACHER_EXTERNAL; หากต้องขยายระบบให้รายงานสิ่งที่ขาดเพื่อส่งต่อทีม Dev
+- ห้ามแก้ `main-world.js`, `main-world-setting.js`, `world.css`, `eduSdk.js`, plugin หรือ asset กลาง เว้นแต่ผู้ใช้สั่งให้แก้ระบบโดยตรง
 - ห้ามแก้ `lesson0.html` เมื่อใช้เป็น reference เว้นแต่ชื่อไฟล์ที่ผู้ใช้สั่งคือ `lesson0.html` หรือผู้ใช้ระบุให้แก้ Lesson 0
 - รักษาการเปลี่ยนแปลงเดิมของผู้ใช้และไม่แตะไฟล์ที่ไม่เกี่ยวข้อง
-- หากการทำบทเรียนต้องเพิ่มความสามารถใหม่ใน runtime ให้หยุดและอธิบายข้อจำกัดก่อน ห้ามแอบขยาย scope ไปแก้ระบบกลาง
+- หากการทำบทเรียนต้องเพิ่มความสามารถใหม่ใน runtime และผู้ใช้ยังไม่ได้อนุญาตงานระบบ ให้หยุดและอธิบายข้อจำกัดก่อน ห้ามแอบขยาย scope ไปแก้ระบบกลาง
+- เมื่อผู้ใช้สั่งเพิ่ม asset/runtime โดยตรง ทีม Dev สามารถดำเนินการได้ แต่ต้องอัปเดต Public API, catalog, types, validator, Github และ regression test ที่เกี่ยวข้อง
 
 ## สัญญาไฟล์บทเรียน
 
@@ -72,13 +68,47 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 - ห้ามสร้าง `window.context`, `window.eduSdk` หรือ lifecycle สมมติ เช่น `onPhaseChange` และ `onInteraction`
 - ห้ามเรียก API สมมติ เช่น `spawnObject`, `removeObject`, `updateObject`; ต้องสร้างฉากผ่าน `context.world` ที่ได้รับใน `mount(context)` เท่านั้น
 - ห้ามสร้าง header, loading, mascot, console, camera control, result screen หรือ UI กลางซ้ำ
-- title, description, category และข้อมูลแสดงผลหลักมาจาก `lessonData` ของ CMS บทเรียนห้ามเขียนทับ header หลัก
+- ต้องกรอก `meta.title`, `meta.category` และ `meta.subcategory` เป็นค่าเริ่มต้นของบทเรียนเสมอ Runtime จะใช้ `lessonData` ที่ไม่ว่างก่อนตามปกติ และ fallback มาใช้ meta; เมื่อ `mainWorldSetting.overrideTitleName === true` จะใช้ meta ทับทั้งสามค่า บทเรียนห้ามสร้างหรือเขียนทับ header หลักเอง
 - ใช้เฉพาะ public API ที่พบจาก runtime ปัจจุบันผ่าน `context.world`, `context.ui`, `context.audio`, `context.quiz`, `context.objectiveAction` และ `context.complete`
-- บทเรียนใหม่เลือกใช้ primitive, group, text และ Standard Asset Library ผสมกันได้ ห้ามยึดรูปแบบกราฟิกของ Lesson 0 เป็นค่าเริ่มต้นทุกบท
-- ห้ามเรียก `world.addModel()`, `addObject({ type: "model" })`, custom GLB/GLTF/FBX หรือเพิ่ม model/texture/image/audio ใหม่ แม้ไฟล์จะอยู่ origin เดียวกัน
-- ตรวจ Asset ID จริงจาก `Project/interactive/assets/library/catalog.json` หรือ portable `sdk/asset-library.catalog.json`; เครื่องหมายทั่วไป เช่น `+ - × ÷` ใช้ generic text API ไม่ส่งเข้า comparison-specific prefab
+- ใน DEV_WORKSPACE บทเรียนเลือกใช้ primitive, Standard Asset Library และ custom GLB/GLTF/FBX ผสมกันได้เมื่อ scope อนุญาต; custom asset ต้องถูกเพิ่มและ deploy โดยทีม Dev ห้ามยึดรูปแบบกราฟิกของ Lesson 0 เป็นค่าเริ่มต้นทุกบท
+- ถ้าสิ่งที่สร้างจะส่งให้อาจารย์ภายนอกใช้ต่อ ต้องลงทะเบียนเป็น Standard Asset ID ใน catalog ก่อน อาจารย์ภายนอกห้ามเรียก path ของ custom model โดยตรง
+- ตรวจ Asset ID จริงจาก `Project/interactive/assets/library/catalog.json`; เครื่องหมาย `= ≠ < > ≤ ≥ + - × ÷` ใช้ `world.addOperatorSign` เพื่อให้ได้ polygon 3D และฐานมาตรฐาน ห้ามใช้ `addText3D` ทำเครื่องหมายบนฐาน
 - ห้ามแก้ material, geometry, renderer, scene, camera ภายใน หรือ `userData` ของ object โดยตรง
-- ใช้ asset ได้เฉพาะ Asset ID ที่มีใน portable catalog ห้ามอ้าง path asset โดยตรงหรือสมมติ path
+- ถ้าต้องใช้ asset ให้ใช้เฉพาะไฟล์ที่มีอยู่จริงและ resolve ผ่าน API ของ runtime ห้ามสมมติ path
+
+## UI กลางของบทเรียน
+
+- **Existing GUI Service First เป็นกฎบังคับ:** ทุกครั้งที่ต้องแสดง UI ให้จำแนกหน้าที่และค้นใน `sdk/UI_CATALOG.md` / `GUI_SERVICE_REFERENCE.md` ก่อน แล้วใช้ Service ที่มีอยู่ ห้ามเริ่มจากการสร้าง UI เฉพาะบทเรียน
+- ถ้าไม่มี capability ที่ต้องการจริง ให้ตรวจ runtime ก่อน จากนั้นเพิ่มหรือขยาย `gui-service.js` และ Setting/API กลาง พร้อม mobile behavior, lifecycle cleanup, เอกสาร และ regression test ห้ามแก้ด้วย HTML/CSS หรือ panel one-off ที่ใช้ได้เพียง lesson เดียว
+- ก่อนออกแบบ UI ต้องอ่าน `sdk/UI_CATALOG.md` และ `sdk/GUI_SERVICE_REFERENCE.md` เพื่อใช้ชื่อมาตรฐาน, API และ ownership ให้ถูกต้อง
+- โจทย์หลักที่ต้องอ่านคงที่ใช้ `context.ui.setQuestion(text)` ระบบจะแสดงเป็น screen-space UI ด้านบนและไม่หมุนตามกล้อง บทเรียนส่งเฉพาะข้อความ
+- เป้าหมายย่อใน Main Console ด้านล่างใช้ `context.ui.setObjective(text)`
+- ข้อความ feedback ใช้ `context.ui.toast(text, type)` เพื่ออัปเดตสถานะใน Main Console ข้อความจะค้างจนกว่าจะมีสถานะใหม่หรือเปลี่ยน Step
+- GUI ใหม่ให้ใช้ Service กลาง `context.ui.question`, `console`, `topMessage`, `choice`, `gizmo`, `feedback`, `dialog`, `insight`, `control`, `hint`, `busy` ห้ามสร้าง UI ซ้ำด้วย HTML/CSS หาก Public API รองรับแล้ว โดย `control.position` รองรับ `top-right`, `middle-right`, `bottom-right`
+- `context.ui.choice.show()` ใช้สร้างตัวเลือกเหนือ Console และแจ้ง objective action ให้อัตโนมัติ ส่วน `context.ui.gizmo.attach()`/`at()` ใช้ข้อความ ตัวเลข icon หรือภาพ Screen-space ที่ติดตาม object/พิกัด World
+- `world.addCallout()` ใช้สำหรับป้ายพร้อมเส้นชี้ "พื้นที่" ในฉาก และใส่ `insight` ได้เพื่อให้ป้ายเป็นจุดกดเปิดคำอธิบายมาตรฐาน ห้ามซ่อน click action ไว้บนพื้นผิวที่มองไม่ออกว่ากดได้; Callout กับ Gizmo ยังมีหน้าที่ต่างกัน
+- ใช้ `world.addWorldCounter()` เมื่อต้องแสดงตัวเลขนับบนพื้น และใช้ `world.addWorldGui()` เมื่อต้องวางข้อความอธิบายลงบนพื้น ทั้งคู่เป็น service กลางแบบ display-only ห้ามสร้างซ้ำเองหรือผูก interaction
+- ใช้ GUI scope ให้เหมาะสม (`scene`, `step`, `question`, `lesson`, `manual`) เพื่อให้ runtime ล้าง UI ตาม lifecycle ได้เอง ดู signature และตัวอย่างล่าสุดใน `sdk/GUI_SERVICE_REFERENCE.md`
+- ห้ามสร้างป้ายโจทย์หลักด้วย `addText3D`, callout, group หรือ DOM ของบทเรียน เพราะจะซ้ำกับ UI กลางและอาจกลับด้านเมื่อหมุนกล้อง
+- runtime ล้าง Question UI ก่อน reset/close อัตโนมัติ บทเรียนเรียก `context.ui.clearQuestion()` เฉพาะเมื่อต้องการซ่อนระหว่างกิจกรรม
+
+เลือก Service ตามหน้าที่ดังนี้:
+
+- `question` — โจทย์หลักที่ต้องอ่านค้าง ห้ามใช้ Top Message, Callout หรือ Text3D แทน
+- `console` — Objective, ขั้นตอน และสถานะหลักที่ควรอ่านได้ตลอด
+- `topMessage` — ประกาศสั้นที่ไม่ใช่โจทย์ เช่น เริ่มรอบหรือปลดล็อกเครื่องมือ
+- `choice` — คำตอบหรือ action ที่ผู้เรียนต้องเลือก; ไม่ใช้ Control Menu เป็นคำตอบ
+- `gizmo` — ข้อความ/ค่า/icon แบบ 2D ที่ติดตาม object หรือพิกัด World
+- `feedback` — สถานะสั้นแบบไม่บล็อก; Quiz ห้ามใช้เฉลยถูก/ผิดระหว่างทำ
+- `dialog` — ข้อความสำคัญหรือการยืนยันที่ต้องบล็อก interaction ชั่วคราว
+- `control` — ปุ่ม utility ของกิจกรรม รองรับ `top-right`, `middle-right`, `bottom-right`
+- Control ที่ใช้ลงมือทำต้องซ่อนระหว่างขั้นสอนแบบ `sequence` และแสดงเฉพาะขั้น `freestyle`/ขั้นที่เปิด interactive หรือ `student-quiz`
+- `hint` — คำแนะนำผ่าน Mascot กลาง ห้ามสร้าง speech bubble หรือตัวละครซ้ำ
+- `busy` — ปิด interaction ระหว่างรอ async task และต้องปิดใน `finally`
+
+วัตถุขนาดเล็กที่แตะยากสามารถกำหนด `hitArea`/`hitAreaOffset` และ `dragFromCenter` โดย hit area จะไม่ขยายโมเดลจริง เมื่อนำวัตถุออกจากฐานแล้วให้เรียก `handle.setHitArea(null)` และ `handle.setDragFromCenter(false)` หากต้องกลับไปใช้พื้นที่จับตามโมเดล
+
+Topbar, Mode Badge, Quiz Badge, System Popup, Camera Controls, World Hint, Loading Screen, Mascot Character และ Celebration VFX เป็น System-owned UI บทเรียนห้ามสร้างหรือควบคุมซ้ำ หากทีม Dev ต้องเปลี่ยนรูปลักษณ์ให้แก้ Setting ตาม path ใน UI Catalog
 
 ## โครงสร้าง Meta
 
@@ -86,6 +116,9 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 
 - `worldType`
 - `lessonId`
+- `title`
+- `category`
+- `subcategory`
 - `description`
 - `keyResult`
 - `background`
@@ -143,7 +176,7 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 - การวางที่ยอมรับควร snap เข้าตำแหน่งชัดเจนและใช้ commit effect ของระบบ
 - ถ้ามีหลายวัตถุ ให้เก็บ object-to-slot ด้วย Map และหา slot ว่าง ห้ามนำทุกชิ้นไปทับ slot ล่าสุด
 - เมื่อนำวัตถุออก ต้องลบ placement คืน slot และส่งกลับตำแหน่งเริ่มต้นหรือจุดพักที่ถูกต้อง
-- อย่าสร้าง VFX, outline, selection หรือเสียงลากซ้ำกับที่ runtime มีอยู่แล้ว
+- อย่าสร้าง VFX, Highlight, Selection Ring, Floating Marker หรือเสียงลากซ้ำกับที่ runtime มีอยู่แล้ว
 
 ## แนวทางจัดฉากและ Mobile
 
@@ -166,9 +199,11 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 - `onStep` ต้องหยุด animation และ cue จาก step ก่อนหน้า ก่อนเริ่ม step ใหม่
 - `dispose` ต้องหยุด timer, drag cue และล้าง reference ของบทเรียน
 
-## Workflow ที่ Codex ต้องทำ
+## Workflow ที่ AI ต้องทำ
 
-1. อ่าน Master และ source of truth ให้ครบ
+ขั้นตอน browser/runtime/mobile ด้านล่างเป็นเกณฑ์ตรวจในระบบปลายทาง ไม่ใช่เงื่อนไขที่ต้องทำให้ได้ใน repository อ้างอิงนี้ หากไม่มีเว็บทดสอบ ให้ส่งไฟล์พร้อมผล static และระบุรายการ runtime ที่ยังไม่ได้ทดสอบ ห้ามอ้างว่าผ่านแล้ว
+
+1. อ่าน `README.md`, Master และ source of truth ให้ครบ พร้อมยืนยันว่าเป็น lesson-only หรือมีงานระบบ/asset ที่ผู้ใช้อนุญาต
 2. ตรวจ git status และรักษาไฟล์ที่ผู้ใช้แก้ไว้
 3. แปลงข้อความครูเป็น values, editable fields, steps, interactions และ quiz conditions
 4. ตรวจความสมเหตุสมผลของโจทย์ทุกแบบ โดยเฉพาะช่วงคำตอบและกรณีศูนย์
@@ -191,16 +226,17 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 2. เพิ่มหรือเลือกบทเรียนใน CMS ของเว็บหลัก
 3. ให้ `lessonData.Id` ตรงกับ `id` และ `meta.lessonId` ในไฟล์
 4. ส่ง path แบบ relative และ origin เดียวกัน เช่น `./interactive/chapters/lesson1.html`
-5. ชื่อ คำอธิบาย หมวด และ tag ที่แสดงใน UI หลักแก้จาก CMS
+5. CMS สามารถส่งชื่อ วิชา และหัวข้อย่อยมาแทนค่า meta ได้; หากไม่ส่งหรือเป็นค่าว่าง Runtime จะใช้ `meta.title`, `meta.category`, `meta.subcategory` และสามารถบังคับใช้ meta ด้วย `overrideTitleName`
 6. เพิ่ม version ของบทเรียนเมื่อเปลี่ยน logic หรือโครงสร้างคำตอบ
 
-รูปแบบ `lessonData` และ callback ต้องอ่านจากหน้า demo และ `eduSdk.js` ปัจจุบันโดยตรง ไม่คัดลอก object schema มาตรึงไว้ที่นี่ เพื่อไม่ให้ Master ล้าสมัยโดยไม่จำเป็น
+รูปแบบ `lessonData` และ callback ต้องอ่านจาก `Project/interactive/eduSdk.js` ปัจจุบันโดยตรง ไม่คัดลอก object schema มาตรึงไว้ที่นี่ เพื่อไม่ให้ Master ล้าสมัยโดยไม่จำเป็น
 
 ## Checklist ก่อนส่งมอบ
 
 - [ ] ไฟล์เป็น HTML UTF-8 และอยู่ใน chapters
 - [ ] มี `script[data-lesson-app]` และ `PuzzleLesson.define` อย่างละหนึ่งครั้ง
 - [ ] id, lessonId, ชื่อไฟล์ และ CMS ID สอดคล้องกัน
+- [ ] meta.title, meta.category และ meta.subcategory มีข้อความครบและตรงกับเนื้อหา
 - [ ] ใช้เฉพาะ public API ปัจจุบัน
 - [ ] Teacher Tools ทุกช่องเปลี่ยนฉากได้จริง
 - [ ] sequence ยัง interactive ไม่ได้ และ freestyle interactive ได้
@@ -229,7 +265,7 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 | มือถือมองไม่เห็นเป้าหมาย | camera framing, ขอบเขต world และพื้นที่ที่ console บัง |
 | เครื่องทำงานแต่ deploy ไม่ได้ | relative path, ตัวพิมพ์เล็ก/ใหญ่, origin และ asset ที่ไม่มีจริง |
 
-## รูปแบบรายงานเมื่อ Codex ทำเสร็จ
+## รูปแบบรายงานเมื่อ AI ทำเสร็จ
 
 - path ของไฟล์บทเรียนที่สร้างหรือแก้
 - สรุปกิจกรรมและค่าที่ครูปรับได้
@@ -237,3 +273,8 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 - โหมดและ viewport ที่ทดสอบ
 - ผล syntax check และ browser console
 - ข้อจำกัดที่ยังเหลืออยู่ตามจริง; ถ้าไม่มีให้ระบุว่าพร้อมเชื่อมผ่าน CMS
+
+
+
+
+

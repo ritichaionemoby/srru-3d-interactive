@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lesson Asset Library Demo</title>
+</head>
+<body>
+  <script data-lesson-app>
+    (() => {
+      PuzzleLesson.define({
+        id: "lesson-library-demo",
+        version: "1.0.0",
+        meta: {
+          worldType: "3d-world-space",
+          lessonId: "lesson-library-demo",
+          title: "ทดสอบคลังวัตถุมาตรฐาน",
+          category: "ระบบตัวอย่าง",
+          subcategory: "Standard Asset Library",
+          description: "ทดสอบวัตถุมาตรฐานและ Generic Lesson Scene API",
+          keyResult: "ตรวจว่าคลังวัตถุมาตรฐานสามารถแสดงและโต้ตอบบนเกาะได้",
+          background: "green",
+          camera: { startYaw: 16, startPitch: 48, startDistance: 26, minDistance: 12, maxDistance: 38, target: [0, .65, 0] },
+          welcomeMessage: ["คลังวัตถุมาตรฐานพร้อมใช้งาน", "ลองลากวัตถุและกดยานอวกาศ"],
+          tooltip: "ลากวัตถุมาตรฐาน หรือกดยานอวกาศ",
+          defaultValue: {},
+          editSchema: [],
+          howto: [
+            { index: 0, title: "สำรวจคลังวัตถุ", type: "sequence", desc: "สังเกตวัตถุหลายประเภทที่ประกอบจาก Primitive" },
+            { index: 1, title: "ทดลอง Interactive", type: "freestyle", desc: "ลองลากผลไม้ ลูกบอล และกดยานอวกาศ" }
+          ],
+          quiz: []
+        },
+        mount(context) {
+          this.context = context;
+          this.handles = [];
+        },
+        async reset({ mode }) {
+          this.handles = [];
+          const world = this.context.world;
+          const draggable = mode === "student-quiz";
+          world.addText3D({ text: "+", position: [-1.2, 3.7, -2.8], size: [1.35, 1.35], color: "#44348f", background: "rgba(255,255,255,.82)" });
+          this.handles.push(world.addLibraryObject({ asset: "food/apple", name: "apple", position: [-2.6, .15, -1.5], scale: 1.05, draggable, hoverMessage: "แอปเปิลมาตรฐาน" }));
+          this.handles.push(world.addLibraryObject({ asset: "food/pizza", name: "pizza", position: [-.3, .15, -1.5], scale: .8, draggable, hoverMessage: "พิซซ่ามาตรฐาน" }));
+          this.handles.push(world.addLibraryObject({ asset: "sports/ball", name: "ball", position: [2, .15, -1.5], scale: .92, draggable, hoverMessage: "ลูกบอลมาตรฐาน" }));
+          this.rocket = world.addLibraryObject({
+            asset: "space/rocket",
+            name: "rocket",
+            position: [0, .15, 2.4],
+            scale: .66,
+            clickable: mode === "student-quiz",
+            hoverMessage: "กดยานอวกาศ",
+            onClick: ({ handle }) => {
+              handle.playCommit();
+              handle.animateTo(0, 3.2, 2.4, { duration: 680, arcHeight: 1.2 });
+              this.context.ui.toast("ยานอวกาศพร้อมออกเดินทาง!", "success");
+            }
+          });
+          this.handles.push(this.rocket);
+          this.customCloud = await world.addModel({
+            path: "../assets/model/cloud/cloud.glb",
+            name: "custom-cloud-model",
+            position: [-4.2, 3.2, 2.2],
+            targetSize: 2.6,
+            scale: 1,
+            roughness: .82
+          });
+          this.handles.push(this.customCloud);
+          this.context.ui.setObjective("สำรวจวัตถุจาก Lesson Asset Library");
+        },
+        onStep(index, step) {
+          this.context.world.hideDragCue();
+          this.handles.forEach(handle => {
+            handle.stopAnimation();
+            handle.setDraggable(step.type === "freestyle" && handle !== this.rocket);
+          });
+          this.rocket.setClickable(step.type === "freestyle");
+          if (step.type === "freestyle" && this.handles.length) this.context.world.showDragCue(this.handles[0], [-2, .7, 2]);
+          this.context.ui.setObjective(step.desc);
+        },
+        dispose() {
+          this.context.world.hideDragCue();
+          this.handles.forEach(handle => handle.stopAnimation());
+          this.handles = [];
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

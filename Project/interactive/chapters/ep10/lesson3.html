@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>แถว แผ่น ก้อน — กำลังสองและกำลังสาม</title>
+</head>
+<body>
+  <script data-lesson-app>
+    (() => {
+      const COLORS = {
+        blue: "#4b82d8", blueTop: "#9fc0f0",
+        orange: "#efaa43", orangeTop: "#ffe0a3",
+        mint: "#65c9b4", mintTop: "#bcebdd",
+        answer: "#eaf1ef", tray: "#f5eee1"
+      };
+      const LAYOUT = { answerX: 0, answerZ: -1.35, sourceX: 0, sourceZ: 4.45 };
+      const quiz = [
+        question("สร้างพื้นที่ 2²", "area", 2), question("สร้างพื้นที่ 3²", "area", 3),
+        question("สร้างพื้นที่ 4²", "area", 4), question("สร้างพื้นที่ 5²", "area", 5), question("สร้างปริมาตร 2³", "volume", 2),
+        question("สร้างปริมาตร 3³", "volume", 3), question("สร้างปริมาตร 4³", "volume", 4), question("สร้างปริมาตร 5³", "volume", 5),
+        question("ด้านละ 2 หน่วย ปูให้เป็นสี่เหลี่ยมจัตุรัส", "area", 2),
+        question("ด้านละ 3 หน่วย ปูให้เป็นสี่เหลี่ยมจัตุรัส", "area", 3),
+        question("ใช้แถวละ 2 บล็อก สร้างลูกบาศก์", "volume", 2),
+        question("ใช้แถวละ 3 บล็อก สร้างลูกบาศก์", "volume", 3)
+      ];
+      function question(text, kind, base) {
+        return { question: text, data: [{ key: "kind", value: kind }, { key: "base", value: base }] };
+      }
+
+      PuzzleLesson.define({
+        id: "ep10-lesson3-square-cube",
+        version: "2.0.0",
+        meta: {
+          worldType: "3d-world-space",
+          lessonId: "ep10-lesson3-square-cube",
+          title: "แถว → แผ่น → ก้อน",
+          category: "คณิตศาสตร์",
+          subcategory: "กำลังสองและกำลังสาม",
+          description: "ลากแถวบล็อกจากถาดด้านล่างไปวางในพื้นที่คำตอบเดียวกัน เพื่อสร้างพื้นที่และปริมาตร",
+          keyResult: "ผู้เรียนมองเห็นว่า a² ใช้ a แถว และ a³ ใช้ a ชั้น ชั้นละ a แถว โดยแต่ละแถวมี a บล็อก",
+          background: "green",
+          camera: { fov: 42, startYaw: 28, startPitch: 55, startDistance: 22, minDistance: 13, maxDistance: 31, minPitch: 30, maxPitch: 75, target: [0, .85, .15] },
+          welcomeMessage: [
+            "โจทย์อยู่ด้านบน พื้นที่คำตอบอยู่ตรงกลาง",
+            "ลากแถวบล็อกจากถาดด้านล่างเข้าไปวาง",
+            "ถ้าเป็นกำลังสาม เมื่อชั้นล่างเต็ม แถวต่อไปจะขึ้นชั้นใหม่"
+          ],
+          tooltip: "ลากแถวบล็อกด้านล่างไปวางในพื้นที่คำตอบ",
+          defaultValue: { kind: "area", base: 3 },
+          editSchema: [
+            { key: "kind", name: "แบบโจทย์", type: "dropdown", option: [
+              { value: "area", label: "กำลังสอง — พื้นที่" },
+              { value: "volume", label: "กำลังสาม — ปริมาตร" }
+            ] },
+            { key: "base", name: "จำนวนบล็อกต่อแถว", type: "slider", option: [2, 5], step: 1 }
+          ],
+          howto: [
+            { index: 0, title: "ลากหนึ่งแถว", type: "sequence", desc: "หนึ่งแถวมีบล็อกเท่ากับเลขฐาน ลากจากถาดเข้าพื้นที่คำตอบ" },
+            { index: 1, title: "เติมให้เต็มชั้น", type: "sequence", desc: "เรียงแถวบนแนวราบจนกว้างและยาวเท่ากัน" },
+            { index: 2, title: "ต่อขึ้นชั้นใหม่", type: "sequence", desc: "กำลังสามใช้แถวเดิม เมื่อชั้นเต็ม แถวต่อไปจะขึ้นด้านบน" },
+            { index: 3, title: "ลองสร้างเอง", type: "freestyle", desc: "เพิ่ม ลด แยกดู และส่งเมื่อพอใจ" }
+          ],
+          quiz
+        },
+
+        mount(context) {
+          this.context = context;
+          this.worldHandles = [];
+          this.uiHandles = [];
+          this.rows = [];
+          this.countGizmos = [];
+          this.selectedCount = 0;
+          this.exploded = false;
+        },
+
+        reset({ values, mode, question }) {
+          this.clearScene();
+          this.mode = mode;
+          this.question = question || null;
+          this.values = this.normalize(values);
+          this.kind = this.values.kind;
+          this.base = this.values.base;
+          this.selectedCount = 0;
+          this.exploded = false;
+          this.buildWorkspace({ interactive: mode === "student-quiz" });
+        },
+
+        normalize(values = {}) {
+          return { kind: values.kind === "volume" ? "volume" : "area", base: Math.min(5, Math.max(2, Math.round(Number(values.base) || 3))) };
+        },
+
+        onStep(index) {
+          if (this.mode === "student-quiz") return;
+          this.clearScene();
+          if (index === 0) return this.buildWorkspace({ kind: "area", base: 3, selected: 1, teaching: "source" });
+          if (index === 1) return this.buildWorkspace({ kind: "area", base: 3, selected: 3, teaching: "square" });
+          if (index === 2) return this.buildWorkspace({ kind: "volume", base: 3, selected: 4, teaching: "stack" });
+          this.kind = this.values.kind;
+          this.base = this.values.base;
+          this.buildWorkspace({ interactive: true, selected: 0 });
+        },
+
+        buildWorkspace(options = {}) {
+          this.kind = options.kind || this.kind || "area";
+          this.base = options.base || this.base || 3;
+          this.selectedCount = options.selected || 0;
+          this.rows = [];
+          this.exploded = false;
+          this.createAnswerArea();
+          this.createSourceTray(Boolean(options.interactive));
+          for (let index = 0; index < this.selectedCount; index += 1) this.createPlacedRow(index);
+          this.createEquationCallout();
+          if (options.interactive) this.createControls();
+          this.updateUI();
+          this.showInstructions(options.teaching);
+          if (options.interactive && this.mode !== "student-quiz") this.context.world.showDragCue(this.sourceHandle, [LAYOUT.answerX, .3, LAYOUT.answerZ]);
+        },
+
+        createAnswerArea() {
+          const cell = this.cellSize();
+          const footprint = this.base * cell;
+          const width = Math.max(7.4, footprint + 2.15);
+          const depth = Math.max(5.9, footprint + 1.75);
+          this.answerWidth = width;
+          this.answerDepth = depth;
+          this.add(this.context.world.addZone({ name: "answer-area", size: [width, .12, depth], position: [0, .06, LAYOUT.answerZ], color: COLORS.answer, opacity: .48 }));
+          const rail = .11;
+          const y = .14;
+          const edge = this.kind === "area" ? COLORS.mint : COLORS.blue;
+          this.add(this.context.world.addBox({ name: "edge-front", size: [width, rail, rail], position: [0, y, LAYOUT.answerZ + depth / 2], color: edge }));
+          this.add(this.context.world.addBox({ name: "edge-back", size: [width, rail, rail], position: [0, y, LAYOUT.answerZ - depth / 2], color: edge }));
+          this.add(this.context.world.addBox({ name: "edge-left", size: [rail, rail, depth], position: [-width / 2, y, LAYOUT.answerZ], color: edge }));
+          this.add(this.context.world.addBox({ name: "edge-right", size: [rail, rail, depth], position: [width / 2, y, LAYOUT.answerZ], color: edge }));
+          this.answerFloorLabel = this.add(this.context.world.addWorldGui({
+            name: "answer-floor-label", text: "พื้นที่คำตอบ",
+            position: [0, .18, LAYOUT.answerZ + depth / 2 - .5], size: [2.65, .72]
+          }));
+        },
+
+        createSourceTray(interactive) {
+          const cell = this.cellSize();
+          const rowWidth = this.base * cell;
+          const trayWidth = Math.max(7.2, rowWidth + 2.4);
+          this.add(this.context.world.addZone({ name: "row-tray", size: [trayWidth, .14, 1.75], position: [0, .08, LAYOUT.sourceZ], color: COLORS.tray, opacity: .9 }));
+          let source;
+          source = this.add(this.context.world.addGroup({
+            name: "source-row", position: [0, .19, LAYOUT.sourceZ], parts: this.rowParts(this.base, COLORS.blue, COLORS.blueTop),
+            draggable: interactive, clickable: interactive, dragAxis: "xz", dragLiftHeight: 1.15, dragFromCenter: true,
+            hitArea: [rowWidth + .7, 1.45, 1.55], hitAreaOffset: [0, .5, 0],
+            guideTarget: this.mode === "student-quiz" ? null : [0, .28, LAYOUT.answerZ],
+            hoverMessage: interactive ? "ลากแถวนี้ไปยังพื้นที่คำตอบ" : "",
+            onClick: () => this.addRow(),
+            onDrop: position => {
+              const accepted = Math.abs(position.x) <= this.answerWidth / 2 && Math.abs(position.z - LAYOUT.answerZ) <= this.answerDepth / 2;
+              source.setPosition(0, .19, LAYOUT.sourceZ);
+              if (!accepted) return false;
+              this.addRow();
+              return { accepted: true, commit: true };
+            }
+          }));
+          this.sourceHandle = source;
+          this.sourceFloorLabel = this.add(this.context.world.addWorldGui({
+            name: "source-floor-label", text: `ลากแถวนี้ · ${this.base} บล็อก`,
+            position: [0, .18, LAYOUT.sourceZ + .62], size: [3.35, .72]
+          }));
+        },
+
+        createPlacedRow(index) {
+          const cell = this.cellSize();
+          const layer = this.kind === "volume" ? Math.floor(index / this.base) : 0;
+          const row = this.kind === "volume" ? index % this.base : index;
+          const palette = layer % 2 === 0 ? [COLORS.blue, COLORS.blueTop] : [COLORS.orange, COLORS.orangeTop];
+          const handle = this.add(this.context.world.addGroup({
+            name: `placed-row-${index}`,
+            position: [0, .19 + layer * cell, LAYOUT.answerZ + (row - (this.base - 1) / 2) * cell],
+            parts: this.rowParts(this.base, palette[0], palette[1])
+          }));
+          this.rows.push(handle);
+          return handle;
+        },
+
+        createEquationCallout(text = this.equationText(), tone = "primary") {
+          if (this.equationCallout) this.removeHandle(this.equationCallout);
+          this.equationState = text;
+          this.equationCallout = this.add(this.context.world.addCallout({
+            text,
+            position: [this.answerWidth / 2 - .9, 1.55, LAYOUT.answerZ + this.answerDepth / 2 - .55],
+            compactPosition: [2.1, 1.35, LAYOUT.answerZ + this.answerDepth / 2 - .35],
+            anchor: [0, .2, LAYOUT.answerZ],
+            scale: [2.6, .78], compactScale: [2.25, .82],
+            color: "#ffffff", lineColor: tone === "success" ? "#36a477" : "#5b46be",
+            insight: () => ({
+              title: this.powerText(),
+              message: this.kind === "area"
+                ? `${this.base} แถว แถวละ ${this.base} บล็อก จึงมี ${this.base ** 2} ตารางหน่วย`
+                : `${this.base} ชั้น ชั้นละ ${this.base} แถว แถวละ ${this.base} บล็อก จึงมี ${this.base ** 3} ลูกบาศก์หน่วย`,
+              html: `<p class="insight-equation">${this.resultEquation()}</p><p class="insight-note">กดแยกดูเพื่อสังเกตชิ้นส่วน โดยจำนวนรวมไม่เปลี่ยน</p>`,
+              primaryLabel: "กลับไปดูรูป"
+            })
+          }));
+        },
+
+        createControls() {
+          this.controls = this.context.ui.control.show({
+            id: "row-builder-tools", scope: "step", position: "bottom-right", objectiveAction: false,
+            items: this.controlItems(),
+            onAction: event => {
+              if (event.id === "add") this.addRow();
+              if (event.id === "remove") this.removeRow();
+              if (event.id === "explode") this.toggleExplode();
+              if (event.id === "reset") this.clearRows();
+              if (event.id === "submit") this.submitQuiz();
+            }
+          });
+        },
+
+        controlItems() {
+          return [
+            { id: "add", label: "เพิ่มแถว", icon: "next.svg", disabled: this.selectedCount >= this.maxRows() },
+            { id: "remove", label: "เอาแถวออก", icon: "previous.svg", disabled: this.selectedCount === 0 },
+            { id: "explode", label: this.exploded ? "รวมกลับ" : "แยกดู", icon: this.exploded ? "collapse.svg" : "expand-all.svg", disabled: this.selectedCount === 0 },
+            { id: "reset", label: "เริ่มใหม่", icon: "reset.svg", disabled: this.selectedCount === 0 },
+            ...(this.mode === "student-quiz" ? [{ id: "submit", label: "ส่งรูปนี้", icon: "target.svg", disabled: this.selectedCount === 0 }] : [])
+          ];
+        },
+
+        addRow() {
+          if (this.selectedCount >= this.maxRows()) return;
+          this.hideCountGizmos();
+          this.context.world.hideDragCue();
+          const row = this.createPlacedRow(this.selectedCount);
+          row.playCommit?.();
+          this.selectedCount += 1;
+          this.exploded = false;
+          this.updateUI();
+          if (this.mode === "student-quiz") {
+            this.context.ui.console.set({ objective: `วางแล้ว ${this.selectedCount} แถว`, title: "ยังแก้คำตอบได้", message: "เพิ่มหรือลดแถว แล้วกดส่งเมื่อพอใจ", tone: "info" });
+          } else if (this.selectedCount === this.expectedRows()) {
+            this.context.audio.play("success");
+            this.context.ui.console.set({ objective: this.resultEquation(), title: this.kind === "area" ? "เต็มพื้นที่แล้ว" : "ครบทุกชั้นแล้ว", message: this.resultExplanation(), tone: "success" });
+          } else if (this.kind === "volume" && this.selectedCount % this.base === 0) {
+            this.context.ui.console.set({ objective: `ชั้นที่ ${this.selectedCount / this.base} เต็มแล้ว`, title: `ล็อก ${this.base} แถวบนแนวราบ`, message: "แถวต่อไปจะเริ่มวางบนชั้นใหม่", tone: "info" });
+          } else {
+            this.context.ui.console.set({ objective: `วางแล้ว ${this.selectedCount} แถว`, title: "ลากแถวเดิมมาเพิ่มได้", message: this.kind === "area" ? "สังเกตว่าด้านทั้งสองเท่ากันหรือยัง" : "เมื่อชั้นเต็ม แถวใหม่จะต่อสูงขึ้น", tone: "info" });
+          }
+        },
+
+        removeRow() {
+          this.hideCountGizmos();
+          const handle = this.rows.pop();
+          if (!handle) return;
+          this.removeHandle(handle);
+          this.selectedCount -= 1;
+          this.exploded = false;
+          this.arrangeRows();
+          this.updateUI();
+          this.context.ui.console.set({ objective: `${this.selectedCount} แถว`, title: "เอาแถวล่าสุดออกแล้ว", message: "แก้ต่อได้ก่อนส่ง", tone: "info" });
+        },
+
+        clearRows() {
+          this.hideCountGizmos();
+          for (const handle of [...this.rows]) this.removeHandle(handle);
+          this.rows = [];
+          this.selectedCount = 0;
+          this.exploded = false;
+          this.updateUI();
+          this.context.ui.console.set({ objective: this.powerText(), title: "พื้นที่คำตอบว่างแล้ว", message: "ลากแถวจากถาดด้านล่าง", tone: "info" });
+        },
+
+        toggleExplode() {
+          if (!this.rows.length) return;
+          this.exploded = !this.exploded;
+          this.arrangeRows();
+          const numbered = this.exploded ? this.showCountGizmos() : (this.hideCountGizmos(), false);
+          this.controls?.setItems(this.controlItems());
+          this.context.ui.console.set({
+            objective: `${this.selectedCount} แถว แถวละ ${this.base} บล็อก`,
+            title: this.exploded ? "แยกแถวให้เห็นแล้ว" : "รวมรูปกลับแล้ว",
+            message: this.exploded && !numbered ? `มีทั้งหมด ${this.selectedCount * this.base} ก้อน — ซ่อนเลขรายก้อนเพื่อไม่ให้ทับกัน` : "จำนวนบล็อกไม่เปลี่ยน",
+            tone: "info"
+          });
+        },
+
+        arrangeRows() {
+          const cell = this.cellSize();
+          this.rows.forEach((handle, index) => {
+            const layer = this.kind === "volume" ? Math.floor(index / this.base) : 0;
+            const row = this.kind === "volume" ? index % this.base : index;
+            const rowGap = this.exploded ? .48 : 0;
+            const layerGap = this.exploded ? .88 : 0;
+            handle.animateTo(0, .19 + layer * (cell + layerGap), LAYOUT.answerZ + (row - (this.base - 1) / 2) * (cell + rowGap), { duration: 380, arcHeight: .18 });
+          });
+        },
+
+        showCountGizmos() {
+          this.hideCountGizmos();
+          if (this.selectedCount * this.base > 16) return false;
+          const cell = this.cellSize();
+          const rowGap = .48;
+          const layerGap = .88;
+          let count = 0;
+          for (let rowIndex = 0; rowIndex < this.selectedCount; rowIndex += 1) {
+            const layer = this.kind === "volume" ? Math.floor(rowIndex / this.base) : 0;
+            const row = this.kind === "volume" ? rowIndex % this.base : rowIndex;
+            for (let block = 0; block < this.base; block += 1) {
+              count += 1;
+              const gizmo = this.context.ui.gizmo.at([
+                (block - (this.base - 1) / 2) * cell,
+                .19 + layer * (cell + layerGap) + cell * .55,
+                LAYOUT.answerZ + (row - (this.base - 1) / 2) * (cell + rowGap)
+              ], { id: `cube-count-${count}`, scope: "step", type: "badge", size: "small", priority: 5, text: String(count), tone: "primary" });
+              this.countGizmos.push(gizmo);
+              this.uiHandles.push(gizmo);
+            }
+          }
+          return true;
+        },
+
+        hideCountGizmos() {
+          for (const gizmo of this.countGizmos || []) {
+            gizmo?.remove?.();
+            const index = this.uiHandles.indexOf(gizmo);
+            if (index >= 0) this.uiHandles.splice(index, 1);
+          }
+          this.countGizmos = [];
+        },
+
+        updateUI() {
+          const solved = this.mode !== "student-quiz" && this.selectedCount === this.expectedRows();
+          const equation = solved ? this.resultEquation() : this.equationText();
+          if (this.equationState !== equation) this.createEquationCallout(equation, solved ? "success" : "primary");
+          this.controls?.setItems(this.controlItems());
+        },
+
+        showInstructions(teaching) {
+          const text = this.mode === "student-quiz" && this.question?.question ? this.question.question : this.kind === "area" ? `สร้างพื้นที่ ${this.base} × ${this.base}` : `สร้างปริมาตร ${this.base} × ${this.base} × ${this.base}`;
+          this.context.ui.question.show({ label: this.kind === "area" ? "กำลังสอง · พื้นที่" : "กำลังสาม · ปริมาตร", text, tone: "primary" });
+          const copies = {
+            source: ["ลากหนึ่งแถว", `แถวนี้มี ${this.base} บล็อก`, "วางในพื้นที่คำตอบ"],
+            square: ["แถวรวมเป็นแผ่น", `${this.base} แถว × ${this.base} บล็อก`, `${this.base}² = ${this.base ** 2} ตารางหน่วย`],
+            stack: ["เริ่มชั้นใหม่ด้านบน", `ชั้นล่างครบ ${this.base} แถวแล้ว`, `แถวที่ ${this.base + 1} ต่อสูงขึ้น`]
+          };
+          const copy = copies[teaching] || (this.mode === "student-quiz" ? ["สร้างรูปแล้วกดส่ง", "ระบบไม่บอกจำนวนแถวที่ถูก", "เพิ่มหรือลดได้จนกว่าจะพอใจ"] : ["ลากแถวด้านล่าง", "วางลงในพื้นที่คำตอบ", "ใช้ปุ่มเพิ่มแถวแทนการลากได้"]);
+          this.context.ui.console.set({ objective: copy[0], title: copy[1], message: copy[2], tone: teaching === "square" ? "success" : "info" });
+        },
+
+        submitQuiz() {
+          if (this.mode !== "student-quiz") return;
+          this.context.quiz.answer(this.selectedCount === this.expectedRows(), { kind: this.kind, base: this.base, selectedCount: this.selectedCount, expectedCount: this.expectedRows(), unitCount: this.selectedCount * this.base });
+          this.context.ui.console.set({ objective: `ส่งรูป ${this.selectedCount} แถวแล้ว`, title: "บันทึกคำตอบเรียบร้อย", message: "ไปข้อต่อไป หรือแก้แล้วส่งใหม่ได้", tone: "info" });
+        },
+
+        rowParts(base, color, topColor) {
+          const cell = this.cellSize(base);
+          return Array.from({ length: base }, (_, index) => ({
+            shape: "box", size: [cell - .075, cell - .075, cell - .075],
+            position: [(index - (base - 1) / 2) * cell, cell * .5, 0],
+            color: index % 2 ? topColor : color, material: { roughness: .5, clearcoat: .18 }
+          }));
+        },
+
+        cellSize(base = this.base) { return base === 5 ? .7 : base === 4 ? .84 : 1.04; },
+        powerText() { return `${this.base}${this.kind === "area" ? "²" : "³"}`; },
+        equationText() { return `${this.powerText()} = ?`; },
+        expectedRows() { return this.kind === "area" ? this.base : this.base * this.base; },
+        maxRows() { return this.mode === "student-quiz" ? this.expectedRows() + this.base : this.expectedRows(); },
+        resultEquation() { return `${this.powerText()} = ${this.base ** (this.kind === "area" ? 2 : 3)}`; },
+        resultExplanation() { return this.kind === "area" ? `${this.base} แถว × ${this.base} บล็อก = ${this.base ** 2} ตารางหน่วย` : `${this.base} ชั้น × ${this.base} แถว × ${this.base} บล็อก = ${this.base ** 3} ลูกบาศก์หน่วย`; },
+        add(handle) { if (handle) this.worldHandles.push(handle); return handle; },
+        removeHandle(handle) { const index = this.worldHandles.indexOf(handle); if (index >= 0) this.worldHandles.splice(index, 1); handle?.remove?.(); },
+
+        clearScene() {
+          this.context?.world?.hideDragCue?.();
+          this.controls?.remove?.();
+          this.controls = null;
+          for (const handle of this.uiHandles || []) handle?.remove?.();
+          for (const handle of this.worldHandles || []) handle?.remove?.();
+          this.uiHandles = [];
+          this.worldHandles = [];
+          this.rows = [];
+          this.countGizmos = [];
+          this.sourceHandle = null;
+          this.equationCallout = null;
+          this.equationState = null;
+        },
+
+        dispose() { this.clearScene(); this.context = null; }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>แผนภาพเลขยกกำลัง</title>
+</head>
+<body>
+  <script data-lesson-app>
+    (() => {
+      // สีไล่จากโทนอุ่นไปโทนเย็นเพื่อให้เห็นว่าเป็น "คนละรุ่น" ได้ทันที
+      const COLORS = Object.freeze({ root: "#e94372", round1: "#ff7548", round2: "#f2b936", round3: "#27b7a0", round4: "#477fd1" });
+      const ROUND_COLORS = [COLORS.root, COLORS.round1, COLORS.round2, COLORS.round3, COLORS.round4];
+      // ระยะต้นแบบสำหรับยกกำลัง 4; เลขชี้กำลังที่น้อยกว่าจะขยายสัดส่วนให้ใช้พื้นที่เต็มเกาะ
+      const ROUND_RADII = [0, 3.25, 6.05, 8.7, 10.95];
+      const ROUND_SIZES = [2.3, 1.32, 1.02, .8, .48];
+
+      const quiz = [
+        quizItem("กดแตกตัวตามจำนวนเลขชี้กำลัง", 2, 1),
+        quizItem("กดแตกตัวตามจำนวนเลขชี้กำลัง", 2, 2),
+        quizItem("กดแตกตัวตามจำนวนเลขชี้กำลัง", 2, 3),
+        quizItem("กดแตกตัวตามจำนวนเลขชี้กำลัง", 2, 4),
+        quizItem("กดแตกตัวตามจำนวนเลขชี้กำลัง", 3, 1),
+        quizItem("กดแตกตัวตามจำนวนเลขชี้กำลัง", 3, 2),
+        quizItem("กดแตกตัวตามจำนวนเลขชี้กำลัง", 3, 3),
+        quizItem("สร้างภาพของเลขยกกำลังด้วยสไลม์", 2, 4),
+        quizItem("เริ่มจาก Root แล้วแตกตัวให้ครบ", 2, 2),
+        quizItem("เริ่มจาก Root แล้วแตกตัวให้ครบ", 3, 2),
+        quizItem("สังเกตผลรวมหลังการแตกตัวแต่ละครั้ง", 2, 3),
+        quizItem("สังเกตผลรวมหลังการแตกตัวแต่ละครั้ง", 2, 4),
+        quizItem("สังเกตผลรวมหลังการแตกตัวแต่ละครั้ง", 3, 2),
+        quizItem("สังเกตผลรวมหลังการแตกตัวแต่ละครั้ง", 3, 3),
+        quizItem("สร้างลำดับจำนวนจากวงในออกสู่วงนอก", 2, 3),
+        quizItem("สร้างลำดับจำนวนจากวงในออกสู่วงนอก", 3, 3),
+        quizItem("คูณฐานซ้ำตามจำนวนเลขชี้กำลัง", 2, 4),
+        quizItem("คูณฐานซ้ำตามจำนวนเลขชี้กำลัง", 3, 3),
+        quizItem("ดูภาพแทนการคูณฐานซ้ำ", 2, 3),
+        quizItem("ดูภาพแทนการคูณฐานซ้ำ", 2, 4)
+      ];
+
+      function quizItem(instruction, base, exponent) {
+        const superscripts = { 0: "⁰", 1: "¹", 2: "²", 3: "³", 4: "⁴" };
+        const expression = `${base}${superscripts[exponent] || exponent} = ?`;
+        return {
+          question: instruction ? `${expression} · ${instruction}` : expression,
+          data: [{ key: "base", value: base }, { key: "exponent", value: exponent }]
+        };
+      }
+
+      PuzzleLesson.define({
+        id: "ep10-lesson1-power-rings",
+        version: "2.1.1",
+        meta: {
+          worldType: "3d-world-space",
+          lessonId: "ep10-lesson1-power-rings",
+          title: "ความหมายของเลขยกกำลัง ฐานและเลขชี้กำลัง",
+          category: "คณิตศาสตร์",
+          subcategory: "เลขยกกำลัง",
+          description: "กดสไลม์จุดเริ่มต้นให้แตกตัวตามจำนวนฐาน แล้วติดตามจำนวนสไลม์รุ่นล่าสุดบนวงแหวนของเลขชี้กำลังแต่ละขั้น",
+          keyResult: "ผู้เรียนเชื่อมโยงฐานกับจำนวนสไลม์ที่แตกออก และเชื่อมโยงเลขชี้กำลังกับจำนวนครั้งที่ทำซ้ำได้",
+          background: "green",
+          camera: { fov: 43, startYaw: 7, startPitch: 61, startDistance: 34.5, minDistance: 15, maxDistance: 42, minPitch: 36, maxPitch: 78, target: [0, .25, 0] },
+          welcomeMessage: ["สไลม์สีชมพูตรงกลางคือจุดเริ่มต้น", "กดหนึ่งครั้ง คือเพิ่มเลขชี้กำลังหนึ่งขั้น", "สไลม์แม่จะยุบตัวแล้วเด้งสไลม์ตัวเล็กออกมาตามจำนวนฐาน"],
+          tooltip: "กดสไลม์สีชมพูตรงกลางเพื่อเพิ่มเลขชี้กำลังทีละ 1",
+          defaultValue: { base: 3, exponent: 3, animationSpeed: "normal", showConnections: "on" },
+          editSchema: [
+            { key: "base", name: "เลขฐาน", type: "slider", option: [2, 3], step: 1, help: "จำนวนสไลม์ใหม่ที่แต่ละตัวแตกออกเมื่อทำซ้ำหนึ่งครั้ง" },
+            { key: "exponent", name: "เลขชี้กำลัง", type: "slider", option: [1, 4], step: 1, help: "จำนวนครั้งที่ต้องการทำซ้ำ ปรับได้ตั้งแต่ 1 ถึง 4" },
+            { key: "animationSpeed", name: "ความเร็ว Animation", type: "dropdown", option: [{ value: "slow", label: "ช้า" }, { value: "normal", label: "ปกติ" }] },
+            { key: "showConnections", name: "เส้นเชื่อม Parent–Child", type: "dropdown", option: [{ value: "on", label: "แสดง" }, { value: "off", label: "ซ่อน" }] }
+          ],
+          howto: [
+            { index: 0, title: "รู้จักจุดเริ่มต้น", type: "sequence", desc: "สไลม์ตัวใหญ่ตรงกลางมีค่าเริ่มต้นเท่ากับ 1", option: { header: "เริ่มจากหนึ่ง", message: "สไลม์สีชมพูอยู่กลางวงเสมอ และยังไม่ถือว่าเพิ่มเลขชี้กำลัง", type: "instruction" } },
+            { index: 1, title: "ฐานบอกจำนวนที่แยก", type: "sequence", desc: "ดูสไลม์กลางแตกตัวตามฐานหนึ่งครั้ง แล้วสังเกตสไลม์รุ่นแรกบนวงยกกำลัง 1", option: { header: "ฐานทำงานหนึ่งครั้ง", message: "ฐาน 3 หมายถึงหนึ่งตัวแตกออกเป็นสไลม์ใหม่ 3 ตัว", type: "instruction" } },
+            { index: 2, title: "ลองสร้างยกกำลัง 2", type: "sequence", desc: "กดสไลม์กลาง แล้วสไลม์รุ่นล่าสุดทุกตัวจะแตกพร้อมกัน", option: { header: "กดสไลม์กลาง", message: "สังเกตตัวแม่ยุบและเด้งก่อน แล้วเส้นสีเดียวกับตัวแม่จะเชื่อมไปหาตัวลูก", type: "hint" } },
+            { index: 3, title: "ลองสร้างยกกำลัง 3", type: "sequence", desc: "ทำซ้ำอีกครั้งเพื่อเห็นการคูณฐานซ้ำสามครั้ง", option: { header: "เพิ่มเลขชี้กำลังอีกหนึ่ง", message: "สไลม์สีใหม่และขนาดเล็กลง คือรุ่นล่าสุด", type: "hint" } },
+            { index: 4, title: "อ่านวงแหวนยกกำลัง", type: "sequence", desc: "แต่ละวงแทนเลขชี้กำลังหนึ่งขั้น เส้นเชื่อมบอกว่าลูกใหม่มาจากลูกใด", option: { header: "อ่านจากกลางออกไป", message: "วงที่ 1 คือฐานยกกำลัง 1 และวงที่ 4 คือฐานยกกำลัง 4", type: "instruction" } },
+            { index: 5, title: "ทดลองด้วยตนเอง", type: "freestyle", desc: "สลับเป้าหมาย แล้วกดสไลม์กลางเพิ่มเลขชี้กำลังทีละ 1 ได้อย่างอิสระ", option: { header: "สร้างรูปแบบของคุณ", message: "ลองคาดเดาผลรวมก่อนเพิ่มเลขชี้กำลังแต่ละขั้น", type: "hint" } }
+          ],
+          quiz
+        },
+
+        mount(context) {
+          this.context = context;
+          this.timers = [];
+          this.generationHandles = [];
+          this.generationBallHandles = [];
+          this.generationConnectorHandles = [];
+          this.generationPositions = [];
+          this.slimeActors = [];
+          this.round = 0;
+          this.splitting = false;
+          this.labStep = 0;
+        },
+
+        async reset({ values, mode, question }) {
+          this.stopSlimeAnimation();
+          this.clearTimers();
+          this.removeGenerations();
+          this.slimeActors = [];
+          this.mode = mode;
+          this.question = question || null;
+          this.base = this.clampInt(values.base, 2, 3);
+          this.exponent = this.clampInt(values.exponent, 1, this.maxExponent(this.base));
+          this.animationSpeed = values.animationSpeed === "slow" ? "slow" : "normal";
+          this.showConnections = values.showConnections !== "off";
+          this.round = 0;
+          this.splitting = false;
+          this.labStep = 0;
+          this.pinnedPowerRound = 0;
+          this.powerLabelToken = 0;
+          this.quizAnswered = false;
+          this.generationConnectorHandles = [];
+          this.removeArena();
+          this.ringHandles = [];
+          this.ringLabels = [];
+          this.createArena();
+          this.createRoot();
+          this.startSlimeAnimation();
+          this.createControls();
+          this.updateRootValue();
+          if (mode === "student-quiz") this.setupQuiz(values);
+          else {
+            this.setRootInteractive(false);
+            this.controls.hide();
+            this.updateLessonUi();
+          }
+        },
+
+        createArena() {
+          for (let round = 1; round <= 4; round++) {
+            this.ringHandles[round] = this.context.world.addTargetFocus({
+              position: [0, this.roundY(round), 0],
+              radius: this.roundRadius(round),
+              color: "#ffffff",
+              opacity: .42,
+              animate: false
+            });
+          }
+          for (let round = 1; round <= 4; round++) {
+            const angle = -32 * Math.PI / 180;
+            const radius = this.roundRadius(round);
+            const label = this.context.ui.gizmo.at([
+              Math.cos(angle) * radius,
+              this.roundY(round) + .18,
+              Math.sin(angle) * radius
+            ], {
+              id: `power-ring-label-${round}`,
+              scope: "scene",
+              type: "badge",
+              text: this.ringLabelText(round),
+              placement: "right",
+              gap: 7,
+              offset: round === 4 ? [8, -38] : [0, 0],
+              clamp: true
+            });
+            label.element.style.setProperty("--gui-gizmo-bg", ROUND_COLORS[round]);
+            label.element.style.setProperty("--gui-gizmo-border", "rgba(255,255,255,.9)");
+            label.element.style.setProperty("--gui-gizmo-font-size", "12px");
+            label.element.style.pointerEvents = this.mode === "student-quiz" ? "none" : "auto";
+            label.element.style.cursor = this.mode === "student-quiz" ? "default" : "pointer";
+            label.element.style.transition = "opacity .18s ease, filter .18s ease, box-shadow .18s ease";
+            label.element.addEventListener("mouseenter", () => {
+              if (!this.pinnedPowerRound) this.setPowerRoundActive(round);
+            });
+            label.element.addEventListener("mouseleave", () => {
+              if (!this.pinnedPowerRound) this.setPowerRoundActive(0);
+            });
+            label.element.addEventListener("click", event => {
+              event.stopPropagation();
+              this.showPowerLabel(null, round);
+            });
+            this.ringLabels[round] = label;
+            this.setRingLabelEmphasis(round, false);
+          }
+          this.syncRingVisibility();
+        },
+
+        createRoot() {
+          this.rootBall = this.context.world.addGroup({
+            name: "power-root-slime", position: [0, this.roundY(0), 0], clickable: false, objectiveAction: true,
+            hitArea: [3.35, 3.35, 3.35], hitAreaOffset: [0, .12, 0], hoverMessage: "สไลม์กลาง — กดเพื่อเพิ่มเลขชี้กำลัง",
+            onClick: () => this.splitNextRound("root"),
+            parts: this.slimeParts(ROUND_SIZES[0], COLORS.root, true)
+          });
+          this.generationPositions[0] = [{ x: 0, y: this.roundY(0), z: 0 }];
+          this.generationBallHandles[0] = [this.rootBall];
+          this.registerSlimeActor(this.rootBall, ROUND_SIZES[0], true);
+          this.valueGizmo = this.context.ui.gizmo.attach(this.rootBall, { id: "power-root-total", scope: "scene", type: "badge", text: "ผลรวม 1", placement: "top", worldOffset: [0, 1.7, 0], gap: 8, tone: "primary" });
+        },
+
+        registerSlimeActor(handle, size, hero = false) {
+          const visual = handle?.object3D?.userData?.visualRoot;
+          if (!visual) return;
+          const eyes = visual.children.filter(child => child?.material?.color?.getHexString?.() === "30233f");
+          this.slimeActors.push({
+            handle, visual, eyes, size, hero,
+            phase: this.slimeActors.length * 1.19,
+            eyeBases: eyes.map(eye => ({ position: eye.position.clone(), scale: eye.scale.clone() }))
+          });
+        },
+
+        startSlimeAnimation() {
+          this.stopSlimeAnimation();
+          const startedAt = performance.now();
+          this.slimeAnimationTimer = setInterval(() => {
+            const elapsed = performance.now() - startedAt;
+            for (const actor of this.slimeActors || []) {
+              if (!actor.handle?.object3D?.parent) continue;
+              const wave = elapsed * .0018 + actor.phase;
+              const breath = Math.sin(wave) * (actor.hero ? .025 : .014);
+              const hopWave = Math.max(0, Math.sin(elapsed * .0032 + actor.phase));
+              const hop = actor.hero ? Math.pow(hopWave, 7) * .13 : 0;
+              actor.visual.position.y = hop;
+              actor.visual.scale.set(1 - breath * .42, 1 + breath + hop * .22, 1 - breath * .42);
+              const blinkTime = (elapsed + actor.phase * 510) % (actor.hero ? 3100 : 3900);
+              const blink = blinkTime < 115 || (actor.hero && blinkTime > 205 && blinkTime < 275) ? .12 : 1;
+              const lookX = Math.sin(elapsed * .00115 + actor.phase) * actor.size * .035;
+              actor.eyes.forEach((eye, index) => {
+                const base = actor.eyeBases[index];
+                eye.position.x = base.position.x + lookX;
+                eye.position.y = base.position.y;
+                eye.scale.set(base.scale.x, base.scale.y * blink, base.scale.z);
+              });
+            }
+          }, 70);
+        },
+
+        stopSlimeAnimation() {
+          clearInterval(this.slimeAnimationTimer);
+          this.slimeAnimationTimer = null;
+        },
+
+        slimeParts(size, color, hero = false) {
+          const skin = { roughness: .36, clearcoat: .4, clearcoatRoughness: .24, emissive: color, emissiveIntensity: .075 };
+          const parts = [
+            { shape: "sphere", position: [0, size * .02, 0], size: [size * 1.04, size * .86, size], color, material: skin }
+          ];
+          // ตัวเล็กรอบนอกสุดมีจำนวนมากและตาเล็กกว่าหนึ่งพิกเซล จึงลดชิ้นส่วนเพื่อรักษาเฟรมเรตมือถือ
+          if (size >= .62) {
+            parts.push(
+              { shape: "sphere", position: [size * -.19, size * .08, size * .475], size: [size * .115, size * .15, size * .075], color: "#30233f", material: { roughness: .3, clearcoat: .35 } },
+              { shape: "sphere", position: [size * .19, size * .08, size * .475], size: [size * .115, size * .15, size * .075], color: "#30233f", material: { roughness: .3, clearcoat: .35 } }
+            );
+          }
+          if (hero) {
+            // ฐานอ้วนแบนทำให้ตัวเอกมีทรงหยดสไลม์เด่นกว่ารุ่นลูก
+            parts.unshift({ shape: "sphere", position: [0, size * -.17, 0], size: [size * 1.1, size * .43, size * 1.03], color, material: skin });
+            parts.push(
+              { shape: "sphere", position: [size * -.28, size * -.04, size * .45], size: [size * .13, size * .07, size * .045], color: "#ffb2bd", material: { roughness: .5 } },
+              { shape: "sphere", position: [size * .28, size * -.04, size * .45], size: [size * .13, size * .07, size * .045], color: "#ffb2bd", material: { roughness: .5 } },
+              { shape: "sphere", position: [0, size * .45, 0], size: [size * .25, size * .2, size * .22], color, material: skin }
+            );
+          }
+          return parts;
+        },
+
+        createControls() {
+          this.controls = this.context.ui.control.show({
+            id: "power-ring-controls", scope: "scene", position: "bottom-right", tone: "primary", objectiveAction: false,
+            items: this.controlItems(false),
+            onAction: event => {
+              if (event.id === "split") {
+                if (this.mode === "student-quiz") this.context.objectiveAction();
+                this.splitNextRound("control");
+              }
+              if (event.id === "reset") this.resetDiagram();
+              if (event.id === "power") this.cycleExponent();
+            }
+          });
+        },
+
+        controlItems(full) {
+          if (this.mode === "student-quiz") {
+            return [
+              { id: "reset", label: "ล้างกระดาน", icon: "reset.svg", disabled: this.splitting || this.round === 0 },
+              { id: "split", label: "แตกตัว", icon: "next.svg", disabled: this.splitting || this.round >= 4 }
+            ];
+          }
+          const items = [{ id: "split", label: "ต่อไป", icon: "next.svg", disabled: this.splitting || this.round >= this.exponent }];
+          if (full) {
+            items.push({ id: "power", label: `เปลี่ยน : กำลัง ${this.exponent}`, icon: "question.svg", disabled: this.splitting });
+          }
+          if (full || this.mode === "student-quiz") items.push({ id: "reset", label: "เริ่มใหม่", icon: "reset.svg", disabled: this.splitting || this.round === 0 });
+          return items;
+        },
+
+        setControls(full, visible) {
+          this.controls.setItems(this.controlItems(full));
+          if (visible) this.controls.show(); else this.controls.hide();
+        },
+
+        setupQuiz(values) {
+          // วงทั้ง 4 เป็นเพียงสเกลอ้างอิง นักเรียนต้องแตกตัวจาก Root เอง
+          this.buildImmediately(0);
+          this.setRootInteractive(true);
+          this.setControls(false, true);
+          this.valueGizmo?.update({ text: "ผลรวม 1", tone: "primary" });
+          this.context.ui.question.show({ label: "ภารกิจเลขยกกำลัง", text: this.question?.question || `${this.expression()} = ? · กดแตกตัวตามจำนวนเลขชี้กำลัง`, tone: "primary" });
+          this.context.ui.console.set({ objective: "กดแตกตัวตามจำนวนเลขชี้กำลัง", title: `เริ่มจาก Root 1 ตัว · ${this.expression()}`, message: "กดสไลม์กลางหรือปุ่มแตกตัว และใช้ล้างกระดานเมื่อต้องการเริ่มนับใหม่", tone: "info" });
+        },
+
+        async onStep(index) {
+          if (this.mode === "student-quiz") return;
+          this.clearTimers();
+          this.labStep = index;
+          this.splitting = false;
+          this.setRootInteractive(false);
+          this.controls.hide();
+          if (index === 0) {
+            this.buildImmediately(0);
+            this.context.ui.question.show({ label: "จุดเริ่มต้น", text: `ผลรวมเริ่มต้น = 1 · เป้าหมาย ${this.expression()}`, tone: "primary" });
+            this.context.ui.console.set({ objective: "มองหาสไลม์ใหญ่สีชมพูตรงกลาง", title: `เริ่มจากหนึ่ง → เป้าหมาย ${this.expression()}`, message: `ฐาน ${this.base} ทำซ้ำทั้งหมด ${this.exponent} ครั้ง`, tone: "info" });
+          }
+          if (index === 1) {
+            this.buildImmediately(0);
+            this.context.ui.question.show({ label: "ฐาน", text: `ฐาน ${this.base} : หนึ่งตัวแตกเป็น ${this.base} ตัว`, tone: "primary" });
+            this.context.ui.console.set({ objective: "ดูการแยกตัวของยกกำลัง 1", title: `${this.base}⁰ → ${this.base}¹`, message: `สไลม์กลางกำลังแตกเป็นสไลม์สีส้ม ${this.base} ตัว`, tone: "info" });
+            this.delay(() => this.splitNextRound("demo"), 520);
+          }
+          if (index === 2) {
+            this.buildImmediately(Math.min(1, this.exponent));
+            this.context.ui.question.show({ label: "ยกกำลัง 2", text: `${this.base} × ${this.base} = ${this.base ** 2}`, tone: "primary" });
+            this.context.ui.console.set({ objective: "กดสไลม์กลางเพื่อเพิ่มเลขชี้กำลัง", title: "สไลม์รุ่นล่าสุดจะแตกพร้อมกัน", message: `ยกกำลังถัดไปมี ${this.base ** Math.min(2, this.exponent)} ตัว`, tone: "info" });
+            if (this.round < this.exponent) { this.setRootInteractive(true); this.setControls(false, true); }
+          }
+          if (index === 3) {
+            this.buildImmediately(Math.min(2, this.exponent));
+            const nextRound = Math.min(3, this.exponent);
+            this.context.ui.question.show({ label: `ยกกำลัง ${nextRound}`, text: `${this.base}${this.superscript(nextRound)} = ${this.base ** nextRound}`, tone: "primary" });
+            this.context.ui.console.set({ objective: this.round < this.exponent ? "กดสไลม์กลางเพิ่มเลขชี้กำลังอีกหนึ่ง" : "สังเกตผลรวมรุ่นล่าสุด", title: `ตอนนี้มี ${this.base ** this.round} ตัว`, message: "สีใหม่และขนาดที่เล็กลง หมายถึงสไลม์รุ่นล่าสุด", tone: "info" });
+            if (this.round < this.exponent) { this.setRootInteractive(true); this.setControls(false, true); }
+          }
+          if (index === 4) {
+            this.buildImmediately(this.exponent);
+            this.context.ui.question.show({ label: "อ่านแผนภาพ", text: `${this.expression()} = ${this.repeatedMultiplication()} = ${this.base ** this.exponent}`, tone: "primary" });
+            this.context.ui.console.set({ objective: "อ่านจากจุดเริ่มต้นออกไปทีละวง", title: `ถึงยกกำลัง ${this.exponent}`, message: `ลำดับจำนวนคือ ${this.historyText()}`, tone: "success" });
+          }
+          if (index === 5) {
+            this.buildImmediately(0);
+            this.setRootInteractive(true);
+            this.setControls(true, true);
+            this.context.ui.question.show({ label: "ทดลองอิสระ", text: `สร้าง ${this.expression()}`, tone: "primary" });
+            this.context.ui.console.set({ objective: `กดต่อไปให้ถึงยกกำลัง ${this.exponent}`, title: "คาดเดาผลรวมก่อนกด", message: `ฐาน ${this.base} · เป้าหมายยกกำลัง ${this.exponent}`, tone: "info" });
+          }
+        },
+
+        splitNextRound(source) {
+          const interactionLimit = this.mode === "student-quiz" ? 4 : this.exponent;
+          if (this.splitting || this.round >= interactionLimit) return;
+          this.splitting = true;
+          this.setRootInteractive(false);
+          const nextRound = this.round + 1;
+          const duration = this.animationSpeed === "slow" ? 1080 : 720;
+          const launchDelay = 430;
+          this.pulseParents(nextRound);
+          this.generationHandles.push(...this.createGeneration(nextRound, true, duration, launchDelay));
+          this.round = nextRound;
+          this.syncRingVisibility();
+          this.setControls(this.labStep === 5, this.controls.element.hidden !== true);
+          const parentCount = this.generationPositions[nextRound - 1]?.length || 1;
+          const stagger = Math.min((parentCount - 1) * (nextRound >= 4 ? 12 : 54), 280);
+          this.delay(() => {
+            this.updateRootValue();
+            this.updateLessonUi();
+          }, launchDelay + duration + stagger);
+          this.delay(() => {
+            this.splitting = false;
+            const reachedTarget = this.round === this.exponent;
+            const atInteractionLimit = this.round >= interactionLimit;
+            this.setRootInteractive(!atInteractionLimit && (this.mode === "student-quiz" || this.labStep === 2 || this.labStep === 3 || this.labStep === 5));
+            this.setControls(this.labStep === 5, this.controls.element.hidden !== true);
+            this.context.audio.play(reachedTarget ? "success" : "onDrop");
+            if (this.mode === "student-quiz" && reachedTarget) this.recordQuizAttempt(this.round, source);
+            else if (this.mode !== "student-quiz" && reachedTarget) this.context.ui.console.feedback(`ครบแล้ว! ${this.expression()} = ${this.base ** this.exponent}`, { tone: "success" });
+          }, launchDelay + duration + stagger + 360);
+        },
+
+        recordQuizAttempt(selectedRound, source) {
+          if (this.quizAnswered) return;
+          this.quizAnswered = true;
+          const correct = selectedRound === this.exponent;
+          this.context.quiz.answer(correct, { leftCount: `${this.base}${this.superscript(selectedRound)}`, operator: "=", rightCount: String(this.base ** this.exponent), base: this.base, expectedExponent: this.exponent, selectedRound, result: this.base ** selectedRound, source });
+        },
+
+        createGeneration(round, animate, duration = 720, launchDelay = 0) {
+          const parents = this.generationPositions[round - 1];
+          const count = this.base ** round;
+          const targets = [];
+          const handles = [];
+          const ballHandles = [];
+          const radius = this.roundRadius(round);
+          const clustered = count > 36;
+          for (let index = 0; index < count; index++) {
+            const parentIndex = Math.floor(index / this.base) % parents.length;
+            const childIndex = index % this.base;
+            const parent = parents[parentIndex];
+            const target = clustered
+              ? this.clusteredTarget(radius, parentIndex, parents.length, childIndex)
+              : this.radialTarget(radius, index, count, round);
+            targets.push(target);
+            // ใช้ Group เป็น interaction root เพื่อให้ position ถูกใช้เพียงครั้งเดียว
+            // (Primitive API รุ่นเก่ายังส่ง position ลง mesh ภายในด้วย จึงทำให้ระยะถูกคูณสอง)
+            let handle;
+            handle = this.context.world.addGroup({
+              name: `power-slime-r${round}-${index}`,
+              position: animate ? [parent.x, parent.y, parent.z] : [target.x, target.y, target.z],
+              clickable: this.mode !== "student-quiz",
+              objectiveAction: false,
+              selectionFeedback: false,
+              hoverMessage: `แตะสไลม์เพื่อดูยกกำลัง ${round}`,
+              hitArea: Array(3).fill(Math.max(1.05, ROUND_SIZES[round] * 1.55)),
+              onClick: () => this.showPowerLabel(handle, round),
+              parts: this.slimeParts(ROUND_SIZES[round], ROUND_COLORS[round])
+            });
+            // ยกเลิก spawn scale กลางของ World เพราะบทเรียนนี้มีจังหวะ split เฉพาะของตัวเอง
+            handle.stopAnimation();
+            handle.object3D.scale.setScalar(1);
+            this.registerSlimeActor(handle, ROUND_SIZES[round], false);
+            if (animate) {
+              handle.object3D.scale.set(.001, .001, .001);
+              // สไลม์ลูกของตัวแม่เดียวกันออกพร้อมกัน แล้วไล่เป็นคลื่นตามตัวแม่
+              const moveDelay = Math.min(parentIndex * (round >= 4 ? 12 : 54), 280);
+              this.delay(() => {
+                // แบนออกตอนดีดตัว ก่อนคืนรูปกลางอากาศ
+                handle.object3D.scale.set(.9, .42, .9);
+                handle.animateTo(target.x, target.y, target.z, { duration, arcHeight: 1.05 + round * .12 });
+                this.delay(() => handle.object3D.scale.set(.82, 1.18, .82), Math.max(90, duration * .24));
+                this.delay(() => handle.object3D.scale.set(1, 1, 1), Math.max(180, duration * .52));
+              }, launchDelay + moveDelay);
+              this.delay(() => {
+                // ลงพื้นแล้วยุบ–พองหนึ่งครั้งเหมือนสไลม์นิ่ม
+                handle.object3D.scale.set(1.18, .72, 1.18);
+                this.delay(() => handle.object3D.scale.set(.93, 1.12, .93), 105);
+                this.delay(() => handle.object3D.scale.set(1, 1, 1), 210);
+              }, launchDelay + moveDelay + duration);
+              // เส้นเกิดหลังบอลลูกลงพื้นแล้ว จึงเห็นลำดับ "บอลตก → เส้นเชื่อมงอก" ชัดเจน
+              if (this.showConnections && (!clustered || childIndex === 0)) {
+                const lineTarget = clustered ? this.clusterCenter(radius, parentIndex, parents.length) : target;
+                this.delay(() => {
+                  const connector = this.createConnection(parent, lineTarget, round, index);
+                  this.generationHandles.push(connector);
+                  (this.generationConnectorHandles[round] ||= []).push(connector);
+                }, launchDelay + moveDelay + duration + 150);
+              }
+            } else if (this.showConnections && (!clustered || childIndex === 0)) {
+              const connector = this.createConnection(parent, clustered ? this.clusterCenter(radius, parentIndex, parents.length) : target, round, index);
+              handles.push(connector);
+              (this.generationConnectorHandles[round] ||= []).push(connector);
+            }
+            handles.push(handle);
+            ballHandles.push(handle);
+          }
+          this.generationBallHandles[round] = ballHandles;
+          this.generationPositions[round] = targets;
+          return handles;
+        },
+
+        radialTarget(radius, index, count, round) {
+          const angle = -Math.PI / 2 + (index + .5) / count * Math.PI * 2;
+          return { x: Math.cos(angle) * radius, y: this.roundY(round), z: Math.sin(angle) * radius };
+        },
+
+        clusterCenter(radius, parentIndex, parentCount) {
+          const angle = -Math.PI / 2 + (parentIndex + .5) / parentCount * Math.PI * 2;
+          return { x: Math.cos(angle) * radius, y: this.roundY(4), z: Math.sin(angle) * radius };
+        },
+
+        clusteredTarget(radius, parentIndex, parentCount, childIndex) {
+          const center = this.clusterCenter(radius, parentIndex, parentCount);
+          const angle = -Math.PI / 2 + (parentIndex + .5) / parentCount * Math.PI * 2;
+          const offsets = [[-.38, -.2], [.38, -.2], [0, .4]];
+          const [tangentOffset, radialOffset] = offsets[childIndex] || [0, 0];
+          return {
+            x: center.x - Math.sin(angle) * tangentOffset + Math.cos(angle) * radialOffset,
+            y: center.y,
+            z: center.z + Math.cos(angle) * tangentOffset + Math.sin(angle) * radialOffset
+          };
+        },
+
+        createConnection(parent, target, round, index) {
+          return this.context.world.addConnector({
+            name: `power-line-r${round}-${index}`,
+            from: [parent.x, parent.y, parent.z],
+            to: [target.x, target.y, target.z],
+            color: ROUND_COLORS[Math.max(0, round - 1)],
+            thickness: .14,
+            opacity: 1
+          });
+        },
+
+        buildImmediately(targetRound) {
+          this.clearTimers();
+          this.removeGenerations();
+          this.round = 0;
+          this.generationPositions = [[{ x: 0, y: this.roundY(0), z: 0 }]];
+          for (let round = 1; round <= targetRound; round++) this.generationHandles.push(...this.createGeneration(round, false));
+          this.round = targetRound;
+          this.syncRingVisibility();
+          this.updateRootValue();
+        },
+
+        pulseParents(round) {
+          const parents = this.generationBallHandles?.[round - 1] || [];
+          for (const handle of parents) {
+            handle.playCommit();
+            handle.object3D.scale.set(1.16, .72, 1.16);
+          }
+          this.delay(() => parents.forEach(handle => handle.object3D.scale.set(.88, 1.22, .88)), 145);
+          this.delay(() => parents.forEach(handle => handle.object3D.scale.set(1.07, .94, 1.07)), 270);
+          this.delay(() => parents.forEach(handle => handle.object3D.scale.set(1, 1, 1)), 400);
+        },
+
+        updateRootValue() {
+          const value = this.base ** this.round;
+          this.valueGizmo?.update({ text: `ผลรวม ${value}`, tone: this.round >= this.exponent ? "success" : "primary" });
+        },
+
+        updateLessonUi() {
+          if (!this.context || this.mode === "student-quiz" && !this.question) return;
+          const value = this.base ** this.round;
+          const remaining = Math.max(0, this.exponent - this.round);
+          if (this.mode === "student-quiz") {
+            this.context.ui.console.set({ objective: "กดแตกตัวตามเลขชี้กำลังในโจทย์", title: `แตกตัวแล้ว ${this.round} ครั้ง · ผลรวม ${value} ตัว`, message: "กดสไลม์ Root หรือปุ่มแตกตัว · กดล้างกระดานเพื่อเริ่มใหม่", tone: "info" });
+            return;
+          }
+          this.context.ui.question.update({ text: `${this.expression()} · ยกกำลัง ${this.round}/${this.exponent} · รุ่นล่าสุด ${value} ตัว` });
+          this.context.ui.console.set({ objective: remaining ? `กดต่อไปอีก ${remaining} ครั้ง` : "ถึงเลขชี้กำลังแล้ว", title: `ผลรวมรุ่นล่าสุด = ${value}`, message: `ลำดับ ${this.historyText()}`, tone: remaining ? "info" : "success" });
+        },
+
+        resetDiagram() {
+          if (this.splitting) return;
+          this.buildImmediately(0);
+          this.setRootInteractive(true);
+          this.setControls(this.labStep === 5, true);
+          this.updateLessonUi();
+        },
+
+        cycleExponent() {
+          if (this.splitting) return;
+          const maximum = this.maxExponent(this.base);
+          this.exponent = this.exponent >= maximum ? 1 : this.exponent + 1;
+          this.removeArena();
+          this.ringHandles = [];
+          this.ringLabels = [];
+          this.createArena();
+          this.buildImmediately(0);
+          this.syncRingVisibility();
+          this.setControls(true, true);
+          this.updateLessonUi();
+        },
+
+        setRootInteractive(value) { this.rootBall?.setClickable(Boolean(value)); },
+        syncRingVisibility() {
+          for (let round = 1; round <= 4; round++) {
+            const visible = this.mode === "student-quiz" || round <= this.exponent;
+            this.ringHandles?.[round]?.setVisible(visible);
+            if (visible) this.ringLabels?.[round]?.show?.();
+            else this.ringLabels?.[round]?.hide?.();
+          }
+        },
+        ringLabelText(round) {
+          return this.mode === "student-quiz"
+            ? `ยกกำลัง ${round}`
+            : `ยกกำลัง ${round} · ${this.base}${this.superscript(round)} = ${this.base ** round}`;
+        },
+        setRingLabelEmphasis(round, emphasized) {
+          const element = this.ringLabels?.[round]?.element;
+          if (!element) return;
+          element.style.opacity = emphasized ? "1" : ".28";
+          element.style.filter = emphasized ? "saturate(1.12) brightness(1.08)" : "saturate(.68) brightness(.96)";
+          element.style.boxShadow = emphasized
+            ? `0 8px 19px ${ROUND_COLORS[round]}77, inset 0 1px rgba(255,255,255,.34)`
+            : "0 4px 10px rgba(33,48,75,.1), inset 0 1px rgba(255,255,255,.16)";
+        },
+        setPowerRoundActive(round = 0) {
+          for (let index = 1; index <= 4; index++) {
+            const active = index === round;
+            const ringOpacity = round ? (active ? .96 : .14) : .42;
+            this.ringHandles?.[index]?.object3D?.traverse?.(child => {
+              if (child.material?.opacity != null) child.material.opacity = ringOpacity;
+              if (child.material?.color) child.material.color.set(active ? ROUND_COLORS[index] : "#ffffff");
+            });
+            for (const ball of this.generationBallHandles?.[index] || []) {
+              ball.setScale(active ? 1.12 : 1);
+              ball.object3D?.traverse?.(child => {
+                if (child.material?.emissiveIntensity != null) child.material.emissiveIntensity = active ? .3 : .075;
+              });
+            }
+            for (const connector of this.generationConnectorHandles?.[index] || []) {
+              connector.object3D?.traverse?.(child => {
+                if (child.material?.opacity != null) child.material.opacity = round ? (active ? 1 : .18) : 1;
+              });
+            }
+            this.setRingLabelEmphasis(index, active);
+          }
+        },
+        showPowerLabel(_target, round) {
+          const token = ++this.powerLabelToken;
+          this.pinnedPowerRound = round;
+          this.setPowerRoundActive(round);
+          const text = this.ringLabels?.[round]?.element?.querySelector("span");
+          text?.animate?.([
+            { transform: "translateY(5px) scale(.9)", opacity: .45 },
+            { transform: "translateY(-4px) scale(1.08)", opacity: 1, offset: .62 },
+            { transform: "translateY(0) scale(1)", opacity: 1 }
+          ], { duration: 430, easing: "cubic-bezier(.2,.85,.25,1)" });
+          this.delay(() => {
+            if (this.powerLabelToken !== token) return;
+            this.pinnedPowerRound = 0;
+            this.setPowerRoundActive(0);
+          }, 3600);
+        },
+        roundRadius(round) {
+          const index = this.clampInt(round, 1, 4);
+          const maximumRadius = ROUND_RADII[4];
+          // ขยายวงที่ใช้งานตามสัดส่วนจนวงสุดท้ายแตะระยะสูงสุด โดยยกกำลัง 4 ยังได้ค่าเดิมทุกวง
+          const layoutExponent = this.mode === "student-quiz" ? 4 : this.exponent;
+          if (layoutExponent <= 1) return index === 1 ? 7.2 : maximumRadius;
+          const scale = maximumRadius / ROUND_RADII[layoutExponent];
+          return Math.min(maximumRadius, ROUND_RADII[index] * scale);
+        },
+        removeArena() {
+          for (const handle of this.ringHandles || []) handle?.remove?.();
+          for (const label of this.ringLabels || []) label?.remove?.();
+        },
+        removeGenerations() { this.pinnedPowerRound = 0; this.powerLabelToken++; this.setPowerRoundActive(0); for (const handle of this.generationHandles || []) handle?.remove?.(); this.generationHandles = []; this.generationPositions = []; this.generationBallHandles = this.rootBall ? [[this.rootBall]] : []; this.generationConnectorHandles = []; this.slimeActors = (this.slimeActors || []).filter(actor => actor.hero); },
+        historyText() { return Array.from({ length: this.round + 1 }, (_, index) => this.base ** index).join(" → "); },
+        repeatedMultiplication() { return Array.from({ length: this.exponent }, () => this.base).join(" × "); },
+        expression() { return `${this.base}${this.superscript(this.exponent)}`; },
+        maxExponent() { return 4; },
+        roundY(round) { return ROUND_SIZES[round] * .5 + .06; },
+        superscript(value) { const digits = { "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴" }; return String(value).split("").map(character => digits[character] || character).join(""); },
+        clampInt(value, minimum, maximum) { return Math.min(maximum, Math.max(minimum, Math.round(Number(value) || minimum))); },
+        delay(callback, milliseconds) { const timer = setTimeout(() => { this.timers = this.timers.filter(value => value !== timer); callback(); }, milliseconds); this.timers.push(timer); return timer; },
+        clearTimers() { for (const timer of this.timers || []) clearTimeout(timer); this.timers = []; },
+        dispose() { this.stopSlimeAnimation(); this.clearTimers(); this.removeGenerations(); this.removeArena(); this.controls?.remove?.(); this.controls = null; this.valueGizmo?.remove?.(); this.valueGizmo = null; this.ringHandles = []; this.ringLabels = []; this.slimeActors = []; this.rootBall = null; this.context = null; }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-# Lesson Contract 1.1.0
+# Lesson Contract 1.2.1
 
 เอกสารนี้กำหนดรูปแบบบังคับของ `lesson_N.html` สำหรับ World Runtime
 
@@ -36,7 +36,11 @@ Lesson Package เป็น HTML UTF-8 ไฟล์เดียวเพื่�
 - ไม่มี network request, dynamic import, CDN, npm หรือ `THREE` โดยตรง
 - ใช้เฉพาะ API ที่ประกาศใน `sdk/LESSON_API_REFERENCE.md`
 - ออกแบบฉากจากเนื้อหาของบทเรียน ไม่บังคับใช้โครงซ้าย/ขวาหรือกล่องจาก Lesson 0
-- ใช้เฉพาะ Standard Asset ID จาก `sdk/asset-library.catalog.json` ห้าม custom model relative path, `world.addModel()` และ `type: "model"`
+- ใช้เฉพาะ Standard Asset ID จาก `sdk/asset-library.catalog.json` ห้าม custom model relative path, `world.addModel()` และ `type: "model"` โดยตรง แต่ Standard Asset ID อาจชี้ไปยังโมเดลที่ระบบกลางดูแลได้
+- GUI ใช้ Service กลาง `question`, `console`, `topMessage`, `choice`, `gizmo`, `feedback`, `dialog`, `control`, `hint`, `busy` ตามหน้าที่ ห้ามสร้าง UI เหล่านี้ซ้ำด้วย DOM/CSS, Canvas, Sprite, primitive หรือ group ของบทเรียน
+- ก่อนสร้าง UI ทุกชิ้นต้องเลือกชื่อ, ownership และ API ตาม `sdk/UI_CATALOG.md` และตัวอย่างใน `sdk/GUI_SERVICE_REFERENCE.md` ก่อนเสมอ ถ้าไม่มี capability จริงให้รายงานสิ่งที่ขาด ห้ามสมมติ API หรือทำ UI one-off ทดแทน
+- `world.addCallout()` สงวนไว้สำหรับ GUI ล็อกเข้าหาจอที่ชี้พื้นที่ด้วย leader line/ring ในฉาก ไม่ใช่ Gizmo และบทเรียนห้ามสร้าง DOM/Screen-space overlay/Sprite ทดแทนเอง
+- เครื่องหมายเปรียบเทียบและคำนวณ `= ≠ < > ≤ ≥ + - × ÷` ใช้ `world.addOperatorSign()` เพื่อรักษา polygon และฐานมาตรฐาน
 
 ## 2. Lesson Definition
 
@@ -72,6 +76,9 @@ Runtime เป็นเจ้าของการ clear world ก่อน rese
 meta: {
   worldType: "3d-world-space",
   lessonId: "lesson-unique-id",
+  title: "ชื่อบทเรียน",
+  category: "ชื่อวิชา",
+  subcategory: "ชื่อหัวข้อย่อย",
   description: "คำอธิบายสั้น",
   keyResult: "ผลลัพธ์การเรียนรู้",
   background: "green",
@@ -86,7 +93,9 @@ meta: {
 ```
 
 - `id` และ `meta.lessonId` ต้องตรงกัน
+- `meta.title`, `meta.category` และ `meta.subcategory` ต้องเป็นข้อความที่ไม่ว่าง เพื่อเป็นค่าแสดงผลสำรองของบทเรียน
 - `worldType` สำหรับบทเรียนนี้ต้องเป็น `3d-world-space`
+- `background` ใช้ค่า `"green"` เท่านั้น ฉากเป็นระบบกลางและบทเรียนไม่กำหนดสี Grid เอง
 - key ใน `defaultValue`, `editSchema`, quiz `data` และ logic ใน reset ต้องตรงกัน
 - Teacher Tools ทุก field ต้องถูกใช้จริง ห้ามมี control ที่แก้แล้วไม่เกิดผล
 - `camera.target` ใช้จัด pivot/framing ของบทเรียน และต้องทดสอบบนจอแนวตั้ง
@@ -98,7 +107,7 @@ meta: {
 ```js
 { key: "count", name: "จำนวน", type: "slider", option: [1, 10], step: 1 }
 { key: "side", name: "ฝั่ง", type: "dropdown", option: ["left", "right"] }
-{ key: "operator", name: "เครื่องหมาย", type: "dropdown", option: ["<", ">", "="] }
+{ key: "operator", name: "เครื่องหมาย", type: "dropdown", option: ["=", "≠", "<", ">", "≤", "≥"] }
 ```
 
 ### howto
@@ -136,9 +145,10 @@ quiz: [
 
 - เริ่มแต่ละข้อด้วย state ใหม่และ interactive ได้ทันที
 - การลาก object จะนับ objective action โดย runtime อัตโนมัติ
-- action ชนิดอื่นต้องเรียก `context.objectiveAction()` เมื่อผู้เรียนลงมือครั้งแรก
-- ทุกครั้งที่ state คำตอบเปลี่ยน ให้เรียก `context.quiz.answer(correct, details)`
-- ปุ่มต่อไปต้องเปิดหลัง objective action ครั้งแรก ไม่ขึ้นกับถูกหรือผิด
+- ทุกครั้งที่ state คำตอบเปลี่ยนจากการลงมือของผู้เรียน ให้เรียก `context.quiz.answer(correct, details)`; Runtime จะบันทึกคำตอบและเปิดปุ่มไปต่อให้อัตโนมัติ ไม่ว่าคำตอบจะถูกหรือผิด
+- ห้ามเรียก `context.quiz.answer(...)` ภายใน `reset()` หรือ helper ที่ `reset()` เรียก เพราะยังไม่มีการลงมือจากผู้เรียน และ Runtime จะไม่รับคำตอบระหว่างเตรียมข้อ
+- ใช้ `context.objectiveAction()` เฉพาะ action ที่ตั้งใจให้ไปต่อได้แต่ยังไม่เปลี่ยน state คำตอบ เช่น invalid drop หรือการกดข้ามตามรูปแบบกิจกรรม
+- เส้นทาง `ตอบ → ต่อไป → ส่งคำตอบ → ดูผล → ปิดบทเรียน` เป็น System-owned flow ที่ทุกบทเรียนต้องใช้งานได้ครบ ห้ามซ่อน แทนที่ หรือผูกปุ่มไปต่อไว้กับคำตอบที่ถูกเท่านั้น
 - ห้ามเฉลยหรือแสดง success/fail ระหว่างกำลังทำ Quiz
 - ตรวจ predicate จริง เช่น `< 4` ต้องยอมรับทุกค่าที่น้อยกว่า 4 ไม่ใช่บังคับ sample answer ค่าเดียว
 - ถ้ามีหลาย object ให้ใช้ Map/slot allocation เพื่อป้องกันวัตถุซ้อน slot เดียวกัน และคืน slot เมื่อลากออก
@@ -168,6 +178,10 @@ false                              // เหมือน accepted: false
 
 ## 7. Output ของ AI
 
-AI ต้องตอบชื่อไฟล์หนึ่งบรรทัดและ HTML code block หนึ่ง blockเท่านั้น ห้ามส่ง runtime patch, custom asset หรือไฟล์เสริม หาก API/Standard Library ไม่รองรับสิ่งที่ขอ ให้รายงาน capability หรือ Asset ID ที่ต้องให้ทีม Dev เพิ่ม แทนการประดิษฐ์ API/path
+AI ต้องส่ง HTML ฉบับเต็มหนึ่งไฟล์ หากสร้างไฟล์ไม่ได้ให้ส่งชื่อไฟล์และ HTML code block หนึ่ง block พร้อมรายงานผลตรวจสั้นแยกจากโค้ดตาม README ใช้ทั้ง CREATE และ REPAIR ห้ามส่ง runtime patch, custom asset หรือไฟล์เสริมสำหรับงาน lesson-only หาก API/Standard Library ไม่รองรับสิ่งที่ขอ ให้รายงาน capability หรือ Asset ID ที่ต้องให้ทีม Dev เพิ่ม แทนการประดิษฐ์ API/path
 
-ก่อนส่งต้องเปรียบเทียบกับ `LESSON_OUTPUT_TEMPLATE.html`, `lesson0.html` และผ่าน `validator/validate-lesson.mjs`
+ก่อนส่งต้องเปรียบเทียบกับ `LESSON_OUTPUT_TEMPLATE.html`, `Project/interactive/chapters/lesson0.html` และผ่าน `validator/validate-lesson.mjs`
+
+
+
+

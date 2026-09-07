@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>หอคอยเลขชี้กำลัง</title>
+</head>
+<body>
+  <script data-lesson-app>
+    (() => {
+      const OPERATIONS = ["multiply", "divide", "powerOfPower"];
+      const COLORS = { 
+        left: "#c9cdd4",
+        leftTop: "#f1f3f6",
+        right: "#c9cdd4",
+        rightTop: "#f1f3f6",
+        answer: "#72aed6",
+        answerTop: "#c0e1f7",
+        source: "#72aed6",
+        sourceTop: "#c0e1f7",
+        edge: "#6e8497",
+        ink: "#352e59"
+      };
+      const LAYOUT = {
+        leftX: -6.4,
+        rightX: -1,
+        answerX: 6.4,
+        panelZ: -.75,
+        stackOffsetX: 0,
+        stackZ: -2.25,
+        sourceZ: 3.5
+      };
+      const NESTED_LAYOUT = {
+        outerX: -5.25,
+        outerWidth: 7.6,
+        innerX: -6.25,
+        outerStackX: -2.72
+      };
+
+      const quiz = [
+        q("2² × 2³ = ? · สร้างกองเลขชี้กำลังคำตอบ", "multiply", 2, 2, 3),
+        q("3¹ × 3² = ? · สร้างกองเลขชี้กำลังคำตอบ", "multiply", 3, 1, 2),
+        q("4² × 4² = ? · สร้างกองเลขชี้กำลังคำตอบ", "multiply", 4, 2, 2),
+        q("5¹ × 5³ = ? · สร้างกองเลขชี้กำลังคำตอบ", "multiply", 5, 1, 3),
+        q("2³ × 2¹ = ? · สร้างกองเลขชี้กำลังคำตอบ", "multiply", 2, 3, 1),
+        q("3² × 3³ = ? · สร้างกองเลขชี้กำลังคำตอบ", "multiply", 3, 2, 3),
+        q("2⁵ ÷ 2² = ? · สร้างกองเลขชี้กำลังคำตอบ", "divide", 2, 5, 2),
+        q("3⁴ ÷ 3¹ = ? · สร้างกองเลขชี้กำลังคำตอบ", "divide", 3, 4, 1),
+        q("4⁵ ÷ 4³ = ? · สร้างกองเลขชี้กำลังคำตอบ", "divide", 4, 5, 3),
+        q("5³ ÷ 5² = ? · สร้างกองเลขชี้กำลังคำตอบ", "divide", 5, 3, 2),
+        q("2⁴ ÷ 2³ = ? · สร้างกองเลขชี้กำลังคำตอบ", "divide", 2, 4, 3),
+        q("3⁵ ÷ 3² = ? · สร้างกองเลขชี้กำลังคำตอบ", "divide", 3, 5, 2),
+        q("(2²)² = ? · สร้างกองเลขชี้กำลังคำตอบ", "powerOfPower", 2, 2, 2),
+        q("(2¹)³ = ? · สร้างกองเลขชี้กำลังคำตอบ", "powerOfPower", 2, 1, 3),
+        q("(3²)² = ? · สร้างกองเลขชี้กำลังคำตอบ", "powerOfPower", 3, 2, 2),
+        q("(4¹)³ = ? · สร้างกองเลขชี้กำลังคำตอบ", "powerOfPower", 4, 1, 3),
+        q("(2³)² = ? · สร้างกองเลขชี้กำลังคำตอบ", "powerOfPower", 2, 3, 2),
+        q("(3¹)⁴ = ? · สร้างกองเลขชี้กำลังคำตอบ", "powerOfPower", 3, 1, 4),
+        q("2² × 2² = ? · นับถาดคำตอบ", "multiply", 2, 2, 2),
+        q("3⁵ ÷ 3³ = ? · นับถาดคำตอบ", "divide", 3, 5, 3)
+      ];
+
+      function q(question, operation, base, leftExponent, rightExponent) {
+        return { question, data: [
+          { key: "operation", value: operation },
+          { key: "base", value: base },
+          { key: "leftExponent", value: leftExponent },
+          { key: "rightExponent", value: rightExponent }
+        ] };
+      }
+
+      PuzzleLesson.define({
+        id: "ep10-lesson2-exponent-stack",
+        version: "3.0.0",
+        meta: {
+          worldType: "3d-world-space",
+          lessonId: "ep10-lesson2-exponent-stack",
+          title: "สมบัติของเลขยกกำลัง คูณ หาร และยกกำลังซ้อน",
+          category: "คณิตศาสตร์",
+          subcategory: "เลขยกกำลัง",
+          description: "อ่านเลขชี้กำลังจากโจทย์ แล้วลากถาดไปซ้อนเป็นกองคำตอบเพื่อเห็นการบวก ลบ และคูณเลขชี้กำลัง",
+          keyResult: "ผู้เรียนหาค่าเลขชี้กำลังใหม่จากการคูณ หาร และยกกำลังซ้อนที่มีฐานเดียวกันได้",
+          background: "green",
+          camera: { fov: 43, startYaw: 2, startPitch: 55, startDistance: 23.5, minDistance: 12, maxDistance: 35, minPitch: 34, maxPitch: 76, target: [0, .45, -.25] },
+          welcomeMessage: [
+            "กองซ้ายและขวาคือเลขชี้กำลังในโจทย์",
+            "ดูว่าต้องบวก ลบ หรือคูณเลขชี้กำลัง",
+            "ลากถาดด้านหน้าไปซ้อนเป็นกองคำตอบ"
+          ],
+          tooltip: "ลากถาดเลขชี้กำลัง +1 จากด้านหน้าไปยังพื้นที่คำตอบ",
+          defaultValue: { operation: "multiply", base: 3, leftExponent: 2, rightExponent: 3, animationSpeed: "normal" },
+          editSchema: [
+            { key: "operation", name: "สมบัติที่ทดลอง", type: "dropdown", option: [
+              { value: "multiply", label: "คูณ — บวกเลขชี้กำลัง" },
+              { value: "divide", label: "หาร — ลบเลขชี้กำลัง" },
+              { value: "powerOfPower", label: "ยกกำลังซ้อน — คูณเลขชี้กำลัง" }
+            ] },
+            { key: "base", name: "ฐาน", type: "slider", option: [2, 5], step: 1 },
+            { key: "leftExponent", name: "เลขชี้กำลังตัวแรก", type: "slider", option: [1, 5], step: 1 },
+            { key: "rightExponent", name: "เลขชี้กำลังตัวที่สอง", type: "slider", option: [1, 4], step: 1 },
+            { key: "animationSpeed", name: "ความเร็ว Animation", type: "dropdown", option: [
+              { value: "slow", label: "ช้า" }, { value: "normal", label: "ปกติ" }
+            ] }
+          ],
+          howto: [
+            { index: 0, title: "อ่านกองเลขชี้กำลัง", type: "sequence", desc: "จำนวนถาดในกองซ้ายและขวาตรงกับเลขชี้กำลังในโจทย์" },
+            { index: 1, title: "คูณคือบวก", type: "sequence", desc: "เมื่อฐานเหมือนกัน ให้นำเลขชี้กำลังมาบวกกัน" },
+            { index: 2, title: "หารคือลบ", type: "sequence", desc: "เมื่อฐานเหมือนกัน ให้นำเลขชี้กำลังมาลบกัน" },
+            { index: 3, title: "ยกกำลังซ้อนคือคูณ", type: "sequence", desc: "นำเลขชี้กำลังด้านในคูณกับเลขชี้กำลังด้านนอก" },
+            { index: 4, title: "จำการกระทำสามแบบ", type: "sequence", desc: "คูณพจน์ใช้บวก หารพจน์ใช้ลบ และยกกำลังซ้อนใช้คูณเลขชี้กำลัง" },
+            { index: 5, title: "สร้างกองคำตอบ", type: "freestyle", desc: "ลากถาด +1 ไปซ้อนจนตัวเลขด้านบนตรงกับคำตอบ" }
+          ],
+          quiz
+        },
+
+        async mount(context) {
+          this.context = context;
+          this.handles = [];
+          this.uiHandles = [];
+          this.answerTrays = [];
+          this.timers = [];
+          await context.assets.preloadImages(["../../assets/icon/power-bolt.svg"]);
+        },
+
+        reset({ values, mode, question }) {
+          this.stopCharger();
+          this.stopSlimeIdle();
+          this.sourceGizmo?.remove();
+          this.sourceGizmo = null;
+          this.clearTimers();
+          this.handles = [];
+          this.uiHandles = [];
+          this.answerTrays = [];
+          this.slimeGroups = [];
+          this.answerSlimeGroup = [];
+          this.lastCelebratedCount = null;
+          this.mode = mode;
+          this.question = question || null;
+          this.values = this.normalizeValues(values);
+          this.activeOperation = this.values.operation;
+          this.answerCount = 0;
+          this.buildBoard(this.values, mode === "student-quiz");
+        },
+
+        normalizeValues(values = {}) {
+          const operation = OPERATIONS.includes(values.operation) ? values.operation : "multiply";
+          const base = this.clampInt(values.base, 2, 5);
+          let leftExponent = this.clampInt(values.leftExponent, 1, 5);
+          let rightExponent = this.clampInt(values.rightExponent, 1, 4);
+          // This activity represents exponents with physical trays. A zero-tray
+          // answer has no draggable representation, so division always keeps at
+          // least one tray in the answer (left exponent > right exponent).
+          if (operation === "divide") {
+            leftExponent = Math.max(2, leftExponent);
+            rightExponent = Math.min(leftExponent - 1, rightExponent);
+          }
+          if (operation === "multiply") rightExponent = Math.min(rightExponent, Math.max(1, 8 - leftExponent));
+          if (operation === "powerOfPower") rightExponent = Math.min(rightExponent, Math.max(1, Math.floor(8 / leftExponent)));
+          return { operation, base, leftExponent, rightExponent, animationSpeed: values.animationSpeed === "slow" ? "slow" : "normal" };
+        },
+
+        onStep(index) {
+          if (this.mode === "student-quiz") return;
+          this.clearActivity();
+          // Step 0 is also the destination after Teacher Lab applies edited values.
+          // Never replace those values with the old fixed multiplication example.
+          if (index === 0) return this.buildBoard({ ...this.values }, false);
+          if (index === 1) return this.buildDemo("multiply", 3, 2, 3);
+          if (index === 2) return this.buildDemo("divide", 3, 5, 2);
+          if (index === 3) return this.buildDemo("powerOfPower", 2, 2, 3);
+          if (index === 4) return this.buildRuleOverview();
+          this.buildBoard(this.values, true);
+        },
+
+        buildDemo(operation, base, leftExponent, rightExponent) {
+          const values = { ...this.values, operation, base, leftExponent, rightExponent };
+          this.buildBoard(values, false);
+          const expected = this.expectedAnswer(values);
+          for (let index = 0; index < expected; index += 1) {
+            this.delay(() => this.addAnswerTray(true), 420 + index * (this.values.animationSpeed === "slow" ? 430 : 260));
+          }
+          this.delay(() => this.showResult(true), 650 + expected * (this.values.animationSpeed === "slow" ? 430 : 260));
+        },
+
+        buildRuleOverview() {
+          this.add(this.context.world.addZone({ name: "rules-board", size: [13.5, .2, 6.1], position: [0, .1, -.65], color: "#fff1ce", opacity: .8 }));
+          const rules = [
+            { x: -4.3, sign: "+", title: "คูณพจน์", text: "บวกเลขชี้กำลัง", color: COLORS.left },
+            { x: 0, sign: "−", title: "หารพจน์", text: "ลบเลขชี้กำลัง", color: COLORS.source },
+            { x: 4.3, sign: "×", title: "ยกกำลังซ้อน", text: "คูณเลขชี้กำลัง", color: COLORS.right }
+          ];
+          rules.forEach((rule, index) => {
+            const zone = this.add(this.context.world.addZone({ name: `rule-${index}`, size: [3.6, .18, 3.8], position: [rule.x, .14, -.6], color: rule.color, opacity: .58 }));
+            const sign = this.add(this.context.world.addOperatorSign({ text: rule.sign === "−" ? "-" : rule.sign, position: [rule.x, .23, -.65], scale: [1.35, 1.35] }));
+            this.addGizmo(sign, rule.title, `rule-label-${index}`);
+            this.add(this.context.world.addWorldGui({ name: `rule-guide-${index}`, text: rule.text, position: [rule.x, .24, 1.15], size: [3.1, .85] }));
+          });
+          this.context.ui.question.show({ label: "สรุป", text: "คูณ → บวก · หาร → ลบ · ยกกำลังซ้อน → คูณ", tone: "primary" });
+          this.context.ui.console.set({ objective: "ดูเครื่องหมายที่ใช้กับเลขชี้กำลัง", title: "จำเพียงสามแบบ", message: "เมื่อเข้าสู่ขั้นทดลอง ให้ลากถาดตามจำนวนคำตอบ", tone: "info" });
+        },
+
+        buildBoard(values, interactive) {
+          this.activeValues = values;
+          this.activeOperation = values.operation;
+          this.expectedCount = this.expectedAnswer(values);
+          this.answerCount = 0;
+          this.answerTrays = [];
+          const nested = values.operation === "powerOfPower";
+
+          if (nested) {
+            // A power of a power is one complete group raised again. Nesting the
+            // inner panel makes that relationship visible without another symbol.
+            this.addFlatPanel("nested-outer-panel", NESTED_LAYOUT.outerX, -.38, NESTED_LAYOUT.outerWidth, 5.05, .04, "#c9c3e5", "#706590");
+            this.addFlatPanel("nested-inner-panel", NESTED_LAYOUT.innerX, .28, 4.15, 3.28, .16, "#f5f6f9", "#9aa8b5");
+          } else {
+            this.addFlatPanel("left-term-panel", LAYOUT.leftX, -.6, 3.9, 3.8);
+            this.addFlatPanel("right-term-panel", LAYOUT.rightX, -.6, 3.9, 3.8);
+          }
+          this.answerZone = this.add(this.context.world.addZone({ name: "answer-zone", size: [7.8, .2, 4.7], position: [LAYOUT.answerX, .11, -.35], color: "#dbe8f1", opacity: .65 }));
+          this.buildCharger();
+
+          if (nested) this.addBaseSlimes(values.base, NESTED_LAYOUT.innerX, "nested-base-slimes", .35, .32);
+          else {
+            this.addBaseSlimes(values.base, LAYOUT.leftX, "left-base-slimes");
+            this.addBaseSlimes(values.base, LAYOUT.rightX, "right-base-slimes");
+          }
+          this.answerSlimeGroup = this.addBaseSlimes(values.base, LAYOUT.answerX, "answer-base-slimes", .2);
+          this.startSlimeIdle();
+
+          const leftStackX = LAYOUT.leftX + LAYOUT.stackOffsetX;
+          const rightStackX = LAYOUT.rightX + LAYOUT.stackOffsetX;
+          const answerStackX = LAYOUT.answerX + LAYOUT.stackOffsetX;
+          if (nested) {
+            const inner = this.addStack(values.leftExponent, [NESTED_LAYOUT.innerX, .31, -1.0], COLORS.left, COLORS.leftTop, "nested-inner-exponent");
+            const outer = this.addStack(values.rightExponent, [NESTED_LAYOUT.outerStackX, .19, -2.03], COLORS.right, COLORS.rightTop, "nested-outer-exponent");
+            this.addNestedLayerGizmo(inner, values, "inner", "nested-inner-count", [0, 1.2, 0]);
+            this.addNestedLayerGizmo(outer, values, "outer", "nested-outer-count", [0, 1.2, 0]);
+            this.add(this.context.world.addWorldGui({ name: "nested-inner-expanded", text: this.factorText(values.base, values.leftExponent), position: [NESTED_LAYOUT.innerX, .34, 1.28], size: [3.7, .82], color: "#243d54", backgroundOpacity: 0, shadowBlur: 0, strokeWidth: 0 }));
+            const nestedPanelRight = NESTED_LAYOUT.outerX + NESTED_LAYOUT.outerWidth / 2;
+            const answerZoneLeft = LAYOUT.answerX - 7.8 / 2;
+            const nestedEqualsX = (nestedPanelRight + answerZoneLeft) / 2;
+            this.add(this.context.world.addOperatorSign({ text: "=", position: [nestedEqualsX, .22, -.75], scale: [1.0, 1.0] }));
+          } else {
+            const left = this.addStack(values.leftExponent, [leftStackX, .24, LAYOUT.stackZ], COLORS.left, COLORS.leftTop, "left-exponent");
+            const right = this.addStack(values.rightExponent, [rightStackX, .24, LAYOUT.stackZ], COLORS.right, COLORS.rightTop, "right-exponent");
+            this.addExponentGizmo(left, values.base, values.leftExponent, "left-count");
+            this.addExponentGizmo(right, values.base, values.rightExponent, "right-count");
+            if (values.operation === "multiply") this.add(this.context.world.addOperatorSign({ text: "×", position: [-3.7, .22, -.75], scale: [1.0, 1.0] }));
+            else this.add(this.context.world.addOperatorSign({ text: "÷", position: [-3.7, .22, -.75], scale: [1.0, 1.0] }));
+            this.add(this.context.world.addOperatorSign({ text: "=", position: [1.72, .22, -.75], scale: [1.0, 1.0] }));
+            this.add(this.context.world.addWorldGui({ name: "left-expanded", text: this.factorText(values.base, values.leftExponent), position: [LAYOUT.leftX, .23, .8], size: [3.5, .82], color: "#243d54", backgroundOpacity: 0, shadowBlur: 0, strokeWidth: 0 }));
+            this.add(this.context.world.addWorldGui({ name: "right-expanded", text: this.factorText(values.base, values.rightExponent), position: [LAYOUT.rightX, .23, .8], size: [3.5, .82], color: "#243d54", backgroundOpacity: 0, shadowBlur: 0, strokeWidth: 0 }));
+          }
+          const zeroExponentLab = this.expectedCount === 0 && this.mode !== "student-quiz";
+          this.answerFactors = this.add(this.context.world.addWorldGui({
+            name: "answer-expanded", text: zeroExponentLab ? "0 ถาด = ยกกำลัง 0" : "—", position: [LAYOUT.answerX, .23, 1.35],
+            // Match the question panel's text scale; allow fitting all eight factors without clipping.
+            size: [7.4, .82], mobileScale: 1, maxLines: 1, minFontSize: 24,
+            textPadding: 12, textPaddingY: 16, lineHeight: 1,
+            backgroundColor: "#41365e", backgroundOpacity: .3, borderOpacity: .6
+          }));
+
+          this.answerAnchor = this.add(this.context.world.addGroup({ name: "answer-stack-anchor", position: [answerStackX, .2, LAYOUT.stackZ], parts: [] }));
+          this.answerGizmo = this.addExponentGizmo(this.answerAnchor, values.base, 0, "answer-count", [0, 1.45, 0]);
+          if (zeroExponentLab) {
+            this.answerZone?.setColor?.("#8ee6aa");
+            this.lastCelebratedCount = 0;
+          }
+
+          this.add(this.context.world.addCallout({
+            text: zeroExponentLab
+              ? "✓ กองว่าง = กำลัง 0"
+              : `⚡ ตัวยกกำลัง ${values.leftExponent}${this.exponentOperator(values.operation)}${values.rightExponent}`,
+            position: [LAYOUT.answerX, 1.5, -.35],
+            compactPosition: [LAYOUT.answerX, 1.35, -.25],
+            anchor: [answerStackX, .45, LAYOUT.stackZ],
+            scale: [3.9, .58],
+            compactScale: [3.6, .54],
+            insight: () => this.powerInsight()
+          }));
+
+          this.showQuestion(values);
+          this.context.ui.console.set({
+            objective: interactive
+              ? (zeroExponentLab ? "คำตอบคือยกกำลัง 0 — ปล่อยกองคำตอบว่างไว้" : `สร้างกองคำตอบให้ได้ ${this.expectedCount} ถาด`)
+              : nested ? "อ่านกลุ่มชั้นใน แล้วดูจำนวนครั้งที่ซ้อนทั้งกลุ่ม" : "อ่านเลขชี้กำลังจากกองซ้ายและขวา",
+            title: this.operationTitle(values.operation),
+            message: interactive
+              ? (this.mode === "student-quiz" && this.expectedCount === 0
+                ? "ถ้าคิดว่าคำตอบเป็น 0 สามารถกดส่งจำนวนนี้ได้โดยไม่ต้องวางถาด"
+                : zeroExponentLab ? "ยกกำลัง 0 ใช้กองว่าง ไม่ต้องลากถาดเพิ่ม" : nested ? "คูณเลขชี้กำลังชั้นในกับชั้นนอก แล้วลากถาดสร้างคำตอบ" : "ลากถาดด้านหน้าไปวางในพื้นที่คำตอบ สามารถล้างแล้วเริ่มใหม่ได้")
+              : this.ruleExplanation(values),
+            tone: "info"
+          });
+
+          if (interactive) {
+            this.spawnSourceTray();
+            this.showControls();
+          } else {
+            this.add(this.context.world.addGroup({
+              name: "exponent-tray-preview",
+              position: [0, .25, LAYOUT.sourceZ],
+              parts: this.trayParts(0, COLORS.source, COLORS.sourceTop)
+            }));
+          }
+        },
+
+        buildCharger() {
+          this.stopCharger();
+          this.add(this.context.world.addGroup({ name: "charging-pedestal", position: [0, .06, LAYOUT.sourceZ], parts: [
+            { shape: "cylinder", size: [3.25, .16, 3.25], color: "#4b718b", material: { roughness: .65 } },
+            { shape: "cylinder", position: [0, .1, 0], size: [3.02, .08, 3.02], color: "#d6eff8", material: { roughness: .6 } },
+            { shape: "torus", position: [0, .16, 0], rotation: [90, 0, 0], size: [2.6, 2.6, .6], color: "#72dcff", material: { emissive: "#29b8e7", emissiveIntensity: .65, roughness: .5 }, castShadow: false },
+            { shape: "cylinder", position: [0, .15, 0], size: [2.1, .045, 2.1], color: "#a5d4ea", castShadow: false }
+          ] }));
+          const sparks = Array.from({ length: 6 }, (_, i) => {
+            const angle = i * Math.PI / 3;
+            return { x: Math.cos(angle) * 1.3, z: LAYOUT.sourceZ + Math.sin(angle) * 1.3,
+              handle: this.add(this.context.world.addGroup({ name: `charge-spark-${i}`, parts: [
+                { shape: "sphere", size: [.09, .15, .09], color: i % 2 ? "#fff0a1" : "#c1f6ff", material: { emissive: i % 2 ? "#ffd15a" : "#60d7ff", emissiveIntensity: 1 }, castShadow: false, receiveShadow: false }
+              ] })) };
+          });
+          const cycle = () => {
+            sparks.forEach(({ handle, x, z }, i) => {
+              handle.setPosition(x, .23, z);
+              handle.animateTo(x * .8, .85 + (i % 3) * .14, LAYOUT.sourceZ + (z - LAYOUT.sourceZ) * .8, { duration: 1400, delay: i * 70, arcHeight: .1 });
+            });
+            this.chargerTimer = setTimeout(cycle, 1900);
+          };
+          cycle();
+        },
+
+        stopCharger() { clearTimeout(this.chargerTimer); this.chargerTimer = null; },
+
+        addFlatPanel(name, x, z, width, depth, y = .1, surfaceColor = "#e9edf1", edgeColor = "#95a4b1") {
+          const dots = [];
+          for (let row = -1; row <= 1; row += 1) for (let column = -2; column <= 2; column += 1) {
+            dots.push({
+              shape: "sphere", position: [column * .62, .108, row * .64], size: [.13, .032, .13],
+              color: (row + column) % 2 ? "#a9c6dc" : "#dda8bd",
+              material: { roughness: .9, opacity: .72, depthWrite: false }, castShadow: false, receiveShadow: false
+            });
+          }
+          return this.add(this.context.world.addGroup({ name, position: [x, y, z], parts: [
+            ...this.roundedPanelParts(width, depth, 0, .10, edgeColor, .46),
+            ...this.roundedPanelParts(width - .10, depth - .10, .065, .03, surfaceColor, .41),
+            ...dots
+          ] }));
+        },
+
+        roundedPanelParts(width, depth, y, _thickness, color, radius) {
+          const corner = Math.min(radius, width * .5, depth * .5);
+          const x = width * .5 - corner;
+          const z = depth * .5 - corner;
+          const material = { roughness: .92, side: "double" };
+          return [
+            { shape: "plane", position: [0, y, 0], rotation: [-90, 0, 0], size: [Math.max(.01, width - corner * 2), depth, 1], color, material, castShadow: false },
+            { shape: "plane", position: [0, y + .001, 0], rotation: [-90, 0, 0], size: [width, Math.max(.01, depth - corner * 2), 1], color, material, castShadow: false },
+            ...[[-x, -z], [x, -z], [-x, z], [x, z]].map(([px, pz]) => ({
+              shape: "circle", position: [px, y + .002, pz], rotation: [-90, 0, 0], size: [corner * 2, corner * 2, 1], color, material, castShadow: false
+            }))
+          ];
+        },
+
+        addStack(count, position, color, topColor, name) {
+          const parts = [];
+          for (let index = 0; index < count; index += 1) {
+            parts.push(...this.trayParts(index * .34, color, topColor));
+          }
+          return this.add(this.context.world.addGroup({ name, position, parts }));
+        },
+
+        addBaseSlimes(base, centerX, name, centerZ = -.35, baseY = .2) {
+          const positions = this.baseCubePositions(base);
+          const size = Math.min(.78, (2.9 / Math.max(1, base - 1)) * .78);
+          const entries = [];
+          positions.forEach(([offsetX, offsetZ], index) => {
+            const x = centerX + offsetX;
+            const y = baseY;
+            const z = centerZ + offsetZ;
+            const body = this.add(this.context.world.addGroup({
+              name: `${name}-${index + 1}`,
+              position: [x, y, z],
+              parts: this.slimeParts(size, "#f58fb2")
+            }));
+            const eyes = this.add(this.context.world.addGroup({
+              name: `${name}-${index + 1}-eyes`,
+              position: [x, y + size * .36, z + size * .47],
+              parts: [
+                { shape: "sphere", position: [size * -.19, 0, 0], size: [size * .105, size * .14, size * .07], color: "#39263f", material: { roughness: .45 } },
+                { shape: "sphere", position: [size * .19, 0, 0], size: [size * .105, size * .14, size * .07], color: "#39263f", material: { roughness: .45 } }
+              ]
+            }));
+            const entry = {
+              handle: body, eyeHandle: eyes, x, y, z,
+              eyeY: y + size * .36, eyeZ: z + size * .47,
+              phase: this.slimeGroups.length * 1.37,
+              blinkOffset: this.slimeGroups.length * 613
+            };
+            this.slimeGroups.push(entry);
+            entries.push(entry);
+          });
+          return entries;
+        },
+
+        slimeParts(size, color) {
+          const skin = { roughness: .4, clearcoat: .3, clearcoatRoughness: .28, emissive: color, emissiveIntensity: .055 };
+          return [
+            { shape: "sphere", position: [0, size * .31, 0], size: [size * 1.08, size * .78, size], color, material: skin },
+            { shape: "sphere", position: [0, size * .63, 0], size: [size * .22, size * .2, size * .2], color, material: skin },
+            { shape: "sphere", position: [0, size * .22, size * .5], size: [size * .075, size * .045, size * .035], color: "#6a3450", material: { roughness: .55 }, castShadow: false },
+            { shape: "sphere", position: [size * -.3, size * .23, size * .43], size: [size * .13, size * .06, size * .04], color: "#ffc2cf", material: { roughness: .6 }, castShadow: false },
+            { shape: "sphere", position: [size * .3, size * .23, size * .43], size: [size * .13, size * .06, size * .04], color: "#ffc2cf", material: { roughness: .6 }, castShadow: false }
+          ];
+        },
+
+        startSlimeIdle() {
+          this.stopSlimeIdle();
+          this.slimeIdleStartedAt = performance.now();
+          this.slimeIdleTimer = setInterval(() => {
+            const elapsed = performance.now() - this.slimeIdleStartedAt;
+            for (const entry of this.slimeGroups || []) {
+              if (this.slimeCelebrating && this.answerSlimeGroup.includes(entry)) continue;
+              const wave = elapsed * .0019 + entry.phase;
+              const breath = Math.sin(wave) * .022;
+              const blinkTime = (elapsed + entry.blinkOffset) % 3600;
+              const blink = blinkTime < 115 || (blinkTime > 205 && blinkTime < 285) ? .12 : 1;
+              // Keep the root position untouched: setPosition cancels the shared
+              // spawn tween. Breathing on the visual root gives gentle movement
+              // while remaining compatible with scene entrance animation.
+              entry.handle?.setScale?.(1 - breath * .42, 1 + breath, 1 - breath * .42);
+              entry.eyeHandle?.setScale?.(1, blink, 1);
+            }
+          }, 65);
+        },
+
+        stopSlimeIdle() {
+          clearInterval(this.slimeIdleTimer);
+          clearInterval(this.slimeIdleTickTimer);
+          this.slimeIdleTimer = null;
+          this.slimeIdleTickTimer = null;
+          this.clearSlimeCelebration();
+        },
+
+        clearSlimeCelebration() {
+          for (const timer of this.slimeCelebrationTimers || []) clearTimeout(timer);
+          this.slimeCelebrationTimers = [];
+          this.slimeCelebrating = false;
+        },
+
+        slimeDelay(callback, milliseconds) {
+          const timer = setTimeout(() => {
+            this.slimeCelebrationTimers = (this.slimeCelebrationTimers || []).filter(item => item !== timer);
+            callback();
+          }, milliseconds);
+          (this.slimeCelebrationTimers ||= []).push(timer);
+        },
+
+        syncAnswerSlimeMood() {
+          const entries = this.answerSlimeGroup || [];
+          if (!entries.length) return;
+          const revealLabSuccess = this.mode !== "student-quiz" && this.answerCount === this.expectedCount;
+          this.answerZone?.setColor?.(revealLabSuccess ? "#8ee6aa" : "#dbe8f1");
+          if (!revealLabSuccess) {
+            this.lastCelebratedCount = null;
+            this.clearSlimeCelebration();
+            entries.forEach(entry => this.resetSlimePose(entry));
+            return;
+          }
+          if (this.lastCelebratedCount === this.answerCount) return;
+          this.lastCelebratedCount = this.answerCount;
+          this.clearSlimeCelebration();
+          this.slimeCelebrating = true;
+          const celebrateRound = () => {
+            if (!this.slimeCelebrating || this.answerCount !== this.expectedCount) return;
+            entries.forEach((entry, index) => this.slimeDelay(() => this.jumpSlime(entry), index * 105));
+            this.slimeDelay(celebrateRound, 820 + Math.max(0, entries.length - 1) * 105);
+          };
+          celebrateRound();
+        },
+
+        resetSlimePose(entry) {
+          entry.handle?.stopAnimation?.();
+          entry.eyeHandle?.stopAnimation?.();
+          entry.handle?.setPosition?.(entry.x, entry.y, entry.z);
+          entry.eyeHandle?.setPosition?.(entry.x, entry.eyeY, entry.eyeZ);
+          entry.handle?.setScale?.(1, 1, 1);
+          entry.eyeHandle?.setScale?.(1, 1, 1);
+        },
+
+        jumpSlime(entry) {
+          if (!this.slimeCelebrating || this.answerCount !== this.expectedCount) return;
+          this.resetSlimePose(entry);
+          entry.handle.setScale(1.1, .84, 1.1);
+          this.slimeDelay(() => {
+            if (!this.slimeCelebrating) return;
+            entry.handle.setScale(.94, 1.14, .94);
+            entry.handle.animateTo(entry.x, entry.y + .34, entry.z, { duration: 230, arcHeight: .26 });
+            entry.eyeHandle.animateTo(entry.x, entry.eyeY + .34, entry.eyeZ, { duration: 230, arcHeight: .26 });
+          }, 90);
+          this.slimeDelay(() => {
+            if (!this.slimeCelebrating) return;
+            entry.handle.setScale(1.05, .91, 1.05);
+            entry.handle.animateTo(entry.x, entry.y, entry.z, { duration: 230, arcHeight: .02 });
+            entry.eyeHandle.animateTo(entry.x, entry.eyeY, entry.eyeZ, { duration: 230, arcHeight: .02 });
+          }, 330);
+          this.slimeDelay(() => {
+            if (!this.slimeCelebrating) return;
+            this.resetSlimePose(entry);
+          }, 585);
+        },
+
+        baseCubePositions(base) {
+          const spacing = Math.min(1.15, 2.9 / Math.max(1, base - 1));
+          return Array.from({ length: base }, (_, index) => [(index - (base - 1) / 2) * spacing, 0]);
+        },
+
+        trayParts(y, color, topColor) {
+          return [
+            { shape: "cylinder", position: [0, y + .14, 0], size: [1.7, .25, 1.7], color: COLORS.edge, material: { roughness: .7 } },
+            { shape: "cylinder", position: [0, y + .3, 0], size: [1.58, .22, 1.58], color, material: { roughness: .58, clearcoat: .15 } },
+            { shape: "cylinder", position: [0, y + .43, 0], size: [1.38, .07, 1.38], color: topColor, material: { roughness: .6 }, castShadow: false },
+            { shape: "plane", position: [0, y + .474, 0], rotation: [-90, 0, 0], size: [1.05, 1.05, 1], color: "#ffffff", material: { texture: "../../assets/icon/power-bolt.svg", opacity: .999, depthWrite: false, roughness: 1 }, castShadow: false }
+          ];
+        },
+
+        spawnSourceTray() {
+          this.sourceTray?.setDraggable?.(false);
+          let handle;
+          handle = this.add(this.context.world.addGroup({
+            name: `exponent-tray-${this.answerCount}`,
+            position: [0, .25, LAYOUT.sourceZ],
+            parts: this.trayParts(0, COLORS.source, COLORS.sourceTop),
+            draggable: true,
+            dragAxis: "xz",
+            dragLiftHeight: 1.05,
+            dragFromCenter: true,
+            hitArea: [2.5, 1.25, 2.5],
+            hitAreaOffset: [0, .45, 0],
+            guideTarget: this.mode === "student-quiz" ? null : [LAYOUT.answerX + LAYOUT.stackOffsetX, .25, LAYOUT.stackZ],
+            hoverMessage: "",
+            onHover: active => { if (active) this.sourceGizmo?.show(); else this.sourceGizmo?.hide(); },
+            onDrag: () => this.sourceGizmo?.show(),
+            onDrop: position => this.handleTrayDrop(position, handle)
+          }));
+          this.sourceGizmo?.remove();
+          this.sourceGizmo = this.context.ui.gizmo.attach(handle, { id: "source-charge-hint", scope: "step", type: "label", text: "เพิ่มตัวยกกำลัง", placement: "top", worldOffset: [0, 1.05, 0], clamp: true });
+          this.sourceGizmo.hide();
+          this.sourceTray = handle;
+          return handle;
+        },
+
+        handleTrayDrop(position, handle) {
+          const answerStackX = LAYOUT.answerX + LAYOUT.stackOffsetX;
+          this.sourceGizmo?.hide();
+          const inside = Math.abs(position.x - LAYOUT.answerX) < 3.9 && Math.abs(position.z + .55) < 2.05;
+          if (!inside) return false;
+          if (this.answerCount >= 8) {
+            this.context.audio.play("fail");
+            this.context.ui.console.set({ objective: "ล้างคำตอบแล้วลองใหม่", title: "กองสูงสุด 8 ถาด", message: "บทเรียนจำกัดความสูงเพื่อให้มองเห็นครบทั้งจอ", tone: "warning" });
+            return false;
+          }
+
+          handle.setDraggable(false);
+          const stackIndex = this.answerCount;
+          this.answerCount += 1;
+          this.answerTrays.push(handle);
+          const targetY = .25 + stackIndex * .34;
+          const duration = this.values.animationSpeed === "slow" ? 760 : 470;
+          handle.animateTo(answerStackX, targetY, LAYOUT.stackZ, { duration, arcHeight: .75 });
+          this.updateAnswerDisplays();
+          this.recordAnswer();
+          this.delay(() => {
+            if (this.mode === "student-quiz") {
+              this.context.ui.console.set({ objective: `ตอนนี้ซ้อนแล้ว ${this.answerCount} ถาด`, title: "บันทึกจำนวนล่าสุดแล้ว", message: "ลากเพิ่ม ล้างคำตอบ หรือกดส่งจำนวนนี้เมื่อพอใจ", tone: "info" });
+            } else if (this.answerCount === this.expectedCount) {
+              this.showResult(false);
+            } else {
+              this.context.ui.console.set({ objective: `ตอนนี้ซ้อนแล้ว ${this.answerCount} ถาด`, title: "ลากเพิ่มหรือล้างคำตอบ", message: `โจทย์นี้ต้องใช้ ${this.expectedCount} ถาด`, tone: "info" });
+            }
+          }, duration + 80);
+          this.spawnSourceTray();
+          return { accepted: true, commit: true };
+        },
+
+        addAnswerTray(demo = false) {
+          const stackIndex = this.answerCount;
+          const handle = this.add(this.context.world.addGroup({
+            name: `demo-answer-tray-${stackIndex}`,
+            position: demo ? [0, .25, LAYOUT.sourceZ] : [LAYOUT.answerX + LAYOUT.stackOffsetX, .25 + stackIndex * .34, LAYOUT.stackZ],
+            parts: this.trayParts(0, COLORS.answer, COLORS.answerTop)
+          }));
+          this.answerCount += 1;
+          this.answerTrays.push(handle);
+          if (demo) handle.animateTo(LAYOUT.answerX + LAYOUT.stackOffsetX, .25 + stackIndex * .34, LAYOUT.stackZ, { duration: 430, arcHeight: .7 });
+          this.updateAnswerDisplays();
+          return handle;
+        },
+
+        updateAnswerDisplays() {
+          this.answerGizmo?.update({
+            text: `${this.activeValues.base}${this.sup(this.answerCount)}`,
+            ariaLabel: `ฐาน ${this.activeValues.base} ยกกำลัง ${this.answerCount}`,
+            segments: this.exponentSegments(this.activeValues.base, this.answerCount),
+            worldOffset: [0, Math.max(1.45, this.answerCount * .34 + .7), 0]
+          });
+          this.answerFactors?.setText(this.answerFactorText(this.activeValues.base, this.answerCount));
+          this.syncAnswerSlimeMood();
+        },
+
+        clearAnswer() {
+          this.clearTimers();
+          for (const handle of this.answerTrays) {
+            const index = this.handles.indexOf(handle);
+            if (index >= 0) this.handles.splice(index, 1);
+            handle?.remove?.();
+          }
+          this.answerTrays = [];
+          this.answerCount = 0;
+          this.updateAnswerDisplays();
+          this.context.world.hideDragCue();
+          if (this.mode === "student-quiz") this.context.quiz.answer(this.expectedCount === 0, this.answerDetails(this.expectedCount === 0));
+          this.context.ui.console.set({ objective: `สร้างกองคำตอบให้ได้ ${this.expectedCount} ถาด`, title: "ล้างคำตอบแล้ว", message: "ลากถาด +1 จากด้านหน้าเพื่อเริ่มใหม่", tone: "info" });
+        },
+
+        recordAnswer() {
+          if (this.mode !== "student-quiz") return;
+          this.context.quiz.answer(this.answerCount === this.expectedCount, this.answerDetails(this.answerCount === this.expectedCount));
+        },
+
+        showResult(demo) {
+          const correct = this.answerCount === this.expectedCount;
+          if (!correct) return;
+          this.answerTrays.forEach((handle, index) => this.delay(() => handle?.playCommit?.(), index * 65));
+          if (!demo && this.mode !== "student-quiz") this.context.audio.play("success");
+          this.context.ui.console.set({
+            objective: `คำตอบคือ ${this.activeValues.base}${this.sup(this.expectedCount)}`,
+            title: `${this.expression(this.activeValues).replace("?", `${this.activeValues.base}${this.sup(this.expectedCount)}`)}`,
+            message: this.ruleExplanation(this.activeValues),
+            tone: "success"
+          });
+        },
+
+        showControls() {
+          this.control?.remove?.();
+          this.control = this.context.ui.control.show({
+            id: "exponent-stack-controls",
+            scope: "step",
+            position: "bottom-right",
+            objectiveAction: false,
+            items: [
+              { id: "clear", label: "ล้างคำตอบ", icon: "reset.svg" },
+              ...(this.mode === "student-quiz" ? [{ id: "submit", label: "ส่งจำนวนนี้", icon: "next.svg" }] : [])
+            ],
+            onAction: event => {
+              if (event.id === "clear") this.clearAnswer();
+              if (event.id === "submit") this.submitQuizAnswer();
+            }
+          });
+        },
+
+        submitQuizAnswer() {
+          const correct = this.answerCount === this.expectedCount;
+          this.context.quiz.answer(correct, this.answerDetails(correct));
+          this.context.ui.console.set({ objective: `ส่งจำนวน ${this.answerCount} แล้ว`, title: "บันทึกคำตอบเรียบร้อย", message: "สามารถปรับกองแล้วส่งใหม่ หรือไปข้อถัดไป", tone: "info" });
+        },
+
+        showQuestion(values) {
+          const text = this.mode === "student-quiz" && this.question?.question
+            ? this.question.question
+            : `${this.expression(values)} · ลากถาดสร้างเลขชี้กำลังคำตอบ`;
+          this.context.ui.question.show({ label: this.operationLabel(values.operation), text, tone: "primary" });
+        },
+
+        addGizmo(target, text, id, worldOffset = [0, 1.28, 0]) {
+          const handle = this.context.ui.gizmo.attach(target, { id, scope: "step", type: "badge", text, placement: "top", worldOffset, tone: "primary" });
+          this.uiHandles.push(handle);
+          return handle;
+        },
+
+        addExponentGizmo(target, base, exponent, id, worldOffset = [0, 1.28, 0]) {
+          const handle = this.context.ui.gizmo.attach(target, {
+            id, scope: "step", type: "badge", placement: "top", worldOffset, tone: "primary",
+            text: `${base}${this.sup(exponent)}`,
+            ariaLabel: `ฐาน ${base} ยกกำลัง ${exponent}`,
+            segments: this.exponentSegments(base, exponent)
+          });
+          this.uiHandles.push(handle);
+          return handle;
+        },
+
+        addNestedLayerGizmo(target, values, layer, id, worldOffset = [0, 1.28, 0]) {
+          const inner = layer === "inner";
+          const text = inner
+            ? `ชั้นใน ${values.base}${this.sup(values.leftExponent)}`
+            : `ชั้นนอก ×${values.rightExponent}`;
+          const handle = this.context.ui.gizmo.attach(target, {
+            id, scope: "step", type: "badge", size: "large", placement: "top", worldOffset, tone: "primary",
+            text,
+            ariaLabel: inner
+              ? `ชั้นใน ฐาน ${values.base} ยกกำลัง ${values.leftExponent}`
+              : `ชั้นนอก นำทั้งกลุ่มไปยกกำลัง ${values.rightExponent}`,
+            segments: inner
+              ? [
+                { text: "ชั้นใน ", color: "#d7eaff", role: "label" },
+                { text: String(values.base), color: "#ffffff", role: "base" },
+                { text: String(values.leftExponent), color: "#ffd45e", role: "exponent" }
+              ]
+              : [
+                { text: "ชั้นนอก ×", color: "#d7eaff", role: "label" },
+                { text: String(values.rightExponent), color: "#ffd45e", role: "exponent" }
+              ]
+          });
+          handle.element.style.setProperty("--gui-gizmo-font-size", "12px");
+          handle.element.style.padding = "5px 9px";
+          handle.element.style.minHeight = "30px";
+          this.uiHandles.push(handle);
+          return handle;
+        },
+
+        exponentSegments(base, exponent) {
+          return [
+            { text: String(base), color: "#ffffff", role: "base" },
+            { text: String(exponent), color: "#ffd45e", role: "exponent" }
+          ];
+        },
+
+        add(handle) { if (handle) this.handles.push(handle); return handle; },
+        expectedAnswer(values) {
+          if (values.operation === "multiply") return values.leftExponent + values.rightExponent;
+          if (values.operation === "divide") return values.leftExponent - values.rightExponent;
+          return values.leftExponent * values.rightExponent;
+        },
+        exponentOperator(operation) { return operation === "multiply" ? "+" : operation === "divide" ? "-" : "×"; },
+        operationLabel(operation) { return operation === "multiply" ? "คูณเลขยกกำลัง" : operation === "divide" ? "หารเลขยกกำลัง" : "ยกกำลังซ้อน"; },
+        operationTitle(operation) { return operation === "multiply" ? "บวกเลขชี้กำลัง" : operation === "divide" ? "ลบเลขชี้กำลัง" : "คูณเลขชี้กำลัง"; },
+        ruleText(values) {
+          const sign = this.exponentOperator(values.operation);
+          return `${sign === "+" ? "บวก" : sign === "-" ? "ลบ" : "คูณ"} ${values.leftExponent} ${sign} ${values.rightExponent}`;
+        },
+        ruleExplanation(values) {
+          if (values.operation === "multiply") return `ฐาน ${values.base} เหมือนกัน จึงบวกเลขชี้กำลัง ${values.leftExponent} + ${values.rightExponent} = ${this.expectedAnswer(values)}`;
+          if (values.operation === "divide") return `ฐาน ${values.base} เหมือนกัน จึงลบเลขชี้กำลัง ${values.leftExponent} - ${values.rightExponent} = ${this.expectedAnswer(values)}`;
+          return `ยกกำลังซ้อน จึงคูณเลขชี้กำลัง ${values.leftExponent} × ${values.rightExponent} = ${this.expectedAnswer(values)}`;
+        },
+        expression(values) {
+          const base = values.base;
+          if (values.operation === "multiply") return `${base}${this.sup(values.leftExponent)} × ${base}${this.sup(values.rightExponent)} = ?`;
+          if (values.operation === "divide") return `${base}${this.sup(values.leftExponent)} ÷ ${base}${this.sup(values.rightExponent)} = ?`;
+          return `(${base}${this.sup(values.leftExponent)})${this.sup(values.rightExponent)} = ?`;
+        },
+        factorText(base, count) {
+          if (count === 0) return "1";
+          return Array.from({ length: count }, () => String(base)).join(" × ");
+        },
+        answerFactorText(base, count) {
+          // One line, up to eight factors; the shared GUI fits the text to the panel width.
+          if (count === 0) return "—";
+          const factors = Array.from({ length: count }, () => String(base));
+          return factors.join(" × ");
+        },
+        powerInsight() {
+          const base = this.activeValues.base;
+          const exponent = this.answerCount;
+          const factors = exponent ? this.factorText(base, exponent) : "1";
+          const result = base ** exponent;
+          return {
+            title: `⚡ อ่านกองพลัง ${base}${this.sup(exponent)}`,
+            icon: "power-bolt.svg",
+            message: `สไลม์ ${base} ตัวคือฐาน และถาด ${exponent} ชั้นคือจำนวนครั้งที่คูณ`,
+            html: `<p class="insight-lead">⚡ 1 ถาด = คูณด้วย ${base} อีก 1 ครั้ง</p>` +
+              `<p class="insight-equation">${base}${this.sup(exponent)} = ${factors}</p>` +
+              `<p class="insight-result"><small>คำตอบ</small><strong>${base}${this.sup(exponent)} = ${result}</strong></p>` +
+              `<p class="insight-note">${exponent ? `กองนี้มี ${exponent} ชั้น จึงใช้ ${base} เป็นตัวคูณ ${exponent} ครั้ง` : `กองยังว่าง จึงเป็น ${base}⁰ = 1`}</p>`,
+            primaryLabel: "กลับไปซ้อนถาด"
+          };
+        },
+        answerDetails(correct) {
+          return {
+            operation: this.activeValues.operation,
+            base: this.activeValues.base,
+            leftExponent: this.activeValues.leftExponent,
+            rightExponent: this.activeValues.rightExponent,
+            expectedExponent: this.expectedCount,
+            selectedExponent: this.answerCount,
+            correct
+          };
+        },
+        sup(value) { return String(value).split("").map(character => ({ "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸" }[character] || character)).join(""); },
+        clampInt(value, minimum, maximum) { return Math.min(maximum, Math.max(minimum, Math.round(Number(value) || minimum))); },
+        delay(callback, milliseconds) { const timer = setTimeout(() => { this.timers = this.timers.filter(item => item !== timer); callback(); }, milliseconds); this.timers.push(timer); return timer; },
+        clearTimers() { for (const timer of this.timers || []) clearTimeout(timer); this.timers = []; },
+        clearActivity() {
+          this.stopSlimeIdle();
+          this.stopCharger();
+          this.clearTimers();
+          this.context.world.hideDragCue();
+          this.control?.remove?.();
+          this.control = null;
+          for (const handle of this.uiHandles || []) handle?.remove?.();
+          for (const handle of this.handles || []) handle?.remove?.();
+          this.uiHandles = [];
+          this.handles = [];
+          this.answerTrays = [];
+          this.slimeGroups = [];
+          this.answerSlimeGroup = [];
+          this.answerZone = null;
+          this.sourceTray = null;
+          this.sourceGizmo?.remove();
+          this.sourceGizmo = null;
+          this.answerGizmo = null;
+          this.answerFactors = null;
+        },
+        dispose() { this.clearActivity(); this.context = null; }
+      });
+    })();
+  </script>
+</body>
+</html>

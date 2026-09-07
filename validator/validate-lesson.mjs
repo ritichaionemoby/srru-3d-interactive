@@ -24,6 +24,92 @@ const add = (code, stage, message, details = "") => errors.push({ code, stage, m
 let html = "";
 let standardAssetIds = new Set();
 
+function methodBody(source, methodName) {
+  const match = new RegExp(`\\b(?:async\\s+)?${methodName}\\s*\\([^)]*\\)\\s*\\{`).exec(source);
+  if (!match) return "";
+  const opening = match.index + match[0].lastIndexOf("{");
+  let depth = 1, quote = "", lineComment = false, blockComment = false, escaped = false;
+  for (let index = opening + 1; index < source.length; index += 1) {
+    const char = source[index], next = source[index + 1];
+    if (lineComment) { if (char === "\n") lineComment = false; continue; }
+    if (blockComment) { if (char === "*" && next === "/") { blockComment = false; index += 1; } continue; }
+    if (quote) {
+      if (escaped) { escaped = false; continue; }
+      if (char === "\\") { escaped = true; continue; }
+      if (char === quote) quote = "";
+      continue;
+    }
+    if (char === "/" && next === "/") { lineComment = true; index += 1; continue; }
+    if (char === "/" && next === "*") { blockComment = true; index += 1; continue; }
+    if (char === "\"" || char === "'" || char === "`") { quote = char; continue; }
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(opening + 1, index);
+    }
+  }
+  return "";
+}
+
+function stripArrowCallbacks(source) {
+  let result = "";
+  for (let index = 0; index < source.length;) {
+    if (source[index] !== "=" || source[index + 1] !== ">") {
+      result += source[index];
+      index += 1;
+      continue;
+    }
+
+    result += "=>";
+    index += 2;
+    while (/\s/.test(source[index] || "")) {
+      result += source[index];
+      index += 1;
+    }
+
+    if (source[index] === "{") {
+      let depth = 1, quote = "", escaped = false;
+      index += 1;
+      while (index < source.length && depth > 0) {
+        const char = source[index];
+        if (quote) {
+          if (escaped) escaped = false;
+          else if (char === "\\") escaped = true;
+          else if (char === quote) quote = "";
+        } else if (char === "\"" || char === "'" || char === "`") quote = char;
+        else if (char === "{") depth += 1;
+        else if (char === "}") depth -= 1;
+        index += 1;
+      }
+      result += "{}";
+      continue;
+    }
+
+    let parens = 0, brackets = 0, braces = 0, quote = "", escaped = false;
+    while (index < source.length) {
+      const char = source[index];
+      if (quote) {
+        if (escaped) escaped = false;
+        else if (char === "\\") escaped = true;
+        else if (char === quote) quote = "";
+        index += 1;
+        continue;
+      }
+      if (char === "\"" || char === "'" || char === "`") { quote = char; index += 1; continue; }
+      if (char === "(") parens += 1;
+      else if (char === ")") { if (parens === 0 && brackets === 0 && braces === 0) break; parens -= 1; }
+      else if (char === "[") brackets += 1;
+      else if (char === "]") brackets -= 1;
+      else if (char === "{") braces += 1;
+      else if (char === "}") { if (parens === 0 && brackets === 0 && braces === 0) break; braces -= 1; }
+      else if ((char === "," || char === "\n") && parens === 0 && brackets === 0 && braces === 0) break;
+      index += 1;
+    }
+    result += "undefined";
+  }
+  return result;
+}
+
 try {
   const catalogText = await readFile(new URL("../sdk/asset-library.catalog.json", import.meta.url), "utf8");
   const catalog = JSON.parse(catalogText);
@@ -94,8 +180,8 @@ if (html) {
   }
 
   const unsupportedOperator = html.match(/\.addOperatorSign\s*\(\s*{[\s\S]{0,240}?\btext\s*:\s*["']([^"']+)["']/);
-  if (unsupportedOperator && !["<", ">", "="].includes(unsupportedOperator[1])) {
-    add("LESSON_OPERATOR_UNSUPPORTED", "validate", `addOperatorSign ไม่รองรับ ${unsupportedOperator[1]}; ใช้ addText3D สำหรับเครื่องหมายทั่วไป`);
+  if (unsupportedOperator && !["<", ">", "=", "≠", "<=", ">=", "≤", "≥", "+", "-", "−", "×", "x", "X", "÷"].includes(unsupportedOperator[1])) {
+    add("LESSON_OPERATOR_UNSUPPORTED", "validate", `addOperatorSign ไม่รองรับ ${unsupportedOperator[1]}; รองรับ = ≠ < > ≤ ≥ + - × ÷`);
   }
 
   const requiredPatterns = [
@@ -104,6 +190,9 @@ if (html) {
     [/\bmeta\s*:\s*{/, "meta"],
     [/\bworldType\s*:\s*["']3d-world-space["']/, "meta.worldType"],
     [/\blessonId\s*:\s*["'][^"']+["']/, "meta.lessonId"],
+    [/\btitle\s*:\s*["'][^"']+["']/, "meta.title"],
+    [/\bcategory\s*:\s*["'][^"']+["']/, "meta.category"],
+    [/\bsubcategory\s*:\s*["'][^"']+["']/, "meta.subcategory"],
     [/\bmount\s*\([^)]*\)\s*{/, "mount(context)"],
     [/\breset\s*\([^)]*\)\s*{/, "reset(payload)"],
     [/\bonStep\s*\([^)]*\)\s*{/, "onStep(index, step)"],
@@ -114,8 +203,22 @@ if (html) {
   }
 
   if (scripts.length === 1) {
+    const lessonSource = scripts[0][1], resetBody = methodBody(lessonSource, "reset");
+    const immediateResetBody = stripArrowCallbacks(resetBody);
+    const resetHelpers = [...immediateResetBody.matchAll(/\bthis\s*\.\s*([A-Za-z_$][\w$]*)\s*\(/g)]
+      .map(match => match[1]);
+    const resetCallsQuizAnswer = /\b(?:this\.)?context\s*\.\s*quiz\s*\.\s*answer\s*\(/.test(immediateResetBody)
+      || resetHelpers.some(name => /\b(?:this\.)?context\s*\.\s*quiz\s*\.\s*answer\s*\(/.test(methodBody(lessonSource, name)));
+    if (resetCallsQuizAnswer) {
+      add(
+        "LESSON_QUIZ_ANSWER_DURING_RESET",
+        "validate",
+        "ห้ามบันทึกคำตอบ Quiz ภายใน reset() หรือเรียก helper ที่บันทึกคำตอบ เพราะยังไม่มีการลงมือจากผู้เรียน",
+        "เรียก context.quiz.answer(...) หลัง click/drag/drop/control action เท่านั้น; Runtime จะเปิดปุ่มต่อไปให้อัตโนมัติ"
+      );
+    }
     try {
-      new Function(scripts[0][1]);
+      new Function(lessonSource);
     } catch (error) {
       add("LESSON_SCRIPT_SYNTAX_ERROR", "compile", error.message);
     }
@@ -125,7 +228,7 @@ if (html) {
 const report = {
   ok: errors.length === 0,
   file: basename(file),
-  contractVersion: "1.1.0",
+  contractVersion: "1.2.1",
   profile,
   errors
 };
@@ -134,7 +237,7 @@ if (errors.length) {
   report.userMessage = "นำข้อความนี้ส่งต่อให้ผู้พัฒนาบทเรียน หรือส่งเข้า AI Agent เพื่อแก้ไขข้อผิดพลาด";
   report.repairPrompt = [
     "ซ่อมเฉพาะไฟล์ lesson ที่แนบมา ห้ามแก้ runtime, SDK, settings หรือ CSS",
-    "อ่าน AgentLesson README, contract, Public API, output template และ lesson0 ก่อนซ่อม",
+    "อ่าน Github README, contract, Public API, output template และ lesson0 ก่อนซ่อม",
     ...errors.map(error => `${error.code} [${error.stage}]: ${error.message}${error.details ? ` — ${error.details}` : ""}`),
     "คืนเฉพาะชื่อไฟล์และ HTML code block ที่แก้สมบูรณ์แล้วหนึ่ง block"
   ].join("\n");
@@ -142,3 +245,4 @@ if (errors.length) {
 
 console.log(JSON.stringify(report, null, 2));
 process.exit(errors.length ? 1 : 0);
+

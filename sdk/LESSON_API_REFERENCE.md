@@ -6,7 +6,7 @@
 
 ดู type signatures เพิ่มเติมที่ [`lesson-sdk.d.ts`](lesson-sdk.d.ts)
 
-## Universal Scene API (SDK 2.0)
+## Universal Scene API (SDK 2.1)
 
 บทเรียนใหม่ไม่ควรคัดลอกฉากซ้าย/ขวา กล่อง หรือเครื่องหมายจาก Lesson 0 โดยอัตโนมัติ ให้เลือกวัตถุและการจัดฉากตามเนื้อหาของครูผ่าน API กลางต่อไปนี้ ส่วน API เดิมยังรองรับเพื่อให้บทเรียนเก่าทำงานต่อได้
 
@@ -68,13 +68,31 @@ world.addGroup({
 });
 ```
 
+ถ้าวัตถุคลิกได้แต่บทเรียนมีเอฟเฟกต์ Active ของตัวเอง ให้กำหนด `selectionFeedback: false` เพื่อไม่แสดงวง Hover และลูกศร Select ของระบบกลาง
+
+### `world.addConnector(options)`
+
+สร้างเส้นเชื่อมจากตำแหน่งหนึ่งไปยังอีกตำแหน่งหนึ่ง ระบบคำนวณองศา 3 มิติให้โดยตรง เหมาะกับกราฟ กิ่งไม้ และความสัมพันธ์ระหว่างวัตถุ
+
+```js
+world.addConnector({
+  from: [0, 1, 0],
+  to: [4, .5, 2],
+  color: "#ffad38",
+  thickness: .08,
+  opacity: .75
+});
+```
+
+วัตถุ interactive แบบ primitive, group และ library ใช้ Highlight กลางของระบบโดยอัตโนมัติ: Material Tint ทั้งวัตถุ วงแหวนที่คำนวณจาก Bounding Box รวม และ Marker รูปเพชรลอยเมื่อเลือก จึงรองรับวัตถุประกอบหลายชิ้นโดยไม่มีเส้น Outline ซ้อน บทเรียนไม่ต้องสร้าง Highlight เอง
+
 ### `world.addText3D(options)`
 
-สร้างข้อความหรือเครื่องหมายทั่วไปใน world space ใช้กับ `+ - × ÷` ตัวเลขและคำสั้นๆ ได้
+สร้างข้อความสั้นใน world space สำหรับ label บนวัตถุเท่านั้น ข้อความจะหันเข้าหากล้องและไม่ใช่ polygon จึงห้ามใช้เป็นป้ายโจทย์หลักหรือเครื่องหมายคำนวณบนฐาน
 
 ```js
 world.addText3D({
-  text: "+",
+  text: "คำตอบ",
   position: [0, 1.2, 0],
   size: [2.2, 1.7],
   color: "#6049c7",
@@ -82,7 +100,7 @@ world.addText3D({
 });
 ```
 
-`world.addOperatorSign()` เป็น prefab เฉพาะบทเปรียบเทียบและรองรับเพียง `<`, `>` และ `=` เท่านั้น เครื่องหมายอื่นต้องใช้ `addText3D`
+เครื่องหมายเปรียบเทียบและคำนวณ `= ≠ < > ≤ ≥ + - × ÷` ให้ใช้ `world.addOperatorSign()` เพื่อให้ได้ polygon 3D และฐานมาตรฐานเดียวกันทุกบท
 
 ### Custom model
 
@@ -99,20 +117,22 @@ Dispatcher กลางรองรับ `type: "primitive" | "group" | "text3d
 - `draggable`, `dragAxis`, `guideTarget`, `onDrag`, `onDrop`
 - `clickable`, `onClick({ handle, object, hitPoint })`
 
-การ drag และ click จะเรียก objective action, outline และ system SFX ผ่าน main-world อัตโนมัติ บทเรียนควรกำหนดเฉพาะ state/condition ของตนเอง
+การ drag และ click จะเรียก objective action, Highlight/Selection และ system SFX ผ่าน main-world อัตโนมัติ บทเรียนควรกำหนดเฉพาะ state/condition ของตนเอง
+
+หาก `onDrop(position, handle)` เรียก `handle.setPosition(...)` หรือ `handle.animateTo(...)` เพื่อ snap วัตถุเข้า grid Runtime จะรักษาตำแหน่ง/แอนิเมชันนั้นไว้และไม่ใส่ drop bounce ทับอีกครั้ง หาก callback ไม่จัดตำแหน่งเอง Runtime จึงใช้ drop bounce มาตรฐาน
 
 ## Context
 
 `mount(context)` ได้ object แบบ read-only:
 
 - `context.world` — สร้างและควบคุม object ใน world space
-- `context.ui` — objective, toast และ progress กลาง
+- `context.ui` — GUI Service กลาง ได้แก่ Question, Console, Top Message, Choice, Gizmo, Feedback, Dialog, Insight Dialog, Control, Hint และ Busy รวม compatibility objective/toast/progress
 - `context.audio.play(name)` — เล่น SFX ที่ระบบเตรียมไว้
 - `context.mode` — `teacher-lab`, `student-lab` หรือ `student-quiz`
 - `context.language` — ภาษาจากเว็บหลัก
-- `context.lessonData` — metadata ที่เว็บหลักส่งให้ SDK
-- `context.objectiveAction()` — แจ้ง action ครั้งแรกสำหรับ interaction ที่ไม่ใช่ drag
-- `context.quiz.answer(correct, details)` — อัปเดตคำตอบ Quiz ล่าสุด
+- `context.lessonData` — ข้อมูลบทเรียนที่ Runtime resolve แล้ว: โดยปกติใช้ `title`/`name`, `category`, `subcategory` ที่เว็บหลักส่งมาเมื่อไม่ว่าง แล้ว fallback จาก lesson meta; หาก `mainWorldSetting.overrideTitleName` เป็น `true` จะใช้ `meta.title`, `meta.category`, `meta.subcategory` ก่อนเสมอ
+- `context.objectiveAction()` — แจ้ง attempt ที่ตั้งใจให้ผู้เรียนไปต่อได้ แต่ยังไม่เปลี่ยน state คำตอบ เช่น invalid drop หรือการกดข้าม; ไม่ต้องเรียกซ้ำหลัง `quiz.answer`
+- `context.quiz.answer(correct, details)` — อัปเดตคำตอบ Quiz ล่าสุดและเปิดปุ่มไปต่ออัตโนมัติหลังข้อพร้อมใช้งาน; ห้ามเรียกจาก `reset()` และคำสั่งระหว่างเตรียมข้อจะถูก Runtime ปฏิเสธ
 - `context.complete(result)` — จบบทเรียนและส่ง result กลับ host
 - `context.root` — root ที่ runtime จัดให้; World lesson ไม่ควรสร้าง UI กลางลงไป
 
@@ -157,22 +177,88 @@ world.addZone({
 
 ### `world.addCallout(options)` / `world.addLabel(options)`
 
-สร้างป้าย UI ใน world space พร้อม leader line:
+สร้างป้าย GUI ที่อ่านตรงและล็อกเข้าหาจอ โดยฉาย `position` จาก World มายังหน้าจอและเชื่อมกับ `anchor` ด้วย leader line/ring ในฉาก ระบบกลางดูแลขนาด Desktop/Mobile และป้องกันป้ายหลุดขอบจอ ใส่ `insight` เมื่อต้องการให้ป้ายเป็นจุดกดเปิดคำอธิบาย ห้ามสร้าง DOM/Sprite ทดแทนภายใน lesson:
 
 ```js
 world.addCallout({
-  text: "พื้นที่คำตอบ",
+  text: "ดูวิธีสร้างคำตอบ",
   position: [4.2, 4.35, 0.35],
+  compactPosition: [2.5, 3.9, 0.35],
   anchor: [4.2, 0.28, -1],
   color: "#23324d",
   lineColor: "#7857ff",
-  scale: [2.85, 0.82]
+  scale: [2.85, 0.82],
+  compactScale: [2.45, 0.92],
+  insight: () => ({
+    title: "พื้นที่คำตอบ",
+    message: "ลากวัตถุเข้าไปในกรอบนี้",
+    primaryLabel: "เข้าใจแล้ว"
+  })
 });
 ```
 
+หากไม่มี `insight` หรือ `onClick` ป้ายยังเป็น Callout แสดงผลอย่างเดียวเหมือนเวอร์ชันเดิม Actionable Callout มี icon ข้อมูลและ hover animation อัตโนมัติ โดยค่าเริ่มต้นการเปิดคำอธิบายไม่นับเป็น Quiz objective action
+
+### Interaction hit area สำหรับโมเดลขนาดเล็ก
+
+```js
+const carrot = await world.addLibraryObject({
+  asset: "food/carrot",
+  draggable: true,
+  hitArea: [3, 1.1, 2.15],
+  hitAreaOffset: [0, 0.78, 0],
+  dragFromCenter: true
+});
+
+// หลังหยิบออกจากฐาน ให้กลับไปจับตามขนาดโมเดลจริง
+carrot.setHitArea(null);
+carrot.setDragFromCenter(false);
+```
+
+Hit area โปร่งใสและไม่ถูกนำไปคำนวณขนาดวง Highlight จึงช่วยเพิ่มความสะดวกบนมือถือโดยไม่ทำให้โมเดลหรือ selection ใหญ่ผิดปกติ
+
 ### `world.addOperatorSign(options)`
 
-รองรับ `<`, `>` และ `=` คืน `OperatorHandle` ซึ่งเพิ่ม `setState(valid)` และ `pulse()`
+รองรับ `=`, `≠`, `<`, `>`, `≤`, `≥`, `+`, `-`, `×` และ `÷` คืน `OperatorHandle` ซึ่งเพิ่ม `setState(valid)` และ `pulse()` ตัวเครื่องหมายเป็น polygon 3D และใช้ฐานมาตรฐานเดียวกันทุกบท (`!=`, `<=`, `>=` ใช้เป็น alias ได้)
+
+### `world.addWorldCounter(options)`
+
+ตัวนับเลขดิจิตอลแบบ 3D ที่วางบนพื้น ใช้เฉพาะแสดงจำนวนและไม่รับ interaction:
+
+```js
+const counter = world.addWorldCounter({
+  name: "answer-counter",
+  position: [4.2, 0.2, 2.8],
+  compactPosition: [3.2, 0.2, 3.4],
+  value: 0,
+  digits: 2
+});
+
+counter.setValue(12);
+counter.getValue();
+```
+
+รองรับเลขจำนวนเต็มตั้งแต่ `0` ถึงจำนวนหลักที่กำหนด (`digits` 1–6) และ `leadingZero: true` เมื่อต้องการแสดงศูนย์นำหน้า ห้ามใช้แสดงข้อความหรือทำเป็นปุ่ม
+
+### `world.addWorldGui(options)`
+
+กรอบข้อความแบบ 3D ที่วางราบบนพื้น ใช้อธิบายบริเวณโดยไม่บังหน้าจอและไม่รับ interaction:
+
+```js
+const instruction = world.addWorldGui({
+  name: "drag-instruction",
+  text: "ลากแครอทไปวางในช่องคำตอบ",
+  position: [0, 0.24, 5.8],
+  compactPosition: [0, 0.24, 5.2],
+  size: [5.2, 1.65],
+  maxLines: 3
+});
+
+instruction.setText("ลากวัตถุชิ้นต่อไปมาวางที่นี่");
+instruction.getText();
+```
+
+ใช้ `compactPosition`/`compactScale` เมื่อต้องจัดตำแหน่งเฉพาะมือถือ ปรับเฉพาะงานจำเป็นด้วย `textColor`, `backgroundColor`, `borderColor`, `accentColor`, `fontSize` และ `size`; รูปลักษณ์หลักควรใช้ค่ากลางจาก Runtime Setting
 
 ### `world.addTargetFocus(options)`
 
@@ -182,10 +268,11 @@ world.addCallout({
 world.addTargetFocus({
   position: [4.2, 0.34, -0.8],
   radius: 2.05,
-  color: "#7857ff",
-  secondaryColor: "#62d5ad"
+  color: "#7857ff"
 });
 ```
+
+ค่า `opacity` ใช้ลดความเด่นของวง และกำหนด `animate: false` เมื่อต้องการวงเส้นประนิ่งที่ใช้เป็นสเกลหรือขอบเขตอ้างอิงแทนวง Focus โดยตำแหน่งจะไม่หมุนหรือ pulse จนคลาดจากวัตถุ นอกจากนี้ปรับ motion รายวงได้ด้วย `rotateSpeed`, `pulseScale` และ `opacityPulse`
 
 ### `world.addGuideline(options)`
 
@@ -230,11 +317,64 @@ Handle ที่ `add...` คืนมามี:
 
 ## UI
 
+อ่านรายละเอียดและตัวอย่างครบที่ [`GUI_SERVICE_REFERENCE.md`](GUI_SERVICE_REFERENCE.md)
+
+บทเรียนใหม่ใช้ GUI กลางผ่าน:
+
+- `context.ui.question` — โจทย์หลักด้านบน
+- `context.ui.console` — Objective, คำอธิบาย และ feedback ใน Console
+- `context.ui.topMessage` — ประกาศสั้นด้านบนที่ไม่ใช่โจทย์
+- `context.ui.choice` — ตัวเลือกที่กดได้เหนือ Console
+- `context.ui.gizmo` — GUI 2D ที่ติดตาม object หรือพิกัด World
+- `context.ui.feedback` — ผลลัพธ์สั้นแบบไม่บล็อก
+- `context.ui.dialog` — Popup แบบบล็อกสำหรับข้อความสำคัญ/การยืนยัน
+- `context.ui.insight` — Popup อธิบายพื้นที่หรือวัตถุที่ผู้เรียนกด รองรับ safe structured HTML
+- `context.ui.control` — เมนูปุ่ม utility มุมขวาบน/กลาง/ล่าง ไม่ใช่คำตอบ
+- `context.ui.hint` — คำแนะนำผ่าน Mascot กลาง
+- `context.ui.busy` — Overlay ระหว่างรอ async task
+
+`context.ui.gizmo` ไม่ใช่ `world.addCallout()`: Gizmo ใช้กับ object/value/status แบบ Screen-space ส่วน Callout ใช้ป้ายและเส้นชี้พื้นที่ในฉาก
+
+```js
+context.ui.question.show({ text: "4 + 2 = ?" });
+context.ui.console.setObjective("เป้าหมาย: หาผลรวมให้ถูกต้อง");
+
+context.ui.choice.show({
+  scope: "question",
+  title: "เลือกคำตอบ",
+  items: [4, 6, 8],
+  onSelect(event) {
+    context.quiz.answer(Number(event.value) === 6, { answer: Number(event.value) });
+  }
+});
+
+context.ui.gizmo.attach(box, {
+  scope: "scene",
+  type: "label",
+  text: "ลากกล่องนี้",
+  worldOffset: [0, 1.2, 0]
+});
+```
+
+Gizmo รองรับ `size: "large"` และ `segments: [{ text, color, role }]` สำหรับป้ายหลายสี โดยใช้ `role: "exponent"` เมื่อต้องแสดงเลขชี้กำลัง
+
+Choice เรียก objective action ให้อัตโนมัติ ระบบล้าง UI ตาม `scope` (`lesson`, `scene`, `step`, `question`, `manual`) และจัด mobile layout ให้ จึงห้ามสร้าง GUI ที่ระบบกลางรองรับด้วย HTML/CSS เอง ดู signature และตัวอย่างทั้งหมดใน `GUI_SERVICE_REFERENCE.md`
+
+### Compatibility API
+
 ```js
 context.ui.setObjective("เป้าหมาย: ลากกล่องไปยังพื้นที่คำตอบ");
+context.ui.setQuestion("4 + 2 = ?");
 context.ui.toast("ทำได้ถูกต้อง!", "success");
 context.ui.setProgress(2, 4);
 ```
+
+- `setQuestion(text)` แสดงโจทย์ด้วย UI มาตรฐานด้านบนของฉาก เป็น screen-space จึงไม่หมุนตามกล้อง บทเรียนส่งเฉพาะข้อความ
+- `clearQuestion()` ซ่อน UI โจทย์ ปกติ runtime จะล้างให้อัตโนมัติก่อน reset/close
+- `setObjective(text)` แสดงเป้าหมายใน Main Console ด้านล่าง
+- `toast(text, type)` อัปเดตข้อความสถานะภายใน Main Console และค้างไว้จนกว่าจะมีสถานะใหม่หรือเปลี่ยน Step รองรับ `success`, `warning`, `error`, `info`; ห้ามสร้าง panel ชั่วคราวเอง
+
+ห้ามใช้ `addText3D`, callout หรือ group มาสร้างป้ายโจทย์หลักซ้ำบน world-space หากเนื้อหาต้องอ่านคงที่ ให้ใช้ `setQuestion()`
 
 ใน Quiz ห้าม toast บอกถูก/ผิดระหว่างทำ
 
@@ -261,3 +401,8 @@ context.complete({ score: 1, total: 1 });
 ```
 
 `details` ต้องเป็นข้อมูล plain object ที่ serialize ได้ และควรเพียงพอให้ host แสดงเฉลยภายหลัง
+
+ทุกการเรียก `context.quiz.answer(...)` ที่ Runtime รับได้ถือว่าเป็นการตอบแล้ว ปุ่มของระบบต้องเปลี่ยนเป็น “ต่อไป” และในข้อสุดท้ายเป็น “ส่งคำตอบ” โดยไม่ขึ้นกับค่า `correct` บทเรียนห้ามสร้างปุ่มเหล่านี้เองหรือบังคับให้ตอบถูกก่อน
+
+
+

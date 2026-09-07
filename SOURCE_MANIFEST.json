@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-07",
+  "purpose": "AI reference only; not a runnable deployment",
+  "source": "Owner project working tree; copied files may contain uncommitted edits",
+  "excluded": [
+    "Project/plugins",
+    "Project/interactive/vendor",
+    "asset binaries",
+    "host Project/index.html"
+  ],
+  "files": [
+    {
+      "path": "Project/interactive/assets/library/catalog.json",
+      "sourcePath": "Project/interactive/assets/library/catalog.json",
+      "sha256": "cffa41a868e0f0f63a2886fc9d56f9a5b26957fd4a929c8fc9d9def114ef6e10"
+    },
+    {
+      "path": "Project/interactive/assets/library/README.md",
+      "sourcePath": "Project/interactive/assets/library/README.md",
+      "sha256": "754a635ea26b807bfcc1358a81b91b29ba29eb7d8bd8cb29d564453c275e3120"
+    },
+    {
+      "path": "Project/interactive/chapters/ep1/lesson1.html",
+      "sourcePath": "Project/interactive/chapters/ep1/lesson1.html",
+      "sha256": "caad8641afe424c313f88fd24aca3940b71996cd186b60531309013774bedc0b"
+    },
+    {
+      "path": "Project/interactive/chapters/ep1/lesson2.html",
+      "sourcePath": "Project/interactive/chapters/ep1/lesson2.html",
+      "sha256": "d5e85a7da92c295842dac1bd29f71d0da35b7571b95093a18ff6df5e692945c2"
+    },
+    {
+      "path": "Project/interactive/chapters/ep1/lesson3.html",
+      "sourcePath": "Project/interactive/chapters/ep1/lesson3.html",
+      "sha256": "d077a50409fef6f8f01b1215759bc0715fa47b5a3cb991a5b79e438da117f038"
+    },
+    {
+      "path": "Project/interactive/chapters/ep10/lesson1.html",
+      "sourcePath": "Project/interactive/chapters/ep10/lesson1.html",
+      "sha256": "968b117ef8fafd9cea039ebe123b7fb9aa3b9b2e0b37fc531b7620978b95aac0"
+    },
+    {
+      "path": "Project/interactive/chapters/ep10/lesson2.html",
+      "sourcePath": "Project/interactive/chapters/ep10/lesson2.html",
+      "sha256": "02ffedce329b395245edf5da3ba6c70c78b9baeac15f37690b28fe05493bf4a7"
+    },
+    {
+      "path": "Project/interactive/chapters/ep10/lesson3.html",
+      "sourcePath": "Project/interactive/chapters/ep10/lesson3.html",
+      "sha256": "0b130a3ea28f655670b951247c96fb9614cc5305bd68e14d8e2d7cdc48ecfff6"
+    },
+    {
+      "path": "Project/interactive/chapters/leesonExternal.html",
+      "sourcePath": "Project/interactive/chapters/leesonExternal.html",
+      "sha256": "371adade6a3c5c7e8f42daede67875148096f5dfd86bf20a9f2885804a5cbca4"
+    },
+    {
+      "path": "Project/interactive/chapters/lesson-library-demo.html",
+      "sourcePath": "Project/interactive/chapters/lesson-library-demo.html",
+      "sha256": "fba0b607c10c179bfbd37038e197aabe612aa365642ac38b03a1f763335c35bb"
+    },
+    {
+      "path": "Project/interactive/chapters/lesson0.html",
+      "sourcePath": "Project/interactive/chapters/lesson0.html",
+      "sha256": "78c913818b9b5878537d9887d6f59a099ca741570537c0adde71c8359b996443"
+    },
+    {
+      "path": "Project/interactive/chapters/lesson1.html",
+      "sourcePath": "Project/interactive/chapters/lesson1.html",
+      "sha256": "9fb3b0257e07eb0f176fc198f78155f925659a44766b21200d71b7d36c577c9e"
+    },
+    {
+      "path": "Project/interactive/eduSdk.js",
+      "sourcePath": "Project/interactive/eduSdk.js",
+      "sha256": "f0bc070a5042a0a5e8a0c589435f92674906f4024413270df68212a9319dc070"
+    },
+    {
+      "path": "Project/interactive/gui-service.js",
+      "sourcePath": "Project/interactive/gui-service.js",
+      "sha256": "41c57eb2f8b38d2a5a28b262a4729905b6a968f473c4ead0587038a344ee3652"
+    },
+    {
+      "path": "Project/interactive/main-world-setting.js",
+      "sourcePath": "Project/interactive/main-world-setting.js",
+      "sha256": "36fd42bd0f9055d81349b283dd1dff6f13dfee6eaa8e396c3e139aa997c09921"
+    },
+    {
+      "path": "Project/interactive/main-world.html",
+      "sourcePath": "Project/interactive/main-world.html",
+      "sha256": "003eed8783a65327952c05473cf891add137ddd0981d6c9224c935065b8b401e"
+    },
+    {
+      "path": "Project/interactive/main-world.js",
+      "sourcePath": "Project/interactive/main-world.js",
+      "sha256": "322c6526b239f59dacb21dccdedd024b544eb797076c2f6ea85b6408044bb5b5"
+    },
+    {
+      "path": "Project/interactive/runtime-setting-menu.js",
+      "sourcePath": "Project/interactive/runtime-setting-menu.js",
+      "sha256": "955ae73223bf11b64201b9bc7e9564f4663230bf40728cfcfb0fee5845ff522f"
+    },
+    {
+      "path": "Project/interactive/world.css",
+      "sourcePath": "Project/interactive/world.css",
+      "sha256": "0bb4a38a13275b597a522f12e70e5e2377465d5bc109d3ffab7fe8376855f1ab"
+    }
+  ]
+}

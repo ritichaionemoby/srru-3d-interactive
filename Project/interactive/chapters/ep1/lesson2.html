@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>เปรียบเทียบจำนวนด้วย = ≠ &lt; &gt; ≤ ≥</title>
+</head>
+
+<body>
+  <script data-lesson-app>
+    (() => {
+      const LAB_OPERATORS = Object.freeze(["=", "≠", "<", ">", "≤", "≥"]);
+      const makeQuestion = (question, givenSide, givenCount, operator, answerCount) => ({ question, data: [
+        { key: "givenSide", value: givenSide }, { key: "givenCount", value: givenCount },
+        { key: "operator", value: operator }, { key: "answerCount", value: answerCount }
+      ] });
+      const quiz = [
+        makeQuestion("วางด้านขวาให้ 4 > จำนวนด้านขวา", "left", 4, ">", 2),
+        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายน้อยกว่า 5", "right", 5, "<", 3),
+        makeQuestion("ทำให้ 3 = จำนวนด้านขวา เป็นจริง", "left", 3, "=", 3),
+        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายมากกว่า 2", "right", 2, ">", 4),
+        makeQuestion("ทำให้ 1 < จำนวนด้านขวา เป็นจริง", "left", 1, "<", 4),
+        makeQuestion("วางด้านซ้ายให้มีจำนวนเท่ากับ 4", "right", 4, "=", 4),
+        makeQuestion("ทำให้ 2 ≠ จำนวนด้านขวา เป็นจริง", "left", 2, "≠", 4),
+        makeQuestion("วางด้านซ้ายให้มีจำนวนไม่เท่ากับ 5", "right", 5, "≠", 1),
+        makeQuestion("ทำให้ 6 ≠ จำนวนด้านขวา เป็นจริง", "left", 6, "≠", 3),
+        makeQuestion("วางด้านขวาให้ 3 ≤ จำนวนด้านขวา", "left", 3, "≤", 3),
+        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายน้อยกว่าหรือเท่ากับ 5", "right", 5, "≤", 4),
+        makeQuestion("ทำให้ 2 ≤ จำนวนด้านขวา เป็นจริง", "left", 2, "≤", 6),
+        makeQuestion("วางด้านขวาให้ 4 ≥ จำนวนด้านขวา", "left", 4, "≥", 4),
+        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายมากกว่าหรือเท่ากับ 2", "right", 2, "≥", 5),
+        makeQuestion("ทำให้ 6 ≥ จำนวนด้านขวา เป็นจริง", "left", 6, "≥", 3),
+        makeQuestion("ทำให้ 5 > จำนวนด้านขวา เป็นจริง", "left", 5, ">", 3),
+        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายน้อยกว่า 6", "right", 6, "<", 4),
+        makeQuestion("ทำให้ 2 = จำนวนด้านขวา เป็นจริง", "left", 2, "=", 2),
+        makeQuestion("วางด้านซ้ายให้มีจำนวนเท่ากับ 6", "right", 6, "=", 6),
+        makeQuestion("วางด้านซ้ายให้มีจำนวนไม่เท่ากับ 1", "right", 1, "≠", 4),
+        makeQuestion("ทำให้ 4 < จำนวนด้านขวา เป็นจริง", "left", 4, "<", 6),
+        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายมากกว่า 3", "right", 3, ">", 5),
+        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายน้อยกว่าหรือเท่ากับ 4", "right", 4, "≤", 4),
+        makeQuestion("ทำให้ 5 ≥ จำนวนด้านขวา เป็นจริง", "left", 5, "≥", 2)
+      ];
+
+      PuzzleLesson.define({
+        id: "lesson0-comparison",
+        version: "2.2.0",
+        meta: {
+          worldType: "3d-world-space",
+          lessonId: "lesson0-comparison",
+          title: "สัญลักษณ์แสดงความสัมพันธ์ = ≠ < > ≤ ≥",
+          category: "คณิตศาสตร์",
+          subcategory: "สัญลักษณ์พื้นฐานทางคณิตศาสตร์",
+          description: "ฝึกอ่านและสร้างประโยคเปรียบเทียบจำนวน โดยลากแอปเปิลให้จำนวนทั้งสองฝั่งสัมพันธ์กับเครื่องหมาย = ≠ < > ≤ ≥",
+          keyResult: "ผู้เรียนแยกความหมายของ เท่ากับ ไม่เท่ากับ มากกว่า น้อยกว่า มากกว่าหรือเท่ากับ และน้อยกว่าหรือเท่ากับได้",
+          background: "green",
+          // แต่ละ lesson ปรับ framing ของกล้องเองได้ โดยไม่กระทบ lesson อื่น
+          camera: {
+            fov: 43,
+            startYaw: 25,
+            startPitch: 44,
+            startDistance: 21.8,
+            minDistance: 10,
+            maxDistance: 32,
+            minPitch: 18,
+            maxPitch: 76,
+            // จุดหมุนอยู่กลางเกาะเสมอ; ปรับความสูงของ framing ด้วยค่า Y เท่านั้น
+            target: [0, 0.25, 0]
+          },
+          welcomeMessage: ["สังเกตจำนวนแอปเปิลด้านที่กำหนด", "อ่านเครื่องหมายตรงกลางจากซ้ายไปขวา", "ลากแอปเปิลลงพื้นที่ว่างให้เงื่อนไขเป็นจริง"],
+          tooltip: "ลากแอปเปิลจากแถวพัก ไปวางบนพื้นที่ว่างที่มีเส้นประนำทาง",
+          defaultValue: { givenSide: "left", givenCount: 4, operator: ">", answerCount: 2 },
+          editSchema: [
+            { key: "givenSide", name: "ด้านที่กำหนดแอปเปิลไว้", type: "dropdown", option: ["left", "right"] },
+            { key: "givenCount", name: "จำนวนแอปเปิลที่กำหนด", type: "slider", option: [1, 6] },
+            { key: "answerCount", name: "จำนวนแอปเปิลตัวอย่าง", type: "slider", option: [1, 6], step: 1 },
+            { key: "operator", name: "เครื่องหมาย", type: "dropdown", option: ["=", "≠", "<", ">", "≤", "≥"] }
+          ],
+          howto: [
+            { index: 0, title: "สำรวจจำนวนที่มีอยู่", type: "sequence", desc: "เริ่มจากนับแอปเปิลในพื้นที่ที่กำหนดให้", option: { type: "instruction", header: "เทคนิคการนับ", message: "นับแอปเปิลทีละผลจากหน้าไปหลัง และตรวจซ้ำอีกครั้งก่อนดูเครื่องหมาย" } },
+            { index: 1, title: "อ่านเครื่องหมาย", type: "sequence", desc: "อ่านประโยคจากซ้ายไปขวา แยกความหมายของ = ≠ < > ≤ และ ≥ ให้ถูกต้อง" },
+            { index: 2, title: "วางแผนคำตอบ", type: "sequence", desc: "มองตามเส้นประไปยังพื้นที่ว่าง แล้วคิดว่าควรใช้แอปเปิลกี่ผล", option: { type: "hint", header: "จำง่าย ๆ", message: "ขีดใต้ของ ≤ และ ≥ หมายถึงสามารถมีจำนวนเท่ากันได้ ส่วน ≠ หมายถึงจำนวนต้องต่างกัน" } },
+            { index: 3, title: "ลองสร้างประโยคจริง", type: "freestyle", desc: "ลากแอปเปิลไปยังพื้นที่ว่างให้ครบตามเงื่อนไข ลองผิดลองถูกได้ไม่จำกัด" }
+          ],
+          quiz
+        },
+
+        mount(context) {
+          this.context = context;
+          this.handles = [];
+          this.placement = new Map();
+          this.startPositions = [];
+          this.demoTimers = [];
+          this.labControls = null;
+        },
+
+        async reset({ values, mode, question }) {
+          this.demoTimers.forEach(clearTimeout);
+          this.demoTimers = [];
+          this.values = { ...values };
+          this.mode = mode;
+          this.placement = new Map();
+          this.handles = [];
+          this.startPositions = [];
+          this.labOperatorIndex = -1;
+          const world = this.context.world;
+          const leftX = -5.1;
+          const rightX = 5.1;
+          const targetX = values.givenSide === "left" ? rightX : leftX;
+          const givenX = values.givenSide === "left" ? leftX : rightX;
+          this.targetX = targetX;
+          this.leftX = leftX;
+          this.rightX = rightX;
+
+          world.addZone({ name: "left-zone", size: [7.4, .28, 6.6], position: [leftX, .15, -1], color: values.givenSide === "left" ? "#c8e5ff" : "#d8f5df" });
+          world.addZone({ name: "right-zone", size: [7.4, .28, 6.6], position: [rightX, .15, -1], color: values.givenSide === "right" ? "#c8e5ff" : "#d8f5df" });
+          this.operatorSign = world.addOperatorSign({ text: values.operator, position: [0, .24, -1], scale: [2.45, 2.45] });
+          this.targetFocus = world.addTargetFocus({ position: [targetX, .34, -.8], radius: 2.05 });
+          this.targetFocus.setVisible(false);
+          this.refreshCallouts();
+
+          const givenPromises = [];
+          for (let index = 0; index < values.givenCount; index += 1) {
+            const column = index % 3;
+            const row = Math.floor(index / 3);
+            givenPromises.push(world.addLibraryObject({
+              asset: "food/apple-orange",
+              name: `given-${index}`,
+              position: [givenX + (column - 1) * 1.65, .18, -1.5 + row * 1.75],
+              rotation: [0, (index % 3 - 1) * 12, 0],
+              scale: .92,
+              hoverMessage: "แอปเปิลฝั่งที่กำหนดให้"
+            }));
+          }
+
+          const supply = 6;
+          const answerPromises = [];
+          for (let index = 0; index < supply; index += 1) {
+            const startX = -4.5 + index * 1.8;
+            const startPosition = [startX, .18, 4.05];
+            answerPromises.push(world.addLibraryObject({
+              asset: "food/apple",
+              name: `answer-${index}`,
+              position: startPosition,
+              rotation: [0, (index % 3 - 1) * 10, 0],
+              scale: .86,
+              draggable: mode === "student-quiz",
+              dragAxis: "xz",
+              dragLiftHeight: 1.1,
+              hitArea: [1.55, 1.85, 1.55],
+              hitAreaOffset: [0, .78, 0],
+              guideTarget: [targetX, .35, -.8],
+              hoverMessage: "ลากแอปเปิลนี้ไปยังพื้นที่คำตอบ",
+              onDrop: (position, droppedHandle) => this.handleDrop(index, position, droppedHandle, targetX)
+            }));
+            this.startPositions[index] = startPosition;
+          }
+
+          await Promise.all(givenPromises);
+          this.handles = await Promise.all(answerPromises);
+
+          if (mode !== "student-quiz") {
+            this.createLabControls();
+            this.guideline = world.addGuideline({ fromObject: this.handles[0].object3D, to: [targetX, .35, -.8] });
+            this.guideline.setVisible(false);
+          }
+
+          this.updateObjective();
+        },
+
+        createLabControls() {
+          this.labControls = this.context.ui.control.show({
+            id: "comparison-lab-tools",
+            scope: "scene",
+            position: "middle-right",
+            ariaLabel: "เครื่องมือทดลองเปรียบเทียบจำนวน",
+            items: [
+              { id: "change-operator", label: "เปลี่ยนเครื่องหมาย", icon: "rotate-right.svg" },
+              { id: "clear-answer", label: "ล้างคำตอบ", icon: "reset.svg" }
+            ],
+            onAction: event => {
+              if (event.id === "change-operator") this.changeOperator();
+              if (event.id === "clear-answer") this.clearAnswer();
+            }
+          });
+          this.labControls.hide();
+        },
+
+        changeOperator() {
+          if (this.mode === "student-quiz") return;
+          this.labOperatorIndex = (this.labOperatorIndex + 1) % LAB_OPERATORS.length;
+          this.values.operator = LAB_OPERATORS[this.labOperatorIndex];
+          this.operatorSign?.remove();
+          this.operatorSign = this.context.world.addOperatorSign({ text: this.values.operator, position: [0, .24, -1], scale: [2.45, 2.45] });
+          this.refreshCallouts();
+          this.updateObjective();
+          const result = this.evaluateAnswer();
+          this.operatorSign.setState(result.correct);
+          this.operatorSign.pulse();
+          this.context.ui.console.feedback(`${result.leftCount} ${this.values.operator} ${result.rightCount} ${result.correct ? "เป็นจริง" : "ยังไม่เป็นจริง"}`, { tone: result.correct ? "success" : "warning" });
+          if (result.correct) this.context.audio.play("success");
+        },
+
+        clearAnswer() {
+          if (this.mode === "student-quiz") return;
+          this.placement.clear();
+          this.handles.forEach((handle, index) => {
+            handle.stopAnimation();
+            handle.animateTo(...this.startPositions[index], { delay: index * 45, duration: 520, arcHeight: .35 });
+          });
+          this.operatorSign?.setState(false);
+          this.context.ui.console.feedback("ล้างคำตอบแล้ว ลากแอปเปิลมาทดลองใหม่ได้เลย", { tone: "info" });
+        },
+
+        refreshCallouts() {
+          this.leftCallout?.remove();
+          this.rightCallout?.remove();
+          const targetOperator = this.targetOperator(this.values.operator, this.values.givenSide);
+          const answerLabel = this.mode === "student-quiz" ? "พื้นที่คำตอบ" : `วางให้ ${targetOperator} ${this.values.givenCount}`;
+          this.leftCallout = this.context.world.addCallout({ text: this.values.givenSide === "left" ? "จำนวนที่กำหนด" : answerLabel, position: [this.leftX, 4.35, .35], anchor: [this.leftX, .28, -1], scale: [2.85, .82] });
+          this.rightCallout = this.context.world.addCallout({ text: this.values.givenSide === "right" ? "จำนวนที่กำหนด" : answerLabel, position: [this.rightX, 4.35, .35], anchor: [this.rightX, .28, -1], scale: [2.85, .82] });
+        },
+
+        updateObjective() {
+          const equation = `${this.values.givenSide === "left" ? this.values.givenCount : "?"} ${this.values.operator} ${this.values.givenSide === "right" ? this.values.givenCount : "?"}`;
+          this.context.ui.setObjective(`เป้าหมาย: ทำให้ ${equation} เป็นจริง`);
+        },
+
+        handleDrop(index, position, handle, targetX) {
+          const inside = Math.abs(position.x - targetX) < 3.3 && position.z > -4.1 && position.z < 2.2;
+          const wasPlaced = this.placement.has(index);
+
+          if (!inside && !wasPlaced) {
+            return false;
+          }
+
+          if (inside) {
+            if (!wasPlaced) {
+              const usedSlots = new Set(this.placement.values());
+              let slot = 0;
+              while (usedSlots.has(slot)) slot += 1;
+              this.placement.set(index, slot);
+            }
+            const slot = this.placement.get(index);
+            handle.setPosition(targetX + ((slot % 3) - 1) * 1.65, .18, -1.5 + Math.floor(slot / 3) * 1.75);
+          } else {
+            this.placement.delete(index);
+            handle.setPosition(...this.startPositions[index]);
+          }
+
+          const { leftCount, rightCount, correct } = this.evaluateAnswer();
+
+          if (this.mode === "student-quiz") {
+            this.context.quiz.answer(correct, { leftCount, rightCount, operator: this.values.operator });
+          } else {
+            this.operatorSign?.setState(correct);
+            if (correct) {
+              this.context.audio.play("success");
+              this.context.ui.toast(`${leftCount} ${this.values.operator} ${rightCount} เป็นจริง ถูกต้อง!`, "success");
+            }
+          }
+          return { accepted: true, commit: inside };
+        },
+
+        evaluateAnswer() {
+          const placedCount = this.placement.size;
+          const leftCount = this.values.givenSide === "left" ? this.values.givenCount : placedCount;
+          const rightCount = this.values.givenSide === "right" ? this.values.givenCount : placedCount;
+          return { leftCount, rightCount, correct: this.compare(leftCount, this.values.operator, rightCount) };
+        },
+
+        compare(left, operator, right) {
+          if (operator === "=") return left === right;
+          if (operator === "≠" || operator === "!=") return left !== right;
+          if (operator === "<") return left < right;
+          if (operator === ">") return left > right;
+          if (operator === "≤" || operator === "<=") return left <= right;
+          if (operator === "≥" || operator === ">=") return left >= right;
+          return false;
+        },
+
+        targetOperator(operator, givenSide) {
+          const normalized = operator === "!=" ? "≠" : operator === "<=" ? "≤" : operator === ">=" ? "≥" : operator;
+          if (givenSide === "right") return normalized;
+          return ({ "=": "=", "≠": "≠", "<": ">", ">": "<", "≤": "≥", "≥": "≤" })[normalized] || normalized;
+        },
+
+        onStep(index, step) {
+          const messages = ["เริ่มจากนับแอปเปิล", `อ่านเครื่องหมาย ${this.values.operator} จากซ้ายไปขวา`, "เส้นประสีเข้มชี้ไปยังพื้นที่คำตอบ", "ถึงเวลาลองลากแอปเปิลด้วยตัวเองแล้ว"];
+          const canPractice = step.type === "freestyle";
+          this.demoTimers.forEach(clearTimeout);
+          this.demoTimers = [];
+          this.context.world.hideDragCue();
+          this.handles.forEach((handle, boxIndex) => {
+            handle.stopAnimation();
+            handle.setDraggable(false);
+            if (index <= 1) handle.setPosition(...this.startPositions[boxIndex]);
+          });
+          this.guideline?.setVisible(index === 2);
+          this.targetFocus?.setVisible(index === 1 || index === 2);
+          if (canPractice) this.labControls?.show(); else this.labControls?.hide();
+          const later = (callback, delay) => this.demoTimers.push(setTimeout(callback, delay));
+          if (index === 1) {
+            this.handles.forEach((handle, boxIndex) => {
+              handle.animateTo(...this.startPositions[boxIndex], { delay: boxIndex * 55, duration: 520, arcHeight: .24 });
+            });
+          } else if (index === 2) {
+            this.handles.slice(0, Number(this.values.answerCount)).forEach((handle, boxIndex) => {
+              handle.animateTo(this.targetX + ((boxIndex % 3) - 1) * 1.65, .18, -1.5 + Math.floor(boxIndex / 3) * 1.75, { delay: boxIndex * 120, duration: 720 });
+            });
+          } else if (canPractice) {
+            this.placement.clear();
+            this.handles.forEach((handle, boxIndex) => handle.animateTo(...this.startPositions[boxIndex], { delay: boxIndex * 55, duration: 520, arcHeight: .35 }));
+            later(() => {
+              this.handles.forEach(handle => handle.setDraggable(true));
+              this.context.world.showDragCue(this.handles[0], [this.targetX, .18, -.8]);
+            }, 720);
+          }
+          this.context.ui.toast(messages[index] || step.title, "success");
+        },
+
+        dispose() {
+          this.demoTimers.forEach(clearTimeout);
+          this.context.world.hideDragCue();
+          this.handles = [];
+          this.labControls?.remove();
+          this.labControls = null;
+          this.placement?.clear();
+          this.startPositions = [];
+        }
+      });
+    })();
+  </script>
+</body>
+
+</html>

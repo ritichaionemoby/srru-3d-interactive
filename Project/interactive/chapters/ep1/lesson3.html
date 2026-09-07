@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>เกมแยกตะกร้า เซตและการเขียนเซต</title>
+</head>
+<body>
+  <script data-lesson-app>
+    (() => {
+      const CARD_IMAGE_ROOT = "../../assets/image/lesson3-cards";
+      const CATEGORIES = Object.freeze({
+        fruit: { code: "F", icon: "🍎", label: "ผลไม้", color: "#f2a33c", pale: "#fff0bd", edge: "#c97828", x: -5.15 },
+        animal: { code: "A", icon: "🐱", label: "สัตว์", color: "#46b9c7", pale: "#c9f2eb", edge: "#268796", x: 0 },
+        toy: { code: "T", icon: "⚽️", label: "ของเล่น", color: "#9870dd", pale: "#eadcff", edge: "#6f49b7", x: 5.15 }
+      });
+      const ITEMS = Object.freeze([
+        { id: "apple", label: "แอปเปิล", category: "fruit" }, { id: "banana", label: "กล้วย", category: "fruit" },
+        { id: "orange", label: "ส้ม", category: "fruit" }, { id: "watermelon", label: "แตงโม", category: "fruit" },
+        { id: "strawberry", label: "สตรอว์เบอร์รี", category: "fruit" }, { id: "grapes", label: "องุ่น", category: "fruit" },
+        { id: "pear", label: "ลูกแพร์เขียว", category: "fruit" }, { id: "green-apple", label: "แอปเปิลเขียว", category: "fruit" },
+        { id: "cat", label: "แมว", category: "animal", quadruped: true }, { id: "dog", label: "สุนัข", category: "animal", quadruped: true },
+        { id: "fish", label: "ปลา", category: "animal" }, { id: "elephant", label: "ช้าง", category: "animal", quadruped: true },
+        { id: "lion", label: "สิงโต", category: "animal", quadruped: true }, { id: "hippo", label: "ฮิปโป", category: "animal", quadruped: true },
+        { id: "bird", label: "นก", category: "animal" }, { id: "giraffe", label: "ยีราฟ", category: "animal", quadruped: true },
+        { id: "ball", label: "ลูกบอล", category: "toy" }, { id: "car", label: "รถของเล่น", category: "toy" },
+        { id: "blocks", label: "บล็อกตัวต่อ", category: "toy" },
+        { id: "kite", label: "ว่าว", category: "toy" }, { id: "drum", label: "กลองของเล่น", category: "toy" },
+        { id: "spinning-top", label: "ลูกข่าง", category: "toy" }, { id: "robot", label: "หุ่นยนต์ของเล่น", category: "toy" },
+        { id: "game-controller", label: "จอยเกม", category: "toy" }
+      ].map(item => Object.freeze({ ...item, image: `${CARD_IMAGE_ROOT}/${item.id}.png` })));
+      const ITEM_BY_ID = new Map(ITEMS.map(item => [item.id, item]));
+      const quizSeeds = [
+        ["apple", "belongs", null], ["dog", "belongs", null], ["ball", "belongs", null], ["watermelon", "belongs", null],
+        ["elephant", "belongs", null], ["kite", "belongs", null], ["pear", "belongs", null], ["giraffe", "belongs", null],
+        ["robot", "belongs", null], ["green-apple", "belongs", null], ["cat", "not-belongs", "fruit"],
+        ["banana", "not-belongs", "animal"], ["blocks", "not-belongs", "fruit"], ["fish", "not-belongs", "toy"],
+        ["orange", "not-belongs", "animal"], ["hippo", "not-belongs", "toy"], ["game-controller", "not-belongs", "animal"],
+        ["bird", "not-belongs", "fruit"], ["lion", "not-belongs", "fruit"], ["car", "not-belongs", "animal"]
+      ];
+      const quiz = quizSeeds.map(([itemId, questionType, comparedCategory]) => {
+        const item = ITEM_BY_ID.get(itemId);
+        const question = questionType === "belongs"
+          ? `ลาก${item.label}ไปยังเซตที่เป็นสมาชิก`
+          : `พิสูจน์ว่า ${item.label} ∉ ${CATEGORIES[comparedCategory].code} โดยลากไปยังเซตที่ถูกต้อง`;
+        return { question, data: [
+          { key: "questionType", value: questionType }, { key: "itemId", value: itemId },
+          { key: "targetCategory", value: item.category }, { key: "comparedCategory", value: comparedCategory || "" }
+        ] };
+      });
+
+      PuzzleLesson.define({
+        id: "ep1-lesson3-set-basket",
+        version: "1.3.4",
+        meta: {
+          worldType: "3d-world-space",
+          lessonId: "ep1-lesson3-set-basket",
+          title: "เซต การเขียนเซต และสัญลักษณ์ ∈ ∉ ⊂",
+          category: "คณิตศาสตร์",
+          subcategory: "สัญลักษณ์พื้นฐานทางคณิตศาสตร์",
+          description: "เรียนรู้เซตผ่านการ์ดภาพผลไม้ สัตว์ และของเล่น แล้วเชื่อมโยงกับ ∈ ∉ และ ⊂",
+          keyResult: "ผู้เรียนจัดสิ่งของเข้ากลุ่ม อธิบายการเป็นหรือไม่เป็นสมาชิก และเข้าใจความหมายของสับเซต",
+          background: "green",
+          camera: { fov: 43, startYaw: 18, startPitch: 47, startDistance: 28, minDistance: 13, maxDistance: 39, minPitch: 22, maxPitch: 76, target: [0, .3, 0] },
+          welcomeMessage: ["ดูภาพบนการ์ดว่าเป็นสิ่งของประเภทใด", "ลากการ์ดไปยังพื้นที่ผลไม้ สัตว์ หรือของเล่น", "สังเกตประโยค ∈ ∉ และ ⊂ ที่เกิดจากการจัดกลุ่ม"],
+          tooltip: "ลากการ์ดจากแท่นด้านหน้าไปยังพื้นที่ล้อมรั้วที่ตรงกับหมวดของภาพ",
+          defaultValue: { categorySet: "all", varietyCount: 8, cardOrder: "random", questionType: "belongs", itemId: "apple", targetCategory: "fruit", comparedCategory: "" },
+          editSchema: [
+            { key: "categorySet", name: "กลุ่มที่ใช้ในเกม", type: "dropdown", option: [
+              { value: "all", label: "ผลไม้ + สัตว์ + ของเล่น" }, { value: "fruit-animal", label: "ผลไม้ + สัตว์" }, { value: "animal-toy", label: "สัตว์ + ของเล่น" }
+            ] },
+            { key: "varietyCount", name: "จำนวนชนิดต่อหมวด", type: "slider", option: [3, 8], step: 1 },
+            { key: "cardOrder", name: "ลำดับการ์ด", type: "dropdown", option: [
+              { value: "random", label: "สุ่มต่อเนื่อง" }, { value: "fixed", label: "เรียงตามรายการ" }
+            ] }
+          ],
+          howto: [
+            { index: 0, title: "รู้จักเซตจากการจัดกลุ่ม", type: "sequence", desc: "พื้นที่ล้อมรั้วแต่ละแห่งแทนหนึ่งเซต และมีการ์ดตัวอย่างบอกสมาชิกของกลุ่ม" },
+            { index: 1, title: "เขียนสมาชิกของเซต", type: "sequence", desc: "เราใช้วงเล็บปีกกาเขียนรายชื่อสมาชิก เช่น F = {แอปเปิล, กล้วย, ส้ม}" },
+            { index: 2, title: "เป็นสมาชิก ∈", type: "sequence", desc: "เครื่องหมาย ∈ อ่านว่า เป็นสมาชิกของ เช่น แอปเปิล ∈ F" },
+            { index: 3, title: "ไม่เป็นสมาชิก ∉", type: "sequence", desc: "เครื่องหมาย ∉ อ่านว่า ไม่เป็นสมาชิกของ เช่น ลูกบอล ∉ A" },
+            { index: 4, title: "รู้จักสับเซต ⊂", type: "sequence", desc: "ถ้าสมาชิกทุกตัวของเซตเล็กอยู่ในเซตใหญ่ เซตเล็กเป็นสับเซตของเซตใหญ่" },
+            { index: 5, title: "ทดลองแยกการ์ด", type: "freestyle", desc: "แท่นจะสุ่มการ์ดใหม่ต่อเนื่อง ลากไปวางในกลุ่มเพื่อดูความสัมพันธ์ของเซต" }
+          ],
+          quiz
+        },
+
+        async mount(context) {
+          this.context = context;
+          this.timers = [];
+          this.dynamicCards = [];
+          this.zoneVisuals = {};
+          this.centerCards = {};
+          this.sideCards = {};
+          this.hasShownLabDragCue = false;
+          // โหลดและ decode ภาพการ์ดทั้งหมดระหว่างหน้า Loading เพื่อไม่ให้ภาพค่อย ๆ โผล่หลังสร้างการ์ด
+          this.cardImagePreload = await context.assets.preloadImages(ITEMS.map(item => item.image));
+        },
+
+        reset({ values, mode, question }) {
+          this.clearTimers();
+          this.values = { ...values };
+          this.mode = mode;
+          this.question = question || null;
+          this.isInteractive = mode === "student-quiz";
+          this.deck = [];
+          this.deckIndex = 0;
+          this.activeCard = null;
+          this.dynamicCards = [];
+          this.zoneVisuals = {};
+          this.centerCards = {};
+          this.sideCards = {};
+          this.buildCategoryAreas();
+          this.buildCardPlatform();
+          this.applyCategoryVisibility();
+          if (mode === "student-quiz") this.prepareQuizQuestion();
+          else {
+            this.context.ui.question.show({ label: "บทเรียน", text: "รู้จักเซตจากสิ่งของรอบตัว", tone: "primary" });
+            this.context.ui.console.set({ objective: "สำรวจกลุ่มผลไม้ สัตว์ และของเล่น", title: "เกมแยกตะกร้า", message: "กดถัดไปเพื่อเรียนรู้ทีละขั้น แล้วทดลองลากการ์ดด้วยตัวเอง", tone: "info" });
+          }
+        },
+
+        enabledCategoryIds() {
+          if (this.values.categorySet === "fruit-animal") return ["fruit", "animal"];
+          if (this.values.categorySet === "animal-toy") return ["animal", "toy"];
+          return ["fruit", "animal", "toy"];
+        },
+
+        categoryItems(categoryId) { return ITEMS.filter(item => item.category === categoryId); },
+
+        buildCategoryAreas() {
+          Object.entries(CATEGORIES).forEach(([id, category]) => {
+            const visuals = [];
+            const zone = this.context.world.addZone({ name: `${id}-set-zone`, size: [4.55, .2, 4.15], position: [category.x, .13, -1.65], color: category.pale, opacity: .66 });
+            visuals.push(zone, this.addFence(category));
+            const callout = this.context.world.addCallout({
+              text: `${category.icon} ${category.label} (${category.code})`,
+              position: [category.x, 2.65, -3.42], compactPosition: [category.x, 2.55, -3.38], anchor: [category.x, .28, -3.57],
+              scale: [3.3, .72], compactScale: [2.7, .66],
+              insight: { title: `เซต${category.label} (${category.code})`, html: this.categoryInsight(id), primaryLabel: "เข้าใจแล้ว" }
+            });
+            visuals.push(callout);
+            const focus = this.context.world.addTargetFocus({ position: [category.x, .3, -1.65], radius: 1.72, color: category.color, secondaryColor: "#ffffff" });
+            focus.setVisible(false);
+            visuals.push(focus);
+            this.zoneVisuals[id] = { visuals, focus, zone };
+          });
+        },
+
+        categoryInsight(id) {
+          const category = CATEGORIES[id];
+          const cards = this.categoryItems(id).map(item => `<div class="insight-card"><img class="insight-card-image" src="${item.image}" alt="${item.label}"><span class="insight-card-name">${item.label}</span></div>`).join("");
+          const example = this.categoryItems(id)[0];
+          return `<p class="insight-lead">${category.icon} ${category.code} คือเซต${category.label} ตัวอย่างสมาชิกมีดังนี้</p><div class="insight-grid">${cards}</div><p class="insight-note">${example.label} ∈ ${category.code} เพราะเป็นสมาชิกของกลุ่มนี้</p>`;
+        },
+
+        addFence(category) {
+          const width = 4.45, depth = 4.05, parts = [];
+          for (const z of [-depth / 2, depth / 2]) parts.push({ shape: "box", position: [0, .42, z], size: [width, .16, .16], color: category.edge, material: { roughness: .76 } });
+          for (const x of [-width / 2, width / 2]) parts.push({ shape: "box", position: [x, .42, 0], size: [.16, .16, depth], color: category.edge, material: { roughness: .76 } });
+          [[-width / 2, -depth / 2], [width / 2, -depth / 2], [-width / 2, depth / 2], [width / 2, depth / 2]].forEach(([x, z]) => {
+            parts.push({ shape: "cylinder", position: [x, .43, z], size: [.28, .86, .28], color: "#8b613b", material: { roughness: .82 } });
+          });
+          return this.context.world.addGroup({ name: `${category.code}-fence`, position: [category.x, .12, -1.65], parts });
+        },
+
+        buildCardPlatform() {
+          const platformZ = 3.25;
+          this.platformHandle = this.context.world.addGroup({ name: "card-platform", position: [0, .13, platformZ], parts: [
+            { shape: "cylinder", position: [0, .16, 0], size: [3.05, .3, 3.05], color: "#7862cf", material: { roughness: .42, clearcoat: .5 } },
+            { shape: "cylinder", position: [0, .39, 0], size: [2.72, .18, 2.72], color: "#fff7df", material: { roughness: .58, clearcoat: .25 } },
+            { shape: "torus", position: [0, .51, 0], rotation: [90, 0, 0], size: [1.37, 1.37, 1.37], color: "#f1c766", material: { roughness: .5 } }
+          ] });
+          // ใช้ size และ fontSize จาก worldGui ส่วนกลาง เพื่อให้ทุกบทเรียนมีมาตรฐานเดียวกัน
+          this.platformLabel = this.context.world.addWorldGui({ name: "card-platform-label", text: "ลากการ์ด" });
+          this.sourcePosition = [0, .58, platformZ];
+        },
+
+        applyCategoryVisibility() {
+          const enabled = new Set(this.enabledCategoryIds());
+          Object.entries(this.zoneVisuals).forEach(([id, group]) => group.visuals.forEach(handle => handle.setVisible(enabled.has(id))));
+        },
+
+        cardParts(item) {
+          return [
+            { shape: "box", position: [0, .11, 0], size: [2.08, .22, 2.28], color: "#d6bd88", material: { roughness: .62, clearcoat: .2 } },
+            { shape: "box", position: [0, .25, 0], size: [1.92, .12, 2.1], color: "#fffaf0", material: { roughness: .66, clearcoat: .15 } },
+            { shape: "plane", position: [0, .325, 0], rotation: [-90, 0, 0], size: [1.78, 1.78, 1], color: "#ffffff", castShadow: false, receiveShadow: false,
+              material: { texture: item.image, roughness: .82, metalness: 0, emissive: "#ffffff", emissiveIntensity: .08 } }
+          ];
+        },
+
+        createCard(item, { draggable = false, position = this.sourcePosition, scale = 1 } = {}) {
+          let record = null;
+          const handle = this.context.world.addGroup({
+            name: `card-${item.id}-${this.dynamicCards.length}`, position, scale, draggable, dragAxis: "xz", dragLiftHeight: 1.2, dragFromCenter: true,
+            hitArea: [2.5, 1.7, 2.7], hitAreaOffset: [0, .62, 0],
+            // Lab ใช้เส้นช่วยสอนตำแหน่งเป้าหมาย แต่ Quiz ต้องให้ผู้เรียนตัดสินใจเลือกกลุ่มเอง
+            guideTarget: this.mode === "student-quiz" ? null : [CATEGORIES[item.category].x, .35, -1.65],
+            hoverMessage: `ลากการ์ด${item.label}ไปยังกลุ่มที่ถูกต้อง`, parts: this.cardParts(item),
+            onDrag: () => {
+              if (!record || record.hasStartedDrag) return;
+              record.hasStartedDrag = true;
+              if (this.mode !== "student-quiz") this.showActiveCardInstruction(record.item);
+            },
+            onDrop: (positionValue, droppedHandle) => this.handleCardDrop(record, positionValue, droppedHandle)
+          });
+          record = { item, handle, startPosition: [...position], placedCategory: null, hasStartedDrag: false };
+          this.dynamicCards.push(record);
+          return record;
+        },
+
+        detectCategory(position) {
+          return this.enabledCategoryIds().find(id => Math.abs(position.x - CATEGORIES[id].x) < 2.25 && position.z > -3.75 && position.z < .5) || null;
+        },
+
+        centerPosition(categoryId) { return [CATEGORIES[categoryId].x, .48, -1.42]; },
+
+        sidePositions(categoryId) {
+          const x = CATEGORIES[categoryId].x;
+          return [
+            [x - 1.45, .34, -2.7], [x + 1.45, .34, -2.7],
+            [x - 1.48, .34, -.62], [x + 1.48, .34, -.62],
+            [x - .72, .34, -3.0], [x + .72, .34, -3.0]
+          ];
+        },
+
+        movePreviousCardAside(categoryId, record) {
+          const cards = this.sideCards[categoryId] || (this.sideCards[categoryId] = []);
+          const used = new Set(cards.map(item => item.sideSlot));
+          const slots = this.sidePositions(categoryId);
+          let sideSlot = slots.map((_, index) => index).filter(index => !used.has(index));
+          sideSlot = sideSlot.length ? sideSlot[Math.floor(Math.random() * sideSlot.length)] : Math.floor(Math.random() * slots.length);
+          if (cards.length >= slots.length) {
+            const removed = cards.shift();
+            sideSlot = removed.sideSlot;
+            removed.handle.remove();
+            const index = this.dynamicCards.indexOf(removed);
+            if (index >= 0) this.dynamicCards.splice(index, 1);
+          }
+          record.sideSlot = sideSlot;
+          cards.push(record);
+          record.handle.setRotation(0, -12 + Math.random() * 24, 0);
+          record.handle.setScale(.48);
+          record.handle.animateTo(...slots[sideSlot], { duration: 680, arcHeight: .5 });
+        },
+
+        playCardResult(record, correct) {
+          const center = this.centerPosition(record.placedCategory);
+          const later = (delay, callback) => this.timers.push(setTimeout(callback, delay));
+          if (correct) {
+            later(440, () => record.handle.setScale(1.13));
+            later(550, () => record.handle.setScale(.93));
+            later(660, () => record.handle.setScale(1.06));
+            later(780, () => record.handle.setScale(1));
+            return;
+          }
+          [[450, -.18], [520, .18], [590, -.13], [660, .09], [735, 0]].forEach(([delay, offset]) => {
+            later(delay, () => record.handle.setPosition(center[0] + offset, center[1], center[2]));
+          });
+        },
+
+        replaceCenterCard(categoryId, record) {
+          const previous = this.centerCards[categoryId];
+          if (previous && previous !== record) this.movePreviousCardAside(categoryId, previous);
+          this.centerCards[categoryId] = record;
+          record.placedCategory = categoryId;
+          record.handle.setDraggable(false);
+          record.handle.setHitArea(null);
+          record.handle.animateTo(...this.centerPosition(categoryId), { duration: 420, arcHeight: .3 });
+        },
+
+        relationMessage(item, selectedCategory, correct) {
+          const actual = CATEGORIES[item.category], selected = CATEGORIES[selectedCategory];
+          if (correct) return `${item.label} ∈ ${actual.code} ถูกต้อง เพราะ${item.label}เป็น${actual.label}`;
+          return `${item.label} ∉ ${selected.code} เพราะ${item.label}ไม่ใช่${selected.label} แต่เป็นสมาชิกของเซต ${actual.code}`;
+        },
+
+        handleCardDrop(record, position, handle) {
+          const categoryId = this.detectCategory(position);
+          if (!categoryId) return false;
+          const correct = categoryId === record.item.category;
+          this.replaceCenterCard(categoryId, record);
+          this.playCardResult(record, correct);
+          this.activeCard = null;
+          this.context.world.hideDragCue();
+          if (correct) this.context.audio.play("success");
+          else this.context.audio.play("fail");
+          if (this.mode === "student-quiz") {
+            const questionType = this.values.questionType || "belongs", comparedCategory = this.values.comparedCategory || "";
+            this.context.quiz.answer(correct, {
+              leftCount: record.item.label, operator: questionType === "not-belongs" ? "∉" : "∈",
+              rightCount: questionType === "not-belongs" ? comparedCategory.toUpperCase() : CATEGORIES[categoryId].code,
+              selectedCategory: categoryId, expectedCategory: record.item.category, itemId: record.item.id, questionType
+            });
+            this.context.ui.console.set({ objective: "บันทึกคำตอบแล้ว", title: "รอส่งคำตอบ", message: "กดปุ่มต่อไป ระบบจะตรวจพร้อมกันเมื่อจบแบบทดสอบ", tone: "info" });
+            return { accepted: true, commit: correct };
+          }
+          const detail = this.relationMessage(record.item, categoryId, correct);
+          this.context.ui.console.set({
+            objective: correct ? "วางถูกกลุ่ม · การ์ดใบใหม่กำลังมา" : "ไม่อยู่ในกลุ่มนี้ · การ์ดใบใหม่กำลังมา",
+            title: correct ? "ถูกต้อง" : "ลองสังเกตความสัมพันธ์",
+            message: detail,
+            tone: correct ? "success" : "warning"
+          });
+          this.timers.push(setTimeout(() => this.spawnNextLabCard(true), 1250));
+          return { accepted: true, commit: correct };
+        },
+
+        prepareQuizQuestion() {
+          const item = ITEM_BY_ID.get(this.values.itemId) || ITEMS[0];
+          const questionType = this.values.questionType || "belongs", compared = CATEGORIES[this.values.comparedCategory];
+          const prompt = this.question?.question || (questionType === "not-belongs" && compared
+            ? `พิสูจน์ว่า ${item.label} ∉ ${compared.code} โดยลากไปยังเซตที่ถูกต้อง`
+            : `ลาก${item.label}ไปยังเซตที่เป็นสมาชิก`);
+          this.context.ui.question.show({ label: questionType === "not-belongs" ? "ไม่เป็นสมาชิก ∉" : "เป็นสมาชิก ∈", text: prompt, tone: "primary" });
+          this.context.ui.console.set({ objective: prompt, title: "สังเกตภาพแล้วเลือกเซต", message: "ลากการ์ดลงในพื้นที่ล้อมรั้วตามโจทย์ แล้วกดต่อไปเพื่อส่งคำตอบ", tone: "info" });
+          this.activeCard = this.createCard(item, { draggable: true });
+        },
+
+        shuffled(items) {
+          const copy = [...items];
+          for (let index = copy.length - 1; index > 0; index -= 1) {
+            const swap = Math.floor(Math.random() * (index + 1));
+            [copy[index], copy[swap]] = [copy[swap], copy[index]];
+          }
+          return copy;
+        },
+
+        buildLoopDeck() {
+          const variety = Math.min(8, Math.max(3, Math.round(Number(this.values.varietyCount) || 8)));
+          const pool = this.enabledCategoryIds().flatMap(categoryId => this.categoryItems(categoryId).slice(0, variety));
+          return this.values.cardOrder === "fixed" ? [...pool] : this.shuffled(pool);
+        },
+
+        startLabGame() {
+          this.clearDynamicCards();
+          this.deck = this.buildLoopDeck();
+          this.deckIndex = 0;
+          this.isInteractive = true;
+          this.hasShownLabDragCue = false;
+          this.spawnNextLabCard(false);
+        },
+
+        showActiveCardInstruction(item) {
+          this.context.ui.console.set({
+            objective: `ลากการ์ด${item.label}ไปยังกลุ่มที่ถูกต้อง`,
+            title: "สังเกตภาพแล้วจัดหมวดหมู่",
+            message: "วางได้ทุกจุดภายในรั้ว การ์ดใบใหม่จะเกิดที่แท่นโดยอัตโนมัติ",
+            tone: "info"
+          });
+        },
+
+        spawnNextLabCard(preserveConsole = false) {
+          if (!this.isInteractive || this.activeCard) return;
+          if (!this.deck.length || this.deckIndex >= this.deck.length) { this.deck = this.buildLoopDeck(); this.deckIndex = 0; }
+          const item = this.deck[this.deckIndex];
+          this.deckIndex += 1;
+          this.activeCard = this.createCard(item, { draggable: true });
+          this.context.ui.question.update({ label: "การ์ดใหม่", text: `${item.label} ควรอยู่ในเซตใด?` });
+          if (!preserveConsole) this.showActiveCardInstruction(item);
+          if (!this.hasShownLabDragCue) {
+            this.hasShownLabDragCue = true;
+            this.context.world.showDragCue(this.activeCard.handle, [CATEGORIES[item.category].x, .35, -1.65]);
+          }
+        },
+
+        clearDynamicCards() {
+          this.dynamicCards?.forEach(record => record.handle.remove());
+          this.dynamicCards = [];
+          this.centerCards = {};
+          this.sideCards = {};
+          this.activeCard = null;
+          this.context?.world.hideDragCue();
+        },
+
+        showDemoCard(itemId, targetCategory = null) {
+          this.clearDynamicCards();
+          const item = ITEM_BY_ID.get(itemId) || ITEMS[0];
+          const record = this.createCard(item, { draggable: false });
+          this.activeCard = record;
+          if (targetCategory) {
+            this.timers.push(setTimeout(() => record.handle.animateTo(...this.centerPosition(targetCategory), { duration: 760, arcHeight: .75 }), 260));
+            this.timers.push(setTimeout(() => record.handle.animateTo(...record.startPosition, { duration: 680, arcHeight: .55 }), 1450));
+          }
+        },
+
+        onStep(index, step) {
+          this.clearTimers();
+          this.isInteractive = false;
+          this.clearDynamicCards();
+          Object.values(this.zoneVisuals).forEach(group => group.focus.setVisible(false));
+          if (index === 0) {
+            this.enabledCategoryIds().forEach(id => this.zoneVisuals[id].focus.setVisible(true));
+            this.context.ui.question.show({ label: "เซต", text: "เซต คือกลุ่มของสิ่งที่มีลักษณะตามเงื่อนไขเดียวกัน", tone: "primary" });
+          } else if (index === 1) {
+            this.zoneVisuals.fruit.focus.setVisible(true); this.showDemoCard("apple");
+            this.context.ui.question.show({ label: "การเขียนเซต", text: "F = {แอปเปิล, กล้วย, ส้ม, ...}", tone: "primary" });
+          } else if (index === 2) {
+            this.zoneVisuals.fruit.focus.setVisible(true); this.showDemoCard("apple", "fruit");
+            this.context.ui.question.show({ label: "เป็นสมาชิก", text: "แอปเปิล ∈ F", tone: "primary" });
+          } else if (index === 3) {
+            this.zoneVisuals.animal.focus.setVisible(true); this.showDemoCard("ball", "animal");
+            this.context.ui.question.show({ label: "ไม่เป็นสมาชิก", text: "ลูกบอล ∉ A", tone: "primary" });
+          } else if (index === 4) {
+            this.zoneVisuals.animal.focus.setVisible(true);
+            this.context.ui.question.show({ label: "สับเซต", text: "S = {แมว, สุนัข, ฮิปโป} และ S ⊂ A", tone: "primary" });
+            this.context.ui.hint.show({ id: "subset-hint", scope: "step", title: "สังเกตการ์ดตัวอย่าง", message: "สัตว์สี่ขาทุกตัวใน S เป็นสมาชิกของเซตสัตว์ A จึงเขียน S ⊂ A", type: "instruction" });
+          } else {
+            this.context.ui.question.show({ label: "ภารกิจ", text: "ลากการ์ดไปยังกลุ่มที่ถูกต้อง", tone: "primary" });
+            this.startLabGame();
+          }
+          const messages = ["รั้วแต่ละสีบอกขอบเขตของหนึ่งเซต และการ์ดเล็กแสดงตัวอย่างสมาชิก", "รายชื่อสมาชิกของเซตเขียนไว้ระหว่างวงเล็บปีกกา", "∈ อ่านว่า เป็นสมาชิกของ", "∉ อ่านว่า ไม่เป็นสมาชิกของ", "⊂ อ่านว่า เป็นสับเซตของ", "ทดลองได้เรื่อย ๆ การ์ดใหม่จะปรากฏบนแท่นหลังวางทุกครั้ง"];
+          this.context.ui.console.set({ objective: step.desc, title: step.title, message: messages[index] || step.desc, tone: "info" });
+        },
+
+        clearTimers() { this.timers?.forEach(clearTimeout); this.timers = []; },
+        dispose() {
+          this.clearTimers();
+          this.context?.world.hideDragCue();
+          this.dynamicCards = [];
+          this.zoneVisuals = {};
+          this.centerCards = {};
+          this.context = null;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

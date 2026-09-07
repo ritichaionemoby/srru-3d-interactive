@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="th" class="world-css-pending">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Main World Runtime</title>
+  <!-- First paint เป็นสีขาวล้วน: ซ่อนทุกอย่างจนหน้า Loading ตัวจริงพร้อมวาดครบ -->
+  <style>
+    html.world-css-pending,
+    html.world-css-pending body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #fff
+    }
+
+    html.world-css-pending body {
+      visibility: hidden
+    }
+  </style>
+  <script type="importmap">
+      {
+        "imports": {
+          "three": "../plugins/vendor/three/0.180.0/three.module.min.js",
+          "three/addons/geometries/RoundedBoxGeometry.js": "../plugins/vendor/three/0.180.0/RoundedBoxGeometry.js",
+          "three/addons/loaders/GLTFLoader.js": "./vendor/three/GLTFLoader.js",
+          "three/addons/loaders/FBXLoader.js": "../plugins/vendor/three/0.180.0/loaders/FBXLoader.js"
+        }
+      }
+    </script>
+  <script>
+    const cacheVersion = new URLSearchParams(location.search).get("v") || Date.now();
+    window.eduCacheVersion = cacheVersion;
+    const worldStyle = document.createElement("link");
+    window.eduRuntimeStyleReady = new Promise((resolve, reject) => {
+      worldStyle.addEventListener("load", resolve, { once: true });
+      worldStyle.addEventListener("error", () => reject(new Error("โหลด world.css ไม่สำเร็จ")), { once: true });
+    });
+    worldStyle.rel = "stylesheet";
+    worldStyle.href = `./world.css?v=${encodeURIComponent(cacheVersion)}`;
+    document.head.append(worldStyle);
+  </script>
+</head>
+
+<body>
+  <main id="runtime">
+    <header class="topbar" id="topbar">
+      <div class="topbar-main">
+        <button class="icon-button back-button" id="close-runtime" type="button" aria-label="กลับไปหน้าเว็บหลัก"><img
+            data-icon="back.svg" alt="" /></button>
+        <div class="title-block">
+          <span class="title-emblem" aria-hidden="true"><img data-icon="category.svg" alt="" /></span>
+          <div class="title-copy">
+            <h1 id="lesson-title">World Runtime</h1>
+            <p id="lesson-taxonomy">กำลังรอบทเรียนจาก Platform</p>
+          </div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span class="mode-badge" id="mode-badge">LAB</span>
+        <button class="soft-button teacher-only" id="edit-lesson" type="button"><img data-icon="edit.svg"
+            alt="" /><span>แก้ไขโจทย์</span></button>
+        <button class="soft-button quiz-only next-button is-waiting" id="next-question" type="button" hidden
+          disabled><span data-next-label>ต่อไป</span><img data-icon="next.svg" alt="" /></button>
+        <button class="icon-button" id="reset-lesson" type="button" aria-label="เริ่มบทเรียนใหม่"><img
+            data-icon="reset.svg" alt="" /></button>
+        <button class="icon-button" id="show-information" type="button" aria-label="ข้อมูลบทเรียน"><img
+            data-icon="info.svg" alt="" /></button>
+      </div>
+    </header>
+
+    <section class="world-viewport" id="world-viewport" aria-label="พื้นที่บทเรียน">
+      <canvas id="world-canvas" aria-label="ฉากสามมิติ"></canvas>
+      <div class="scene-vignette" aria-hidden="true"></div>
+      <div class="scene-hand-cue" id="scene-hand-cue" hidden aria-hidden="true"><img data-icon="hand.svg" alt="" />
+      </div>
+      <div id="lesson-ui"></div>
+      <div class="gui-gizmo-layer" id="gui-gizmo-layer" aria-live="polite"></div>
+      <div class="gui-top-message-layer" id="gui-top-message-layer" hidden aria-live="polite"></div>
+      <div class="gui-feedback-layer" id="gui-feedback-layer" hidden aria-live="polite"></div>
+      <div class="gui-choice-dock" id="gui-choice-dock" hidden></div>
+      <div class="gui-control-dock" id="gui-control-dock" hidden></div>
+      <div class="gui-busy-layer" id="gui-busy-layer" hidden aria-live="assertive"></div>
+      <div class="gui-dialog-layer" id="gui-dialog-layer" hidden></div>
+      <div id="web-page-root" hidden></div>
+
+      <div class="mascot-guide" id="mascot-guide" hidden aria-live="polite">
+        <div class="mascot-particles" id="mascot-particles" aria-hidden="true"></div>
+        <img class="mascot-perch" id="mascot-perch-image" alt="" aria-hidden="true" />
+        <button class="mascot-notice" id="mascot-notice" type="button" hidden aria-label="เปิดคำแนะนำใหม่">
+          <img class="mascot-quest-bubble" data-runtime-asset="./assets/image/mascot-quest-bubble.png" alt=""
+            aria-hidden="true" />
+          <img class="mascot-quest-icon" data-runtime-asset="./assets/icon/quest-alert.svg" alt="" aria-hidden="true" />
+        </button>
+        <div class="mascot-character" id="mascot-character" aria-hidden="true">
+          <img class="mascot-pose mascot-pose-idle" id="mascot-idle-image" alt="" />
+          <img class="mascot-pose mascot-pose-fly mascot-pose-fly-up" id="mascot-fly-image" alt="" />
+          <img class="mascot-pose mascot-pose-fly mascot-pose-fly-mid" id="mascot-fly-mid-image" alt="" />
+          <img class="mascot-pose mascot-pose-fly mascot-pose-fly-down" id="mascot-fly-down-image" alt="" />
+          <i class="mascot-eyelid mascot-eyelid-left"></i>
+          <i class="mascot-eyelid mascot-eyelid-right"></i>
+        </div>
+        <aside class="step-option mascot-speech" id="step-option" hidden></aside>
+      </div>
+      <div class="test-badge quiz-only"><i aria-hidden="true"></i><span>PRE-TEST</span><small>กำลังทำแบบทดสอบ</small>
+      </div>
+      <section class="lesson-question-ui" id="lesson-question-ui" hidden aria-live="polite">
+        <span class="lesson-question-icon" aria-hidden="true"><img data-icon="question.svg" alt="" /></span>
+        <div><small id="lesson-question-label">โจทย์</small>
+          <p id="lesson-question-text"></p>
+        </div>
+      </section>
+      <div class="world-hint" id="world-hint">ลากวัตถุไปยังพื้นที่เป้าหมาย</div>
+
+      <nav class="world-controls" id="world-controls" aria-label="ควบคุมกล้องสามมิติ">
+        <button id="rotate-left" type="button" aria-label="หมุนกล้องไปทางซ้าย"><img data-icon="rotate-left.svg"
+            alt="" /></button>
+        <button id="zoom-out" type="button" aria-label="ซูมออก"><img data-icon="zoom-out.svg" alt="" /></button>
+        <button id="reset-view" class="reset-control" type="button" aria-label="รีเซ็ตกล้อง"><img data-icon="home.svg"
+            alt="" /></button>
+        <button id="zoom-in" type="button" aria-label="ซูมเข้า"><img data-icon="zoom-in.svg" alt="" /></button>
+        <button id="rotate-right" type="button" aria-label="หมุนกล้องไปทางขวา"><img data-icon="rotate-right.svg"
+            alt="" /></button>
+      </nav>
+
+      <section class="howto-panel lab-only" id="howto-panel" hidden>
+        <button id="previous-step" type="button" aria-label="ขั้นตอนก่อนหน้า"><img data-icon="previous.svg"
+            alt="" /></button>
+        <div class="console-state-icon" id="console-state-icon" aria-hidden="true"><img id="console-state-image"
+            data-icon="book.svg" alt="" /></div>
+        <div class="howto-copy">
+          <div class="objective-line" id="objective-text">เป้าหมายของบทเรียน</div>
+          <span id="step-counter"></span>
+          <strong id="step-title"></strong>
+          <p id="step-description" aria-live="polite"></p>
+        </div>
+        <button id="next-step" type="button" aria-label="ขั้นตอนถัดไป"><img data-icon="next.svg" alt="" /></button>
+      </section>
+
+      <section class="quiz-panel quiz-only" id="quiz-panel" hidden>
+        <div class="console-state-icon is-quiz" aria-hidden="true"><img data-icon="question.svg" alt="" /></div>
+        <div class="quiz-copy">
+          <div class="quiz-dots" id="quiz-dots"></div>
+          <p id="question-text"></p>
+        </div>
+      </section>
+    </section>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="modal-layer" id="modal-layer" hidden></div>
+    <section class="entry-screen" id="entry-screen" aria-live="polite">
+      <button class="entry-close" id="entry-close" type="button" aria-label="ยกเลิกการเปิดบทเรียน"><img
+          data-icon="back.svg" alt="" /></button>
+      <div class="entry-art" aria-hidden="true"></div>
+      <div class="entry-card">
+        <div class="entry-visual" aria-hidden="true">
+          <span class="entry-cloud entry-cloud-a"></span>
+          <span class="entry-cloud entry-cloud-b"></span>
+          <span class="entry-star entry-star-a">✦</span>
+          <span class="entry-star entry-star-b">✦</span>
+          <img id="entry-character" alt="" />
+          <span class="entry-visual-label">LET'S LEARN!</span>
+        </div>
+        <div class="entry-content">
+          <div class="entry-heading">
+            <span class="entry-eyebrow">PUZZLE WORKSHOP</span>
+            <h2 id="entry-title">กำลังเตรียมพื้นที่เรียนรู้</h2>
+          </div>
+          <div class="entry-welcome" id="entry-welcome"></div>
+          <div class="entry-progress-meta"><span>กำลังเตรียมบทเรียน</span><strong id="entry-progress-value">8%</strong>
+          </div>
+          <div class="entry-progress"><i id="entry-progress-bar"></i></div>
+          <p id="entry-status">กำลังตรวจสอบระบบ…</p>
+        </div>
+      </div>
+    </section>
+    <div class="celebration-fireworks" id="celebration-fireworks" aria-hidden="true"></div>
+    <div class="celebration" id="celebration" aria-hidden="true"></div>
+  </main>
+
+  <script type="module">
+    try {
+      await window.eduRuntimeStyleReady;
+      await import(`./main-world.js?v=${encodeURIComponent(window.eduCacheVersion)}`);
+      await window.eduRuntimeFirstFrameReady;
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      document.documentElement.classList.remove("world-css-pending");
+      document.documentElement.classList.add("world-css-ready");
+    } catch (error) {
+      window.parent.postMessage({
+        channel: "edu-widget",
+        type: "runtime.setupError",
+        payload: { message: error.message }
+      }, window.location.origin);
+    }
+  </script>
+</body>
+
+</html>

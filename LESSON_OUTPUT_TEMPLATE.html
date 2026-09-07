@@ -21,6 +21,9 @@
         meta: {
           worldType: "3d-world-space",
           lessonId: "lesson-template",
+          title: "ชื่อบทเรียน",
+          category: "ชื่อวิชา",
+          subcategory: "ชื่อหัวข้อย่อย",
           description: "Template สำหรับกิจกรรมลากกล่องไปยังพื้นที่คำตอบ",
           keyResult: "ผู้เรียนเข้าใจวิธีลากและวางวัตถุใน World",
           background: "green",
@@ -131,11 +134,11 @@
 
           this.box = box;
           this.handles.push(box);
+          this.context.ui.setQuestion("วางกล่องลงในพื้นที่เป้าหมาย");
           this.context.ui.setObjective("เป้าหมาย: ลากกล่องไปยังพื้นที่คำตอบ");
 
           if (mode === "student-quiz") {
             this.targetFocus.setVisible(true);
-            this.updateResult();
           }
         },
 

@@ -1,10 +1,10 @@
 {
-  "sdkVersion": "2.0.0",
+  "sdkVersion": "2.6.0",
   "worldOwner": "main-world",
   "accessProfiles": {
     "teacherExternal": {
       "output": "one-lesson-html",
-      "allowedObjects": ["primitive", "group", "text3d", "library", "zone", "callout", "guideline", "target-focus"],
+      "allowedObjects": ["primitive", "group", "text3d", "library", "zone", "callout", "world-counter", "world-gui", "guideline", "target-focus"],
       "forbidden": ["custom-asset", "model", "runtime-edit", "shared-asset-edit", "network"]
     },
     "devWorkspace": {
@@ -13,9 +13,55 @@
     }
   },
   "lessonOwns": ["scene-composition", "interaction-state", "answer-condition", "lab-step-behavior", "quiz-data"],
-  "objects": ["primitive", "group", "text3d", "library", "zone", "callout", "guideline", "target-focus"],
+  "objects": ["primitive", "group", "text3d", "library", "zone", "callout", "world-counter", "world-gui", "guideline", "target-focus"],
   "primitiveShapes": ["box", "sphere", "cylinder", "cone", "torus", "circle", "plane"],
-  "interactions": ["drag", "click"],
+  "interactions": ["drag", "click", "custom-hit-area", "actionable-callout"],
+  "guiServices": {
+    "question": "context.ui.question",
+    "console": "context.ui.console",
+    "topMessage": "context.ui.topMessage",
+    "choice": "context.ui.choice",
+    "gizmo": "context.ui.gizmo",
+    "feedback": "context.ui.feedback",
+    "dialog": "context.ui.dialog",
+    "insight": "context.ui.insight",
+    "control": "context.ui.control",
+    "hint": "context.ui.hint",
+    "busy": "context.ui.busy"
+  },
+  "systemUi": {
+    "topbar": "mainWorldSetting.ui.topbar",
+    "modeBadge": "mainWorldSetting.ui.modeBadge",
+    "quizBadge": "mainWorldSetting.ui.quizBadge",
+    "popup": "mainWorldSetting.ui.popup",
+    "cameraControls": "mainWorldSetting.ui.cameraControls",
+    "worldHint": "mainWorldSetting.ui.worldHint",
+    "worldCallout": "mainWorldSetting.ui.worldCallout",
+    "worldCounter": "mainWorldSetting.ui.worldCounter",
+    "worldGui": "mainWorldSetting.ui.worldGui",
+    "loadingEntry": "mainWorldSetting.entry",
+    "mascotCharacter": "mainWorldSetting.mascot",
+    "celebrationVfx": "mainWorldSetting.vfx.celebrationEffect"
+  },
+  "deprecatedUi": {
+    "hud": "context.ui.feedback",
+    "toast": "context.ui.console"
+  },
+  "guiScopes": ["lesson", "scene", "step", "question", "manual"],
+  "guiAuthoringPolicy": "existing-central-service-first-no-lesson-owned-duplicate-ui",
+  "devTools": {
+    "quickRetest": "F4",
+    "runtimeSetting": "F6",
+    "runtimeModeSwitch": ["teacher-lab", "student-quiz"],
+    "runtimeRefresh": "same-as-F4",
+    "guiServiceLab": ["preview", "update", "clear"]
+  },
+  "backgrounds": ["green"],
+  "centralGridSettings": ["ground.gridColor", "ground.gridOpacity", "ground.ringColor"],
+  "worldCalloutPurpose": "point-to-world-area-and-optionally-open-insight",
+  "worldCounterPurpose": "display-numeric-count-on-world-surface",
+  "worldGuiPurpose": "display-noninteractive-explanatory-text-on-world-surface",
+  "gizmoPurpose": "screen-space-object-or-position-overlay",
   "standardAssets": [
     "food/apple",
     "food/pizza",
@@ -25,7 +71,9 @@
     "space/rocket",
     "classroom/counter"
   ],
-  "comparisonOperatorPrefab": ["<", ">", "="],
-  "genericOperatorsUse": "world.addText3D",
+  "operatorPrefab": ["<", ">", "=", "+", "-", "×", "÷"],
+  "questionUi": "context.ui.question.show",
+  "compatibilityUi": ["context.ui.setQuestion", "context.ui.clearQuestion", "context.ui.setObjective", "context.ui.toast", "context.ui.setProgress"],
   "optionalFutureCapabilities": ["throw", "physics", "balance", "cut-state", "pour-state"]
 }
+
