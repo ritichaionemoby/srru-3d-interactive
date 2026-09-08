@@ -9,13 +9,14 @@
 - **DEV_WORKSPACE:** ทีม Dev/AI อ่าน source ทั้งโปรเจ็คและมีสิทธิ์เพิ่ม asset หรือขยาย runtime ได้เมื่อผู้ใช้ระบุงานระบบนั้นอย่างชัดเจน
 - **Default scope:** แม้อยู่ใน DEV_WORKSPACE งานจาก ข้อความ START_PROMPT ที่ผู้มอบหมายส่งมาแยกจาก repository เริ่มต้นเป็น lesson-only ห้ามแตะ runtime หรือ asset กลางถ้าไม่ได้รับคำสั่ง
 - **Portable lesson-only:** ค่าเริ่มต้นของชุดนี้ ส่งบทเรียน HTML หนึ่งไฟล์ ใช้ primitive และ Standard Asset ID; ข้อจำกัด teacher-external ใน portable contract ใช้กับงานแบบนี้ หากผู้ใช้อนุญาตงานระบบโดยชัดเจนให้ยึด DEV_WORKSPACE และรายงานไฟล์เพิ่มเติมทั้งหมด
+- **GITHUB_CHAT_READ_ONLY:** เมื่อเริ่มผ่าน `git/DEVGEN` Repository มีไว้ให้อ่านเท่านั้น ห้ามเขียน commit, branch, PR หรือ push ผลลัพธ์ต้องเป็นชื่อ path และ HTML ฉบับเต็มใน Chat เพื่อให้ผู้ใช้ Copy ไปบันทึกเอง กฎนี้มีอำนาจเหนือข้อความเรื่องการเขียนไฟล์ใน workflow ทั่วไปของ Master
 - **EXTERNAL_FULL_HTML:** เป็นคนละรูปแบบกับ Lesson Package; ดูข้อแยกใน EXAMPLES.md และ source ของ EduSDK ใช้เมื่อผู้ใช้ขอ HTML อิสระโดยชัดเจนเท่านั้น
 
 ## คำสั่งบังคับสำหรับ AI
 
 ก่อนวิเคราะห์ วางแผน สร้าง หรือแก้บทเรียน ต้องอ่านเอกสารนี้ทั้งไฟล์และตรวจ source code ปัจจุบันตามรายการอ้างอิงด้านล่าง ห้ามสร้างจากความจำหรือ pattern ของโปรเจ็คอื่น
 
-AI ต้องลงมือสร้างไฟล์จริงและตรวจ static ใน repository นี้ ส่วน runtime test ทำเมื่อมีระบบปลายทางพร้อมเท่านั้น ไม่ต้องขอ plugin/asset หรือหยุดสร้างบทเรียนเพราะชุดอ้างอิงนี้รันไม่ได้
+AI ต้องผลิต Lesson Package HTML ฉบับเต็มและตรวจ static ส่วน `git/DEVGEN` ส่งผลใน Chat โดยไม่เขียนกลับ Repository และ runtime test ทำเมื่อมีระบบปลายทางพร้อมเท่านั้น ไม่ต้องขอ plugin/asset หรือหยุดสร้างบทเรียนเพราะชุดอ้างอิงนี้รันไม่ได้
 
 ## Source of Truth
 
@@ -209,7 +210,7 @@ Topbar, Mode Badge, Quiz Badge, System Popup, Camera Controls, World Hint, Loadi
 2. ตรวจ git status และรักษาไฟล์ที่ผู้ใช้แก้ไว้
 3. แปลงข้อความครูเป็น values, editable fields, steps, interactions และ quiz conditions
 4. ตรวจความสมเหตุสมผลของโจทย์ทุกแบบ โดยเฉพาะช่วงคำตอบและกรณีศูนย์
-5. สร้างไฟล์ HTML จริงใน `Project/interactive/chapters/`
+5. สร้าง HTML ฉบับเต็มสำหรับ path ใต้ `Project/interactive/chapters/`; ใน `git/DEVGEN` ให้ส่งทั้งไฟล์ใน Chat ห้ามเขียนกลับ Repository
 6. ตรวจ HTML/JavaScript syntax ค้นหาการใช้ API ที่ไม่มีใน runtime และยืนยันว่าทุก `this.someHelper()` มี `someHelper()` ประกาศจริงใน lesson definition
 7. เปิดผ่านหน้า demo และ EduSDK ด้วย relative path จริง
 8. ทดสอบ `teacher-lab`, `student-lab` และ `student-quiz`

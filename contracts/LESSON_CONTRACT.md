@@ -195,9 +195,9 @@ PuzzleLesson.define({
 
 ## 7. Output ของ AI
 
-AI ต้องส่ง HTML ฉบับเต็มหนึ่งไฟล์ หากสร้างไฟล์ไม่ได้ให้ส่งชื่อไฟล์และ HTML code block หนึ่ง block พร้อมรายงานผลตรวจสั้นแยกจากโค้ดตาม README ใช้ทั้ง CREATE และ REPAIR ห้ามส่ง runtime patch, custom asset หรือไฟล์เสริมสำหรับงาน lesson-only หาก API/Standard Library ไม่รองรับสิ่งที่ขอ ให้รายงาน capability หรือ Asset ID ที่ต้องให้ทีม Dev เพิ่ม แทนการประดิษฐ์ API/path
+AI ต้องส่ง HTML ฉบับเต็มหนึ่งไฟล์ สำหรับ `git/DEVGEN` ให้ส่งชื่อ path และ HTML ทั้งไฟล์ใน code block ภาษา `html` หนึ่งก้อนใน Chat เสมอ ห้ามเขียน commit, branch, PR หรือ push กลับ GitHub ใช้รูปแบบนี้ทั้ง CREATE และ REPAIR ห้ามส่ง runtime patch, custom asset หรือไฟล์เสริมสำหรับงาน lesson-only หาก API/Standard Library ไม่รองรับสิ่งที่ขอ ให้รายงาน capability หรือ Asset ID ที่ต้องให้ทีม Dev เพิ่ม แทนการประดิษฐ์ API/path
 
-ก่อนส่งต้องเปรียบเทียบกับ `LESSON_OUTPUT_TEMPLATE.html`, `Project/interactive/chapters/lesson0.html` และผ่าน `validator/validate-lesson.mjs`
+ก่อนส่งต้องเปรียบเทียบกับ `LESSON_OUTPUT_TEMPLATE.html` และ `Project/interactive/chapters/lesson0.html` หากรันเครื่องมือได้ให้ใช้ `validator/validate-lesson.mjs`; หากเป็น Chat ที่รันไม่ได้ให้ทำ static self-review และระบุข้อจำกัดตามจริง
 
 
 

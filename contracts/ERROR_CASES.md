@@ -42,7 +42,7 @@ File: [FILENAME]
 Message: [MESSAGE]
 Details: [DETAILS]
 
-คืน HTML ฉบับเต็มหนึ่งไฟล์ ถ้าสร้างไฟล์ไม่ได้ให้ส่งชื่อไฟล์และ HTML code block ที่แก้สมบูรณ์แล้วหนึ่ง block พร้อมรายงานสั้นแยกจากโค้ดตาม README
+คืนชื่อ path และ HTML ฉบับเต็มที่แก้สมบูรณ์แล้วใน code block ภาษา `html` หนึ่งก้อนใน Chat พร้อมรายงานสั้นแยกจากโค้ดตาม README ห้ามพยายามเขียนหรือ push กลับ GitHub
 ```
 
 ข้อความสำหรับผู้ใช้งาน runtime:

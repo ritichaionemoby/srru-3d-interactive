@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-09-08 — 0.0.7 ส่งบทเรียนผ่าน Chat
+
+- กำหนด `git/DEVGEN` เป็น GitHub read-only workflow
+- `--CREATE` ส่งชื่อ path และ Lesson Package HTML ฉบับเต็มใน code block สำหรับ Copy
+- ห้ามพยายามเขียนไฟล์, commit, branch, pull request หรือ push กลับ Repository
+- หากไม่มี validator ให้ทำ static self-review และรายงานตามจริงแทนการหยุดที่ `403`
+
 ## 2026-09-07 — 0.0.6 แยก Connection ออกจาก Lesson
 
 - คำสั่ง Introduction ใช้เพียง Repository และ `git/DEVGEN`

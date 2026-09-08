@@ -21,7 +21,7 @@ Repository นี้รวมคู่มือ, Public API, ตัวอย่�
 4. ตรวจ [capabilities](sdk/capabilities.json) และ [Asset catalog](Project/interactive/assets/library/catalog.json) — ห้ามเดา API หรือ Asset ID
 5. อ่าน [Lesson 0](Project/interactive/chapters/lesson0.html) ทั้งไฟล์ แล้วเลือกตัวอย่างใกล้กิจกรรมใหม่ 1–2 บทจาก [EXAMPLES.md](EXAMPLES.md) หรือ [examples.json](examples.json)
 6. ตรวจ source เฉพาะบริการที่ใช้จาก [main-world.js](Project/interactive/main-world.js), [gui-service.js](Project/interactive/gui-service.js), [settings](Project/interactive/main-world-setting.js) และ [EduSDK](Project/interactive/eduSdk.js)
-7. สร้างไฟล์จริงและทำตาม [TESTING.md](TESTING.md); ใช้ [ERROR_CASES](contracts/ERROR_CASES.md) ช่วยซ่อม
+7. สร้าง HTML ฉบับเต็มใน Chat และทำตาม [TESTING.md](TESTING.md); ใช้ [ERROR_CASES](contracts/ERROR_CASES.md) ช่วยซ่อม
 
 กฎป้องกัน runtime error ที่ต้องตรวจทุกครั้ง: `this.someHelper()` หมายถึง method ภายใน lesson object เท่านั้น ไม่ใช่ Public API ของ Platform จึงต้องมี `someHelper() { ... }` อยู่ใน object ที่ส่งให้ `PuzzleLesson.define(...)` และสะกดตรงกัน Validator จะรายงาน `LESSON_HELPER_MISSING` เมื่อเรียก helper ที่ไม่ได้ประกาศ
 
@@ -62,6 +62,10 @@ Repository นี้รวมคู่มือ, Public API, ตัวอย่�
 ## รูปแบบและขอบเขตงาน
 
 ค่าเริ่มต้นคือ lesson-only: ส่ง HTML หนึ่งไฟล์ ใช้ primitive/group/text และ Standard Asset ID ตาม catalog ที่มีจริง ไม่แก้ source snapshot, settings, CSS, SDK หรือเพิ่ม asset โดยปริยาย source ที่เห็นมีไว้ตรวจ API และโครงสร้าง
+
+สำหรับ workflow `git/DEVGEN` ให้ถือ GitHub Repository เป็น read-only เสมอ AI Chat
+ต้องคืนชื่อ path และ HTML ฉบับเต็มใน code block เพื่อให้ผู้ใช้ Copy ไปบันทึกเอง
+ห้ามพยายามเขียนกลับ Repository, ขอสิทธิ์ write, สร้าง branch, commit, PR หรือ push
 
 Host เรียก EduSDK → ตรวจ `script[data-lesson-app]` → เปิด main-world → เรียก PuzzleLesson.define และ lifecycle → บทเรียนสร้างฉากผ่าน context ส่วน runtime ดูแล renderer, GUI, กล้อง, Lab, Quiz และการปิด บทเรียนจึงไม่สร้าง renderer, canvas หรือแผง UI กลางซ้ำ
 
@@ -112,8 +116,8 @@ Lesson path จะส่งภายหลังพร้อม `--CREATE`, แ�
 
 รัน validator และแก้ error ที่รายงานทุกข้อ หากรันเครื่องมือไม่ได้ให้รายงานว่าเป็น self-review เท่านั้น ไม่อ้างว่า validator ผ่าน ส่วน browser/mobile checks ทำเมื่อมีระบบปลายทางตาม TESTING.md
 
-- เครื่องมือเขียนไฟล์ได้: ส่ง HTML จริงหนึ่งไฟล์ พร้อมรายงานสั้นแยกจากโค้ด ระบุ commit ที่อ้างอิง ผล static และผล runtime ที่ทำจริงหรือยังไม่ได้ทำ
-- Chat ที่เขียนไฟล์ไม่ได้: ส่งชื่อไฟล์และ HTML ครบหนึ่ง code block จากนั้นรายงานสั้นนอก code block
+- `git/DEVGEN` ใน AI Chat: ส่งชื่อ path และ HTML ฉบับเต็มหนึ่ง code block เสมอ
+  จากนั้นรายงานสั้นนอก code block ห้ามพยายามเขียนหรือ push กลับ GitHub
 - ใช้รูปแบบเดียวกันทั้ง CREATE และ REPAIR; ไม่ส่ง runtime patch หรือ asset เพิ่มสำหรับงาน lesson-only
 
 เมื่อระบบเปลี่ยน ให้ sync source snapshot, Public API, GUI catalog, types, capabilities, asset catalog, contract, template, validator และ examples ในรุ่นเดียวกัน ตรวจลิงก์, template และตัวอย่างหลักก่อน sync

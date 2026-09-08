@@ -34,5 +34,5 @@ Exit 0 หมายถึงผ่าน static checks; exit 1 มี JSON error
 
 ## รายงานส่งมอบ
 
-ส่งไฟล์ HTML จริง สรุปกิจกรรม ค่าที่ครูปรับได้ เงื่อนไขคำตอบ ผล validator และ commit/tag ของ repository อ้างอิง หากมีเว็บทดสอบ ให้ระบุโหมด viewport และผลจริง หากไม่มีให้ระบุ “ผ่าน static checks; ยังไม่ได้ทดสอบ runtime ในระบบปลายทาง” แล้วส่งงานได้ ไม่ต้องหยุดรอ asset
+สำหรับ `git/DEVGEN` ให้ส่งชื่อ path และ HTML ฉบับเต็มใน code block ภาษา `html` หนึ่งก้อนใน Chat สรุปกิจกรรม ค่าที่ครูปรับได้ เงื่อนไขคำตอบ ผล validator หรือ static self-review และ commit/tag ของ repository อ้างอิง ห้ามเขียนหรือ push กลับ GitHub หากมีเว็บทดสอบ ให้ระบุโหมด viewport และผลจริง หากไม่มีให้ระบุ “ผ่าน static checks; ยังไม่ได้ทดสอบ runtime ในระบบปลายทาง” แล้วส่งงานได้ ไม่ต้องหยุดรอ asset
 

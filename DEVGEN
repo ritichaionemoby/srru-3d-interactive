@@ -2,6 +2,9 @@ DEVGEN entrypoint
 
 อ่านและทำตาม `git/DEVGEN` ทั้งไฟล์
 
+Repository นี้ใช้สำหรับอ่านเท่านั้น ผลงานต้องส่งเป็น HTML ฉบับเต็มใน Chat
+ห้ามพยายามเขียน commit, branch, pull request หรือ push กลับ GitHub
+
 รองรับคำสั่งเริ่มต้น:
 
 [ Repo ] : https://github.com/ritichaionemoby/srru-3d-interactive.git

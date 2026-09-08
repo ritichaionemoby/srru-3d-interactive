@@ -1,6 +1,9 @@
 PUZZLE WIDGET PLATFORM
 DEVGEN — Introduction สำหรับทีม Dev / AI ภายนอก
 
+Repository นี้เป็นข้อมูลอ้างอิงแบบ READ-ONLY สำหรับ AI Chat ห้ามพยายามเขียนไฟล์
+กลับ GitHub, สร้าง branch, commit, pull request หรือ push ผลงาน
+
 
 ===============================================================================
 คำสั่งเริ่มต้นที่รองรับ
@@ -18,8 +21,8 @@ DEVGEN — Introduction สำหรับทีม Dev / AI ภายนอก
 ขั้นตอนที่ต้องทำทันที
 ===============================================================================
 
-1. เปิด Repository จากค่า `[ Repo ]` หากอ่านผ่านหน้าเว็บไม่ครบ ให้ clone ลง
-   workspace แล้วอ่านไฟล์จริง
+1. เปิด Repository จากค่า `[ Repo ]` หากอ่านผ่านหน้าเว็บไม่ครบและมีเครื่องมือ clone
+   แบบ read-only จึงค่อย clone เพื่ออ่าน ห้ามขอสิทธิ์ write หรือพยายามแก้ Repository
 2. อ่าน `VERSION.txt` ที่ root ก่อน หากอ่านไม่ได้ ห้ามเดาเวอร์ชันหรืออ้างว่า
    เชื่อมต่อสำเร็จ ให้ระบุว่าเข้าถึงไฟล์ใดไม่ได้แล้วหยุดรอการแก้สิทธิ์หรือ URL
 3. อ่านไฟล์ต่อไปนี้จาก Repository จริงตามลำดับ:
@@ -63,7 +66,7 @@ DEVGEN MENU
 กฎการรับข้อความถัดไป:
 
 - `--CREATE` ตามด้วย lesson path และคำอธิบายหรือคำตอบ Brief ให้เริ่มสร้างบทเรียน
-  ตาม workflow ทันที
+  ตาม workflow ทันที แล้วคืน HTML ฉบับเต็มใน Chat
 - เมื่อเริ่ม `--CREATE` ให้แปลง `[ Lesson ]` เป็น path ใต้
   `Project/interactive/chapters/` และเติม `.html` เมื่อไม่ได้ระบุ ยอมรับเฉพาะ
   relative path ที่ไม่มี `..` และไม่ออกนอก chapters
@@ -144,8 +147,21 @@ DEVGEN MENU
 1. ใช้คำตอบของผู้ใช้เป็น Content Source of Truth แล้วเริ่มสร้างทันที
 2. ทำตาม `MASTER_README.md`, contract, Public API, template และ `TESTING.md`
 3. ตรวจทุก API, Asset ID และ `this.someHelper()` จากไฟล์จริง ห้ามเดา
-4. ตรวจว่ามี `[ Lesson ]` ก่อนสร้าง แล้วสร้างไฟล์เต็มที่ path นั้น รองรับ Lab และ
-   Quiz ตามข้อกำหนด
-5. รัน `node validator/validate-lesson.mjs <lesson-file>` และแก้ error ให้หมด
-6. หากเขียน Repository ไม่ได้ ให้ส่งชื่อ path และ HTML ฉบับเต็มหนึ่ง code block
-7. รายงานไฟล์ ผลตรวจ ข้อสมมติ และ runtime checks ที่ทำจริงหรือยังรอระบบปลายทาง
+4. ตรวจว่ามี `[ Lesson ]` แล้วใช้ค่านั้นเป็นชื่อ path สำหรับส่งมอบ ห้ามเขียนไฟล์
+   กลับ Repository
+5. สร้าง Lesson Package HTML ให้ครบทั้งไฟล์ รองรับ Lab และ Quiz ตามข้อกำหนด
+6. หากมีเครื่องมือ local ชั่วคราว สามารถรัน
+   `node validator/validate-lesson.mjs <temporary-lesson-file>` ได้ แต่ห้าม commit,
+   push, เปิด PR หรืออัปโหลดไฟล์กลับ GitHub หากไม่มีเครื่องมือให้ตรวจ static ด้วย
+   ตนเองและระบุว่าไม่ได้รัน validator ห้ามอ้างว่าผ่าน
+7. ส่งผลลัพธ์ใน Chat ตามรูปแบบบังคับนี้เสมอ:
+
+   [ Lesson Output ]
+   Path: `Project/interactive/chapters/ep5/lesson5.html`
+
+   ตามด้วย code block ภาษา `html` เพียงหนึ่งก้อนที่มีไฟล์ฉบับเต็มตั้งแต่
+   `<!doctype html>` ถึง `</html>` เพื่อให้ผู้ใช้กด Copy แล้วนำไปบันทึกได้ทันที
+8. หลัง code block ให้รายงานสั้นๆ เรื่องกิจกรรม เงื่อนไขคำตอบ ผล static/validator
+   ที่ทำจริง และ runtime checks ที่ยังรอระบบปลายทาง
+9. ห้ามส่งเพียง diff, patch, fragment, pseudocode, ลิงก์ดาวน์โหลด หรือข้อความว่า
+   `403` เป็นผลส่งมอบ หากเขียน GitHub ไม่ได้ให้ดำเนินการสร้างใน Chat ต่อจนจบ
