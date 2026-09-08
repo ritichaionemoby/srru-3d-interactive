@@ -1,0 +1,48 @@
+# Feedback
+
+ใช้คำสั่ง `--FEEDBACK` เพื่อวิเคราะห์ Lesson HTML ล่าสุดและเสนอแนวทางพัฒนา
+interactive ให้เรียนรู้ได้ดีขึ้น ใช้ง่ายขึ้น สวยขึ้น และดูเป็นงานมืออาชีพ โดยยัง
+ไม่แก้หรือสร้าง HTML ในคำตอบเดียวกัน
+
+## Source ที่ใช้
+
+เลือกตามลำดับ: HTML ล่าสุดใน Chat, HTML ที่ผู้ใช้ paste มา หรือ lesson path ที่อ่าน
+ได้จาก Repository หากไม่มี source ให้ขอ HTML หรือ path เพียงหนึ่งคำถาม
+
+## มุมวิเคราะห์
+
+- Learning: เป้าหมายชัดไหม การลงมือสัมพันธ์กับแนวคิดหรือเป็นเพียงของตกแต่ง
+- Interaction: ผู้เรียนรู้ไหมว่าต้องทำอะไร feedback ตรงเวลา และแก้คำตอบได้หรือไม่
+- Lab flow: ขั้นสอนสั้น กระชับ มี progression และเปิดพื้นที่ทดลองจริงหรือไม่
+- Quiz: วัดผลตรงเป้าหมาย มีความหลากหลาย และยอมรับคำตอบถูกทุกแบบหรือไม่
+- Usability: discoverability, hit area, ปุ่ม, drag/drop, reset และ error recovery
+- Visual: hierarchy, spacing, สี, typography, scene composition และความสม่ำเสมอ
+- Professional quality: ใช้ GUI Service กลาง ลด UI ซ้ำ และรายละเอียดดูตั้งใจ
+- Mobile/accessibility: แนวตั้ง ข้อความไม่บังวัตถุ contrast และพื้นที่แตะ
+- Reliability/performance: lifecycle, timer, asset, object count และ animation
+
+ข้อเสนอทุกข้อจะต้องอิงสิ่งที่พบจริงใน HTML และ capability ที่มีใน Repository ห้าม
+เสนอ API, GUI Service หรือ Asset ID ที่ไม่มี หากมี Define Map ให้ใช้ชื่อเหล่านั้น
+
+## รูปแบบคำตอบ
+
+[ FEEDBACK REPORT ]
+Lesson: <id, title หรือ path>
+
+WHAT WORKS
+- จุดแข็งที่ควรรักษา
+
+PRIORITY IMPROVEMENTS
+1. [P1] ปัญหา → เหตุผล → แนวทางปรับ → ผลที่คาดหวัง
+2. [P2] ...
+3. [P3] ...
+
+QUICK WINS
+- สิ่งที่ปรับได้เร็วและเห็นผลชัด 3–5 ข้อ
+
+NEXT ITERATION
+- ชุดการปรับที่ควรทำร่วมกันในรอบถัดไป โดยอ้าง `[Defined Name]` เมื่อมี
+
+ปิดท้ายด้วยคำสั่งตัวอย่างที่ผู้ใช้ copy ไปสั่งแก้ต่อได้ 2–3 บรรทัด `--FEEDBACK`
+เป็นงานวิเคราะห์เท่านั้น ห้ามแก้ HTML หรือเขียนกลับ GitHub
+

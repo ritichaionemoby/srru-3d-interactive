@@ -1,0 +1,53 @@
+# Check
+
+ใช้คำสั่ง `--CHECK` เพื่อตรวจ Lesson Package HTML ล่าสุดก่อนนำไปใช้ โดยไม่แก้ไข
+หรือสร้าง HTML ใหม่ในคำตอบเดียวกัน
+
+## Source ที่ใช้ตรวจ
+
+เลือกตามลำดับ: HTML ล่าสุดใน Chat, HTML ที่ผู้ใช้ paste มา หรือ lesson path ที่อ่าน
+ได้จาก Repository หากไม่มี source ให้ขอ HTML หรือ path เพียงหนึ่งคำถาม
+
+## รายการตรวจ
+
+1. โครงสร้าง HTML และ `script[data-lesson-app]`
+2. `PuzzleLesson.define(...)`, id, version, meta และ lifecycle
+3. ทุก `this.someHelper()` มี method จริง และทุก Public API มีอยู่จริง
+4. Teacher Tools, default values และค่าที่ส่งเข้า `reset()` สอดคล้องกัน
+5. Lab sequence/freestyle, interaction state และการเริ่มใหม่
+6. Quiz ไม่ตอบใน reset, ไม่เฉลยระหว่างทำ และไปต่อได้หลังลงมือ
+7. drag/drop, slot, placement และกรณีวางผิดหรือลากออก
+8. timer, animation, handle, Map/Set/array และ cleanup ใน reset/dispose
+9. GUI Service, World GUI, Callout และ UI ownership ถูกต้อง ไม่สร้าง UI กลางซ้ำ
+10. mobile, hit area, visual hierarchy, accessibility และข้อความที่อาจถูกบัง
+11. Asset ID, relative path, dependency และสิ่งที่ Repository ไม่ได้แนบโดยตั้งใจ
+12. ความถูกต้องของเนื้อหา เงื่อนไขคำตอบ และ edge cases
+
+หากรัน validator ได้ ให้รายงานคำสั่งและผลจริง หากรันไม่ได้ให้ระบุว่าเป็น static
+self-review ห้ามอ้างว่า validator หรือ runtime ผ่าน ห้ามพยายามเขียนกลับ GitHub
+
+## รูปแบบคำตอบ
+
+[ CHECK REPORT ]
+Lesson: <id, title หรือ path>
+Checked from: <Latest Chat HTML | Pasted HTML | Repository path>
+Validation: <command/result หรือ Static self-review only>
+
+PASSED
+- รายการที่ตรวจแล้วผ่านพร้อมหลักฐานสั้นๆ
+
+WARNINGS
+- จุดที่ยังทำงานได้แต่ควรปรับ พร้อมผลกระทบ
+
+ERRORS
+- จุดที่ทำให้โหลดไม่ได้ ทำงานผิด หรือขัด contract พร้อมตำแหน่งที่พบ
+
+SUGGESTED FIXES
+1. เรียงวิธีแก้ตามความสำคัญ โดยอ้างชื่อจาก Define Map เมื่อมี
+
+VERDICT
+- `READY TO COPY`, `READY WITH WARNINGS` หรือ `FIX REQUIRED`
+
+`--CHECK` ห้ามแก้ HTML หากผู้ใช้ต้องการให้แก้ ให้รอคำสั่ง `--CREATE` พร้อม HTML
+เดิมและรายการแก้ หรือ workflow ซ่อมที่กำหนดใน session
+

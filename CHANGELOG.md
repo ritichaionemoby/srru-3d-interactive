@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-08 — 0.0.9 เพิ่ม CHECK, FEEDBACK และ IDEA
+
+- `--CHECK` ตรวจ Lesson HTML และรายงาน Passed/Warning/Error/Fix/Verdict
+- `--FEEDBACK` วิเคราะห์งานล่าสุดและจัดลำดับแนวทางพัฒนา interactive
+- `--IDEA <หัวข้อ>` เสนอแนวคิดเริ่มต้น 5 แบบก่อนสร้างจริง
+- เพิ่มคู่มือทั้งใน `AI/*.md` และ public entrypoint ภายใต้ `git/`
+
+## 2026-09-08 — 0.0.8 เพิ่ม DEFINE MAP
+
+- เพิ่มเมนู `--DEFINE` สำหรับตั้งชื่อพื้นที่ วัตถุ GUI และ logic ของบทเรียน
+- เพิ่ม `git/DEFINE` ซึ่งวิเคราะห์ HTML ล่าสุดใน Chat โดยไม่แก้ไฟล์
+- ชื่อ `[Defined Name]` ใช้อ้างอิงจุดแก้ในข้อความถัดไปและ refresh ได้เมื่อโครงสร้างเปลี่ยน
+
 ## 2026-09-08 — 0.0.7 ส่งบทเรียนผ่าน Chat
 
 - กำหนด `git/DEVGEN` เป็น GitHub read-only workflow

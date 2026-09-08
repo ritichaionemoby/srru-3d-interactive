@@ -1,0 +1,4 @@
+CHECK entrypoint
+
+อ่านและทำตาม `git/CHECK` ทั้งไฟล์เมื่อได้รับคำสั่ง `--CHECK`
+

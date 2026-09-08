@@ -1,0 +1,4 @@
+FEEDBACK entrypoint
+
+อ่านและทำตาม `git/FEEDBACK` ทั้งไฟล์เมื่อได้รับคำสั่ง `--FEEDBACK`
+

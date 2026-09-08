@@ -11,7 +11,8 @@ Repository นี้รวมคู่มือ, Public API, ตัวอย่�
 `VERSION.txt`, อ่านโครงสร้างจริง ตอบหลักฐานการเชื่อมต่อ และถาม Brief กลับมา
 เพื่อให้ผู้ใช้กรอกในข้อความถัดไป
 
-คำตอบแรกจะแสดง `DEVGEN MENU`: `--CREATE`, `--TEMPLATE`, `--TOOLS` และ `--HELP`
+คำตอบแรกจะแสดง `DEVGEN MENU`: `--CREATE`, `--TEMPLATE`, `--TOOLS`, `--HELP`
+`--DEFINE`, `--CHECK`, `--FEEDBACK` และ `--IDEA`
 ถ้าข้อความถัดไปไม่ขึ้นต้นด้วยคำสั่งเหล่านี้ DEVGEN จะใช้ข้อความนั้นเป็นคำอธิบาย
 สำหรับ `--CREATE` โดยอัตโนมัติ
 
@@ -34,6 +35,11 @@ Repository นี้รวมคู่มือ, Public API, ตัวอย่�
 ├── README.md
 ├── DEVGEN                   ← entrypoint สำรอง; ชี้ไปที่ git/DEVGEN
 ├── git/DEVGEN               ← Introduction สำหรับคำสั่งสั้นของทีมภายนอก
+├── DEFINE                   ← entrypoint สำรอง; ชี้ไปที่ git/DEFINE
+├── git/DEFINE               ← สร้าง Define Map สำหรับอ้างชื่อส่วนต่างๆ ของบทเรียน
+├── CHECK / git/CHECK        ← ตรวจ HTML ก่อนนำไปใช้โดยไม่แก้ไฟล์
+├── FEEDBACK / git/FEEDBACK  ← วิเคราะห์งานล่าสุดและแนะนำการพัฒนา
+├── IDEA / git/IDEA          ← เสนอ Interactive เริ่มต้น 5 แบบ
 ├── MASTER_README.md
 ├── EXAMPLES.md
 ├── examples.json             ← path อ้างจาก root นี้
@@ -103,6 +109,31 @@ Lesson path จะส่งภายหลังพร้อม `--CREATE`, แ�
 ## CREATE — สร้างบทเรียนใหม่
 
 แปลงโจทย์เป็นผลการเรียนรู้, ค่าที่ครูปรับได้, ขั้น Lab ที่มีความหมาย, state/การเปลี่ยน state ที่ยอมรับและปฏิเสธ, คลัง Quiz พร้อม predicate ที่ยอมรับทุกคำตอบที่ถูก, cleanup และการจัดฉากแนวตั้ง ก่อนลงมือเลือก GUI Service และ Asset ID จริง ผลลัพธ์เป็น HTML หนึ่งไฟล์ ไม่ใช่แผนหรือ API ที่สมมติขึ้น
+
+## DEFINE — ตั้งชื่อส่วนต่างๆ เพื่อสั่งแก้ได้ตรงจุด
+
+ใช้ `--DEFINE` หลังมี Lesson HTML แล้ว AI จะอ่าน HTML ล่าสุดใน Chat และสร้าง
+Define Map เช่น `[Grid Area]`, `[Main Character]` หรือ `[World GUI Center Panel]`
+พร้อมหน้าที่และส่วนของ code ที่เกี่ยวข้อง ชื่อเหล่านี้ใช้ชี้จุดในคำสั่งรอบถัดไปได้
+โดยยังใช้คำอธิบายหรือภาพแบบเดิมได้ ดูกฎเต็มที่ [git/DEFINE](git/DEFINE)
+
+## CHECK — ตรวจไฟล์ก่อนนำไปใช้
+
+ใช้ `--CHECK` เพื่อตรวจโครงสร้าง, helper/API, lifecycle, Lab, Quiz, cleanup, GUI,
+mobile, asset และเนื้อหา แล้วรายงาน `PASSED`, `WARNINGS`, `ERRORS`,
+`SUGGESTED FIXES` และ `VERDICT` โดยไม่แก้ HTML ดู [git/CHECK](git/CHECK)
+
+## FEEDBACK — วิเคราะห์คุณภาพและแนวทางพัฒนา
+
+ใช้ `--FEEDBACK` กับ HTML ล่าสุดเพื่อหาวิธีทำให้การเรียนรู้ interaction, usability,
+visual, mobile และความเป็นมืออาชีพดีขึ้น ข้อเสนอเรียง P1–P3 พร้อม Quick Wins และ
+คำสั่งที่ copy ไปใช้ต่อได้ ดู [git/FEEDBACK](git/FEEDBACK)
+
+## IDEA — เสนอแนวคิด Interactive 5 แบบ
+
+ใช้ `--IDEA <ชื่อหรือข้อความสั้นๆ>` เพื่อรับแนวคิดที่มีกลไกต่างกัน 5 แบบ แต่ละแบบ
+มี core interaction, learning value, scene, Lab, Quiz, Platform tools และระดับ
+ความซับซ้อน โดยยังไม่สร้าง HTML ดู [git/IDEA](git/IDEA)
 
 ## REPAIR — ซ่อมบทเรียนจากรายงาน
 
