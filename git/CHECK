@@ -1,53 +1,47 @@
 # Check
 
-ใช้คำสั่ง `--CHECK` เพื่อตรวจ Lesson Package HTML ล่าสุดก่อนนำไปใช้ โดยไม่แก้ไข
-หรือสร้าง HTML ใหม่ในคำตอบเดียวกัน
+ใช้ `--CHECK` เพื่อตรวจ Lesson Package HTML ก่อนนำไปใช้ โดยไม่แก้ไฟล์
 
-## Source ที่ใช้ตรวจ
+## Input
 
-เลือกตามลำดับ: HTML ล่าสุดใน Chat, HTML ที่ผู้ใช้ paste มา หรือ lesson path ที่อ่าน
-ได้จาก Repository หากไม่มี source ให้ขอ HTML หรือ path เพียงหนึ่งคำถาม
+ใช้ตามลำดับ: HTML ล่าสุดใน Chat → HTML ที่ผู้ใช้ส่งมา → lesson path ใน Repository
+หากไม่มี ให้ถามหา HTML หรือ path เพียงข้อเดียว
 
-## รายการตรวจ
+## ตรวจให้ครบ
 
-1. โครงสร้าง HTML และ `script[data-lesson-app]`
+1. HTML และ `script[data-lesson-app]`
 2. `PuzzleLesson.define(...)`, id, version, meta และ lifecycle
-3. ทุก `this.someHelper()` มี method จริง และทุก Public API มีอยู่จริง
-4. Teacher Tools, default values และค่าที่ส่งเข้า `reset()` สอดคล้องกัน
-5. Lab sequence/freestyle, interaction state และการเริ่มใหม่
-6. Quiz ไม่ตอบใน reset, ไม่เฉลยระหว่างทำ และไปต่อได้หลังลงมือ
-7. drag/drop, slot, placement และกรณีวางผิดหรือลากออก
-8. timer, animation, handle, Map/Set/array และ cleanup ใน reset/dispose
-9. GUI Service, World GUI, Callout และ UI ownership ถูกต้อง ไม่สร้าง UI กลางซ้ำ
-10. mobile, hit area, visual hierarchy, accessibility และข้อความที่อาจถูกบัง
-11. Asset ID, relative path, dependency และสิ่งที่ Repository ไม่ได้แนบโดยตั้งใจ
-12. ความถูกต้องของเนื้อหา เงื่อนไขคำตอบ และ edge cases
+3. ทุก `this.method()` และ Public API ต้องมีอยู่จริง
+4. Teacher Tools, default values และค่าที่ส่งเข้า `reset()` ต้องตรงกัน
+5. Lab/Quiz, drag-drop, reset, retry และคำตอบทุกกรณี
+6. timer, animation, listener และ object ต้อง cleanup ได้
+7. GUI Service, World GUI, Callout และ Asset ID ต้องอ้างของที่มีจริง
+8. mobile, hit area, contrast, ข้อความล้น และ accessibility
+9. เนื้อหา เงื่อนไขคำตอบ และ edge cases
 
-หากรัน validator ได้ ให้รายงานคำสั่งและผลจริง หากรันไม่ได้ให้ระบุว่าเป็น static
-self-review ห้ามอ้างว่า validator หรือ runtime ผ่าน ห้ามพยายามเขียนกลับ GitHub
+ถ้ารัน validator ได้ ให้ระบุคำสั่งและผลจริง หากรันไม่ได้ให้เขียน `Static review only`
 
-## รูปแบบคำตอบ
+## Output
 
+```text
 [ CHECK REPORT ]
-Lesson: <id, title หรือ path>
-Checked from: <Latest Chat HTML | Pasted HTML | Repository path>
-Validation: <command/result หรือ Static self-review only>
+Lesson: <id/title/path>
+Source: <แหล่งที่ตรวจ>
+Validation: <คำสั่งและผล หรือ Static review only>
 
 PASSED
-- รายการที่ตรวจแล้วผ่านพร้อมหลักฐานสั้นๆ
+- <สิ่งที่ผ่าน + หลักฐาน>
 
 WARNINGS
-- จุดที่ยังทำงานได้แต่ควรปรับ พร้อมผลกระทบ
+- <จุดเสี่ยง + ผลกระทบ>
 
 ERRORS
-- จุดที่ทำให้โหลดไม่ได้ ทำงานผิด หรือขัด contract พร้อมตำแหน่งที่พบ
+- <ข้อผิดพลาด + ตำแหน่ง>
 
 SUGGESTED FIXES
-1. เรียงวิธีแก้ตามความสำคัญ โดยอ้างชื่อจาก Define Map เมื่อมี
+1. <วิธีแก้ตามลำดับความสำคัญ>
 
-VERDICT
-- `READY TO COPY`, `READY WITH WARNINGS` หรือ `FIX REQUIRED`
+VERDICT: `READY TO COPY`, `READY WITH WARNINGS` หรือ `FIX REQUIRED`
+```
 
-`--CHECK` ห้ามแก้ HTML หากผู้ใช้ต้องการให้แก้ ให้รอคำสั่ง `--CREATE` พร้อม HTML
-เดิมและรายการแก้ หรือ workflow ซ่อมที่กำหนดใน session
-
+ห้ามอ้างว่าทดสอบผ่านถ้ายังไม่ได้รัน `--CHECK` ห้ามแก้ HTML หรือเขียนกลับ GitHub
