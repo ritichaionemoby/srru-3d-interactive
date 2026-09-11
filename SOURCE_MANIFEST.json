@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-07",
+  "generatedAt": "2026-09-11",
   "purpose": "AI reference only; not a runnable deployment",
   "source": "Owner project working tree; copied files may contain uncommitted edits",
   "excluded": [
@@ -93,7 +93,7 @@
     {
       "path": "Project/interactive/main-world.js",
       "sourcePath": "Project/interactive/main-world.js",
-      "sha256": "fdbaa8bf26c316c9e98e9a61a6c330efa551304615e76cae92a4d8211bf91e4f"
+      "sha256": "cc2d2f1618a469955f1fdd30bd5a11813b6986568f61e498f48a006966143e61"
     },
     {
       "path": "Project/interactive/runtime-setting-menu.js",

@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-09-11 — 0.1.0 Procedural Geometry First
+
+- เพิ่ม Public Procedural Geometry เป็น 32 รูปทรง พร้อมตัวเลือกมุม จำนวนด้าน รัศมีด้านใน และความละเอียด
+- เพิ่ม `sector`/`ring-sector` สำหรับแบ่งเค้ก พิซซ่า เศษส่วน และกราฟวงกลมอย่างเท่ากันโดยไม่ใช้โมเดลใหม่
+- เพิ่ม prism, pyramid, frustum, capsule, polyhedra และรูปทรงตกแต่งสำหรับทำ lesson prototype ให้จบจาก HTML ไฟล์เดียว
+- เพิ่มกฎ Procedural First: AI ภายนอกต้องลองประกอบจาก `addPrimitive`/`addGroup` ก่อนขอ Asset หรือติดต่อทีม Dev
+- อัปเดต SDK 3.0.0, Lesson Contract 1.3.0, types, capabilities, validator และ regression tests
+
 ## 2026-09-08 — 0.0.9 เพิ่ม CHECK, FEEDBACK และ IDEA
 
 - `--CHECK` ตรวจ Lesson HTML และรายงาน Passed/Warning/Error/Fix/Verdict

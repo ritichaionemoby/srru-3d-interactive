@@ -214,10 +214,9 @@ window.addEventListener("keydown", () => audio.unlockBgm(), { capture: true });
 // ---------- Shared Three.js world ----------
 const constrainedDevice = setting.renderer.adaptiveQuality !== false && (matchMedia("(max-width: 760px)").matches || (navigator.hardwareConcurrency || 8) <= 4);
 const renderer = new THREE.WebGLRenderer({ canvas: elements.canvas, antialias: true, alpha: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, constrainedDevice ? (setting.renderer.mobilePixelRatio || 1.35) : setting.renderer.maxPixelRatio)); renderer.shadowMap.enabled = setting.renderer.enableShadows; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.outputColorSpace = THREE.SRGBColorSpace; const toneMappings = { none: THREE.NoToneMapping, linear: THREE.LinearToneMapping, reinhard: THREE.ReinhardToneMapping, cineon: THREE.CineonToneMapping, aces: THREE.ACESFilmicToneMapping, agx: THREE.AgXToneMapping, neutral: THREE.NeutralToneMapping }; renderer.toneMapping = toneMappings[setting.renderer.toneMapping] ?? THREE.NeutralToneMapping ?? THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = setting.renderer.exposure;
+const shadowSetting = setting.shadow || {}, shadowTypes = { basic: THREE.BasicShadowMap, pcf: THREE.PCFShadowMap, pcfsoft: THREE.PCFSoftShadowMap };
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, constrainedDevice ? (setting.renderer.mobilePixelRatio || 1.35) : setting.renderer.maxPixelRatio)); renderer.shadowMap.enabled = shadowSetting.enabled !== false; renderer.shadowMap.type = shadowTypes[String(shadowSetting.type || "pcfsoft").toLowerCase()] || THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = shadowSetting.autoUpdate !== false; renderer.outputColorSpace = THREE.SRGBColorSpace; const toneMappings = { none: THREE.NoToneMapping, linear: THREE.LinearToneMapping, reinhard: THREE.ReinhardToneMapping, cineon: THREE.CineonToneMapping, aces: THREE.ACESFilmicToneMapping, agx: THREE.AgXToneMapping, neutral: THREE.NeutralToneMapping }; renderer.toneMapping = toneMappings[setting.renderer.toneMapping] ?? THREE.NeutralToneMapping ?? THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = setting.renderer.exposure;
 renderer.setClearColor(0x000000, 0);
-renderer.shadowMap.autoUpdate = setting.renderer.shadowAutoUpdate !== false;
-function requestShadowUpdate() { if (renderer.shadowMap.enabled && !renderer.shadowMap.autoUpdate) renderer.shadowMap.needsUpdate = true; }
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(setting.camera.fov, 1, .1, 100); const cameraTarget = new THREE.Vector3(...setting.camera.target);
 let cameraConfig = { ...setting.camera, target: [...setting.camera.target] };
@@ -225,7 +224,7 @@ let defaultCamera = { yaw: THREE.MathUtils.degToRad(cameraConfig.startYaw), pitc
 let rimLight = null;
 function updateCameraFog() { const fog = scene.fog, config = setting.camera.fogZoom, base = fog?.userData?.zoomBase; if (!fog || !config?.enabled || !base) return; const distanceDelta = cameraState.distance - (cameraConfig.startDistance ?? setting.camera.startDistance), nearOffset = clamp(config.baseNearOffset + distanceDelta * config.nearChangePerUnit, config.minNearOffset, config.maxNearOffset), farOffset = clamp(config.baseFarOffset + distanceDelta * config.farChangePerUnit, config.minFarOffset, config.maxFarOffset); fog.near = Math.max(.1, base.near + nearOffset); fog.far = Math.max(fog.near + 1, base.far + farOffset); }
 function updateRimLight() { if (!rimLight) return; const direction = camera.position.clone().sub(cameraTarget); direction.y = 0; if (direction.lengthSq() < .001) direction.set(0, 0, 1); direction.normalize(); rimLight.position.copy(cameraTarget).addScaledVector(direction, -(setting.lighting?.rimDistance ?? 18)); rimLight.position.y = cameraTarget.y + (setting.lighting?.rimHeight ?? 10); rimLight.target.position.copy(cameraTarget); rimLight.target.updateMatrixWorld(); }
-function updateCamera() { const horizontal = Math.cos(cameraState.pitch) * cameraState.distance; camera.position.set(cameraTarget.x + Math.sin(cameraState.yaw) * horizontal, cameraTarget.y + Math.sin(cameraState.pitch) * cameraState.distance, cameraTarget.z + Math.cos(cameraState.yaw) * horizontal); camera.lookAt(cameraTarget); updateCameraFog(); updateRimLight(); markSceneActive(); requestShadowUpdate(); }
+function updateCamera() { const horizontal = Math.cos(cameraState.pitch) * cameraState.distance; camera.position.set(cameraTarget.x + Math.sin(cameraState.yaw) * horizontal, cameraTarget.y + Math.sin(cameraState.pitch) * cameraState.distance, cameraTarget.z + Math.cos(cameraState.yaw) * horizontal); camera.lookAt(cameraTarget); updateCameraFog(); updateRimLight(); markSceneActive(); }
 function isPortraitViewport() { return elements.viewport.clientWidth / elements.viewport.clientHeight < .82; }
 function cameraMaxDistance() { return cameraConfig.maxDistance * (isPortraitViewport() ? (cameraConfig.mobileMaxDistanceScale || setting.camera.mobileMaxDistanceScale || 1.5) : 1); }
 function resetCamera() { Object.assign(cameraState, defaultCamera); if (isPortraitViewport()) cameraState.distance = Math.min(defaultCamera.distance * (cameraConfig.mobileDistanceScale || setting.camera.mobileDistanceScale || 1.9), cameraMaxDistance()); updateCamera(); }
@@ -242,24 +241,72 @@ const guiService = guiServiceTools.createGuiService({
   camera, iconUrl, resolveAsset: path => runtimeAssetUrl(path, runtime.lessonUrl || import.meta.url), objectiveAction, animateConsole, typeText, getMode: () => runtime.mode, onChoiceShow: () => showStepOption(null), onHintShow: option => queueStepOption(option), onHintHide: () => queueStepOption(null), playUiSound: uiSound
 });
 
-const lighting = setting.lighting || {}, hemisphereLight = new THREE.HemisphereLight(lighting.skyColor || "#e8f8ff", lighting.groundColor || "#c8d8c7", lighting.hemisphere ?? 1.5); scene.add(hemisphereLight); if ((lighting.ambient ?? 0) > 0) scene.add(new THREE.AmbientLight(lighting.ambientColor || "#dcecff", lighting.ambient)); const keyLight = new THREE.DirectionalLight(0xffffff, lighting.key ?? 1.65); keyLight.position.set(-8, 14, 8); keyLight.castShadow = true; const shadowMapSize = constrainedDevice ? (setting.renderer.mobileShadowMapSize || 1024) : (setting.renderer.desktopShadowMapSize || 2048); keyLight.shadow.mapSize.set(shadowMapSize, shadowMapSize); keyLight.shadow.radius = lighting.shadowRadius ?? 4; keyLight.shadow.normalBias = lighting.shadowNormalBias ?? .035; Object.assign(keyLight.shadow.camera, { left: -16, right: 16, top: 13, bottom: -13, near: 1, far: 38 }); scene.add(keyLight); const fillLight = new THREE.DirectionalLight(lighting.fillColor || "#c8c5ff", lighting.fill ?? .95); fillLight.position.set(8, 7, -7); scene.add(fillLight); rimLight = new THREE.DirectionalLight(lighting.rimColor || "#fff0c7", lighting.rim ?? 1.15); scene.add(rimLight, rimLight.target); updateRimLight(); const mintLight = new THREE.PointLight(0x6de2c1, lighting.mint ?? .55, 30, 2); mintLight.position.set(7, 7, 8); scene.add(mintLight); const peachLight = new THREE.PointLight(0xffb384, lighting.peach ?? .42, 25, 2); peachLight.position.set(-8, 5, -5); scene.add(peachLight);
+const lighting = setting.lighting || {}, hemisphereLight = new THREE.HemisphereLight(lighting.skyColor || "#e8f8ff", lighting.groundColor || "#c8d8c7", lighting.hemisphere ?? 1.15); scene.add(hemisphereLight); if ((lighting.ambient ?? 0) > 0) scene.add(new THREE.AmbientLight(lighting.ambientColor || "#dcecff", lighting.ambient)); const keyLight = new THREE.DirectionalLight(0xffffff, lighting.key ?? 1.35); keyLight.position.fromArray(shadowSetting.lightPosition || [-6, 19, 7]); keyLight.castShadow = renderer.shadowMap.enabled; const compactShadowViewport = matchMedia("(max-width: 760px)").matches, requestedShadowMapSize = compactShadowViewport ? (shadowSetting.mobileMapSize || 1024) : (shadowSetting.desktopMapSize || 2048), shadowMapSize = Math.min(requestedShadowMapSize, renderer.capabilities.maxTextureSize); keyLight.shadow.mapSize.set(shadowMapSize, shadowMapSize); keyLight.shadow.intensity = shadowSetting.intensity ?? .52; keyLight.shadow.radius = shadowSetting.radius ?? 2; keyLight.shadow.bias = shadowSetting.bias ?? -.00015; keyLight.shadow.normalBias = shadowSetting.normalBias ?? .018; Object.assign(keyLight.shadow.camera, shadowSetting.camera || { left: -12.5, right: 12.5, top: 10.5, bottom: -10.5, near: 2, far: 32 }); keyLight.shadow.camera.updateProjectionMatrix(); scene.add(keyLight); const fillLight = new THREE.DirectionalLight(lighting.fillColor || "#c8c5ff", lighting.fill ?? .42); fillLight.position.set(8, 7, -7); scene.add(fillLight); rimLight = new THREE.DirectionalLight(lighting.rimColor || "#fff0c7", lighting.rim ?? .55); scene.add(rimLight, rimLight.target); updateRimLight(); const mintLight = new THREE.PointLight(0x6de2c1, lighting.mint ?? .14, 30, 2); mintLight.position.set(7, 7, 8); scene.add(mintLight); const peachLight = new THREE.PointLight(0xffb384, lighting.peach ?? .12, 25, 2); peachLight.position.set(-8, 5, -5); scene.add(peachLight);
 
 function makePattern(kind, repeat = [2, 2]) { const canvas = document.createElement("canvas"); canvas.width = canvas.height = 256; const c = canvas.getContext("2d"); c.fillStyle = "#fff"; c.fillRect(0, 0, 256, 256); c.fillStyle = kind === "ground" ? "rgba(65,143,151,.055)" : "rgba(255,255,255,.42)"; for (let y = 16; y < 256; y += kind === "ground" ? 32 : 54)for (let x = 16; x < 256; x += kind === "ground" ? 32 : 54) { c.beginPath(); c.arc(x, y, kind === "ground" ? 3 : 8, 0, Math.PI * 2); c.fill(); } const t = new THREE.CanvasTexture(canvas); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...repeat); t.colorSpace = THREE.SRGBColorSpace; return t; }
 const objectPattern = makePattern("object", setting.object.textureRepeat);
-function makeAoTexture() { const canvas = document.createElement("canvas"); canvas.width = canvas.height = 128; const c = canvas.getContext("2d"), g = c.createRadialGradient(64, 64, 5, 64, 64, 62); g.addColorStop(0, "rgba(39,58,73,.72)"); g.addColorStop(.65, "rgba(39,58,73,.18)"); g.addColorStop(1, "rgba(39,58,73,0)"); c.fillStyle = g; c.fillRect(0, 0, 128, 128); return new THREE.CanvasTexture(canvas); } const aoTexture = makeAoTexture();
 function material(color, map = objectPattern) { const surface = setting.object.surface, colorValue = new THREE.Color(color), emissive = colorValue.clone().multiplyScalar(.18); return new THREE.MeshPhysicalMaterial({ color: colorValue, map, roughness: surface.roughness, metalness: .015, clearcoat: surface.clearcoat, clearcoatRoughness: surface.clearcoatRoughness, sheen: surface.sheen, sheenRoughness: surface.sheenRoughness, sheenColor: new THREE.Color(0xffffff), emissive, emissiveIntensity: surface.emissiveIntensity }); }
 function makeIslandTexture(config) { const canvas = document.createElement("canvas"); canvas.width = canvas.height = 768; const c = canvas.getContext("2d"); c.fillStyle = config.topColor; c.fillRect(0, 0, 768, 768); c.globalAlpha = config.textureOpacity; for (let index = 0; index < 92; index++) { const x = (index * 137 + 53) % 768, y = (index * 83 + 97) % 768, r = 4 + (index % 5) * 1.7; c.fillStyle = index % 3 === 0 ? config.textureStarColor : config.textureDotColor; if (index % 7 === 0) { c.save(); c.translate(x, y); c.rotate(Math.PI / 4); c.fillRect(-r, -r, r * 2, r * 2); c.restore(); } else { c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); } } c.globalAlpha = config.textureOpacity * .58; c.strokeStyle = config.textureDotColor; c.lineWidth = 4; for (let index = 0; index < 18; index++) { const x = (index * 211 + 80) % 768, y = (index * 149 + 44) % 768; c.beginPath(); c.arc(x, y, 16 + (index % 3) * 6, .2, Math.PI * 1.18); c.stroke(); } c.globalAlpha = 1; const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); return texture; }
 function loadIslandTexture(path, repeat = [1, 1]) { if (!path) return null; const texture = new THREE.TextureLoader().load(runtimeAssetUrl(path), loaded => { loaded.colorSpace = THREE.SRGBColorSpace; loaded.wrapS = loaded.wrapT = THREE.RepeatWrapping; loaded.repeat.set(...repeat); loaded.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); loaded.needsUpdate = true; }); texture.colorSpace = THREE.SRGBColorSpace; texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(...repeat); return texture; }
-const islandPlantMaterials = [], islandClouds = [];
+const islandPlantMaterials = [], islandPlantObjects = [], islandClouds = [];
 function plantRandom(index, salt = 0) { const value = Math.sin((index + 2) * 17.173 + (salt + 1) * 61.719) * 18473.927; return value - Math.floor(value); }
-function makeSoftDecorationShadowTexture() {
-  const canvas = document.createElement("canvas"); canvas.width = canvas.height = 64;
-  const context = canvas.getContext("2d"), gradient = context.createRadialGradient(32, 32, 2, 32, 32, 31);
-  gradient.addColorStop(0, "rgba(255,255,255,1)");
-  gradient.addColorStop(.44, "rgba(255,255,255,0.72)");
-  gradient.addColorStop(1, "rgba(255,255,255,0)");
-  context.fillStyle = gradient; context.fillRect(0, 0, 64, 64);
-  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.NoColorSpace; texture.needsUpdate = true; return texture;
+function loadIslandPlantAsset(entry) {
+  return new Promise(resolve => {
+    const texture = entry.texture ? new THREE.TextureLoader().load(runtimeAssetUrl(entry.texture), loaded => {
+      loaded.colorSpace = THREE.SRGBColorSpace;
+      loaded.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+      loaded.needsUpdate = true;
+    }) : null;
+    if (texture) texture.colorSpace = THREE.SRGBColorSpace;
+    const finish = object => {
+      stripImportedSceneControls(object);
+      object.traverse(child => {
+        if (!child.isMesh) return;
+        if (!child.geometry.attributes.normal) child.geometry.computeVertexNormals();
+        child.material = new THREE.MeshStandardMaterial({ map: texture, color: "#ffffff", roughness: .78, metalness: 0 });
+        child.castShadow = Boolean(shadowSetting.decorationCast);
+        child.receiveShadow = shadowSetting.decorationReceive !== false;
+      });
+      object.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(object), center = bounds.getCenter(new THREE.Vector3()), size = bounds.getSize(new THREE.Vector3());
+      object.position.sub(new THREE.Vector3(center.x, bounds.min.y, center.z));
+      object.updateMatrixWorld(true);
+      resolve({ object, height: Math.max(size.y, .001), entry });
+    };
+    const fail = error => { console.warn(`main-world: โหลดโมเดลพืชไม่สำเร็จ ${entry.path}`, error); resolve(null); };
+    const manager = new THREE.LoadingManager();
+    if (entry.texture) manager.setURLModifier(requestUrl => /\.(?:png|jpe?g|webp)(?:\?|$)/i.test(decodeURIComponent(requestUrl)) ? runtimeAssetUrl(entry.texture) : requestUrl);
+    import("three/addons/loaders/FBXLoader.js").then(({ FBXLoader }) => new FBXLoader(manager).load(runtimeAssetUrl(entry.path), finish, undefined, fail)).catch(fail);
+  });
+}
+function createImportedIslandPlants(style, placements, modelKey) {
+  const entries = style[modelKey]?.filter(entry => entry?.path) || [], randomSalt = modelKey === "flowerModels" ? 25 : 23;
+  if (!entries.length || !placements.length) return;
+  Promise.all(entries.map(loadIslandPlantAsset)).then(results => {
+    const assets = results.filter(Boolean);
+    if (!assets.length) return;
+    for (const placement of placements) {
+      const asset = assets[placement.index % assets.length], [minHeight, maxHeight] = asset.entry.height || [.26, .4], targetHeight = THREE.MathUtils.lerp(minHeight, maxHeight, plantRandom(placement.index, randomSalt));
+      const object = new THREE.Group(), model = asset.object.clone(true);
+      model.scale.setScalar(targetHeight / asset.height);
+      object.add(model);
+      object.position.set(placement.x, placement.y, placement.z);
+      object.rotation.y = placement.rotationY;
+      const faceFront = modelKey === "flowerModels" && asset.entry.faceFront !== false,
+        facingOffset = THREE.MathUtils.degToRad(asset.entry.facingOffset || 0) + (plantRandom(placement.index, randomSalt + 2) - .5) * .36;
+      if (faceFront) object.rotation.y = THREE.MathUtils.degToRad(cameraConfig.startYaw) + facingOffset;
+      object.userData.islandPlantMotion = {
+        baseX: 0,
+        baseZ: 0,
+        phase: plantRandom(placement.index, randomSalt + 1) * Math.PI * 2,
+        speed: Math.max(.1, (style.swaySpeed || .0018) * 1000),
+        amount: Math.max(0, style.swayAmount || .08)
+      };
+      islandPlantObjects.push(object);
+      scene.add(object);
+    }
+    markSceneActive();
+  });
 }
 function createIslandDecorations(config, surface = null) {
   const style = config.decorations;
@@ -271,11 +318,8 @@ function createIslandDecorations(config, surface = null) {
     [offsetX, offsetZ] = style.offsetXZ || [0, 0], modelOffset = surface ? (config.model?.position || [0, 0, 0]) : [0, 0, 0],
     raycaster = followSurface ? new THREE.Raycaster() : null, rayDirection = new THREE.Vector3(0, -1, 0),
     rayHeight = placement?.rayHeight ?? 30, heightOffset = placement?.heightOffset ?? 0,
-    fallbackSurfaceY = (config.model?.autoFit?.surfaceY ?? 0) + (modelOffset[1] ?? 0), buckets = new Map(), shadowMatrices = [],
-    shadowStyle = style.shadow, mobileShadowDevice = matchMedia("(max-width: 760px)").matches || matchMedia("(pointer: coarse) and (max-width: 1024px)").matches,
-    decorationShadowEnabled = Boolean(shadowStyle?.enabled && (shadowStyle.enabledOnMobile !== false || !mobileShadowDevice)),
+    fallbackSurfaceY = (config.model?.autoFit?.surfaceY ?? 0) + (modelOffset[1] ?? 0), buckets = new Map(), grassPlacements = [], flowerPlacements = [],
     root = new THREE.Object3D(), local = new THREE.Object3D(), matrix = new THREE.Matrix4();
-  const shadowPoint = new THREE.Vector3(), shadowNormal = new THREE.Vector3(0, 1, 0), planeNormal = new THREE.Vector3(0, 0, 1), normalMatrix = new THREE.Matrix3();
   const add = (kind, color, rootMatrix, position, rotation, scale) => {
     const key = `${kind}:${color}`; let bucket = buckets.get(key);
     if (!bucket) { bucket = { kind, color, matrices: [] }; buckets.set(key, bucket); }
@@ -292,34 +336,103 @@ function createIslandDecorations(config, surface = null) {
     let surfaceY = surface ? fallbackSurfaceY : 0, hit = null,
       baseY = flower ? (style.flowerBaseY ?? -.14) - height * (style.flowerSinkRatio ?? 0) : (style.grassBaseY ?? .025);
     if (followSurface) { raycaster.set(new THREE.Vector3(x, rayHeight, z), rayDirection); hit = raycaster.intersectObject(surface, true)[0]; const sink = flower ? height * (placement.flowerSinkRatio ?? 0) : 0; surfaceY = hit?.point.y ?? fallbackSurfaceY; baseY = surfaceY + heightOffset - sink; }
-    const showShadow = decorationShadowEnabled && (!shadowStyle.flowerOnly || flower);
-    if (showShadow) {
-      const [shadowWidth, shadowDepth] = shadowStyle.size || [.48, .28], variation = Math.max(0, shadowStyle.sizeVariation ?? .18), randomScale = 1 + (plantRandom(index, 19) - .5) * variation * 2;
-      shadowPoint.set(x, surfaceY, z); shadowNormal.set(0, 1, 0);
-      if (hit) { shadowPoint.copy(hit.point); if (hit.face) { normalMatrix.getNormalMatrix(hit.object.matrixWorld); shadowNormal.copy(hit.face.normal).applyMatrix3(normalMatrix).normalize(); if (shadowNormal.y < 0) shadowNormal.negate(); } }
-      local.position.copy(shadowPoint).addScaledVector(shadowNormal, shadowStyle.heightOffset ?? .065); local.rotation.set(0, 0, 0); local.quaternion.setFromUnitVectors(planeNormal, shadowNormal); local.rotateZ(angle); local.scale.set(shadowWidth * randomScale, shadowDepth * randomScale, 1); local.updateMatrix(); shadowMatrices.push(local.matrix.clone());
-    }
     root.position.set(x, baseY, z); root.rotation.set(0, -angle + (plantRandom(index, 4) - .5) * 1.4, 0); root.scale.set(1, 1, 1); root.updateMatrix();
     if (flower) {
-      const headScale = .72 + plantRandom(index, 5) * .25;
-      add("stem", grassColors[index % grassColors.length], root.matrix, [0, height / 2, 0], [0, 0, 0], [1, height, 1]);
-      for (let petal = 0; petal < 5; petal++) { const petalAngle = petal / 5 * Math.PI * 2; add("petal", flowerColors[index % flowerColors.length], root.matrix, [Math.cos(petalAngle) * .115 * headScale, height, Math.sin(petalAngle) * .115 * headScale], [0, -petalAngle, 0], [.78 * headScale, .42 * headScale, 1.2 * headScale]); }
-      add("center", "#ffd45c", root.matrix, [0, height, 0], [0, 0, 0], [headScale, headScale, headScale]);
-    } else for (let blade = 0; blade < 3; blade++)add("grass", grassColors[index % grassColors.length], root.matrix, [(blade - 1) * .09, height * .42, 0], [0, 0, (blade - 1) * -.28], [.7, height * (.72 + blade * .14), .48]);
+      if (style.flowerModels?.length) flowerPlacements.push({ index, x, y: baseY, z, rotationY: root.rotation.y });
+      else {
+        const headScale = .72 + plantRandom(index, 5) * .25;
+        add("stem", grassColors[index % grassColors.length], root.matrix, [0, height / 2, 0], [0, 0, 0], [1, height, 1]);
+        for (let petal = 0; petal < 5; petal++) { const petalAngle = petal / 5 * Math.PI * 2; add("petal", flowerColors[index % flowerColors.length], root.matrix, [Math.cos(petalAngle) * .115 * headScale, height, Math.sin(petalAngle) * .115 * headScale], [0, -petalAngle, 0], [.78 * headScale, .42 * headScale, 1.2 * headScale]); }
+        add("center", "#ffd45c", root.matrix, [0, height, 0], [0, 0, 0], [headScale, headScale, headScale]);
+      }
+    } else if (style.grassModels?.length) grassPlacements.push({ index, x, y: baseY, z, rotationY: root.rotation.y });
+    else for (let blade = 0; blade < 3; blade++)add("grass", grassColors[index % grassColors.length], root.matrix, [(blade - 1) * .09, height * .42, 0], [0, 0, (blade - 1) * -.28], [.7, height * (.72 + blade * .14), .48]);
   }
   for (const bucket of buckets.values()) {
     const material = new THREE.MeshStandardMaterial({ color: bucket.color, roughness: bucket.kind === "petal" ? .55 : .76, metalness: 0, flatShading: true });
     const time = { value: 0 }; material.userData.plantTime = time; material.onBeforeCompile = shader => { shader.uniforms.plantTime = time; shader.vertexShader = shader.vertexShader.replace("#include <common>", "#include <common>\nuniform float plantTime;").replace("#include <begin_vertex>", `vec3 transformed = vec3(position);\n#ifdef USE_INSTANCING\nfloat plantPhase=instanceMatrix[3].x*.71+instanceMatrix[3].z*.53;\ntransformed.x+=sin(plantTime*${Math.max(.1, (style.swaySpeed || .0018) * 1000).toFixed(4)}+plantPhase)*${Math.max(0, style.swayAmount || .08).toFixed(4)}*max(position.y,0.0);\n#endif`); }; material.customProgramCacheKey = () => "island-instanced-sway-v1"; islandPlantMaterials.push(material);
-    const mesh = new THREE.InstancedMesh(geometries[bucket.kind], material, bucket.matrices.length); bucket.matrices.forEach((value, index) => mesh.setMatrixAt(index, value)); mesh.instanceMatrix.needsUpdate = true; mesh.castShadow = false; mesh.receiveShadow = false; mesh.computeBoundingSphere(); scene.add(mesh);
+    const mesh = new THREE.InstancedMesh(geometries[bucket.kind], material, bucket.matrices.length); bucket.matrices.forEach((value, index) => mesh.setMatrixAt(index, value)); mesh.instanceMatrix.needsUpdate = true; mesh.castShadow = Boolean(shadowSetting.decorationCast); mesh.receiveShadow = shadowSetting.decorationReceive !== false; mesh.computeBoundingSphere(); scene.add(mesh);
   }
-  if (shadowMatrices.length) {
-    const shadowMaterial = new THREE.MeshBasicMaterial({ color: shadowStyle.color || "#365b3c", map: makeSoftDecorationShadowTexture(), transparent: true, opacity: shadowStyle.opacity ?? .32, depthWrite: false, side: THREE.DoubleSide, fog: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
-      shadowMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), shadowMaterial, shadowMatrices.length);
-    shadowMatrices.forEach((value, index) => shadowMesh.setMatrixAt(index, value)); shadowMesh.instanceMatrix.setUsage(THREE.StaticDrawUsage); shadowMesh.instanceMatrix.needsUpdate = true; shadowMesh.castShadow = false; shadowMesh.receiveShadow = false; shadowMesh.renderOrder = 1; shadowMesh.computeBoundingSphere(); shadowMesh.name = "island-decoration-shadows"; scene.add(shadowMesh);
-  }
+  createImportedIslandPlants(style, grassPlacements, "grassModels");
+  createImportedIslandPlants(style, flowerPlacements, "flowerModels");
 }
 function createIslandCloudBase(config) { const style = config.cloudBase; if (!style?.enabled) return; const [near, far] = style.radius, [low, high] = style.y, [minScale, maxScale] = style.scale, colors = style.colors || ["#ffffff"]; for (let index = 0; index < style.count; index++) { const angle = index / style.count * Math.PI * 2 + (plantRandom(index, 12) - .5) * .34, radius = THREE.MathUtils.lerp(near, far, plantRandom(index, 13)), cloud = makeSoftCloud(colors[index % colors.length]), scale = THREE.MathUtils.lerp(minScale, maxScale, plantRandom(index, 14)); cloud.position.set(Math.cos(angle) * radius, THREE.MathUtils.lerp(low, high, plantRandom(index, 15)), Math.sin(angle) * radius); cloud.scale.setScalar(scale); cloud.rotation.y = -angle; cloud.traverse(mesh => { if (mesh.material) { mesh.material = mesh.material.clone(); mesh.material.transparent = true; mesh.material.opacity = style.opacity; mesh.material.depthWrite = false; } }); cloud.userData.islandCloud = { baseY: cloud.position.y, phase: plantRandom(index, 16) * Math.PI * 2, speed: style.floatSpeed * (.7 + plantRandom(index, 17) * .55), amount: style.floatAmount * (.7 + plantRandom(index, 18) * .5) }; islandClouds.push(cloud); scene.add(cloud); } }
-function createWorldIsland() { const config = setting.ground.island; if (!config?.enabled) return; const grassTexture = loadIslandTexture(config.topTexturePath, config.topTextureRepeat) || makeIslandTexture(config), soilTexture = loadIslandTexture(config.sideTexturePath, config.sideTextureRepeat), height = config.height, edgeHeight = clamp(config.straightEdgeHeight ?? .65, .08, height - .08), curveSegments = Math.max(2, Math.round(config.curveSegments ?? 7)), grassRadius = config.radius - clamp(config.grassEdgeInset ?? .1, .02, .3), profile = [new THREE.Vector2(config.radius, 0), new THREE.Vector2(config.radius, -edgeHeight)]; for (let index = 1; index <= curveSegments; index++) { const progress = index / curveSegments, eased = progress * progress * (3 - 2 * progress); profile.push(new THREE.Vector2(THREE.MathUtils.lerp(config.radius, config.bottomRadius, eased), -edgeHeight - (height - edgeHeight) * progress)); } profile.reverse(); const geometry = new THREE.LatheGeometry(profile, 128), side = new THREE.MeshPhysicalMaterial({ color: config.sideColor, map: soilTexture, bumpMap: soilTexture, bumpScale: .028, roughness: .7, metalness: 0, clearcoat: .1, clearcoatRoughness: .45, side: THREE.DoubleSide }), island = new THREE.Mesh(geometry, side); island.receiveShadow = island.castShadow = true; scene.add(island); const edgeMaterial = new THREE.MeshPhysicalMaterial({ color: config.edgeColor || config.bottomColor, roughness: .78, metalness: 0, clearcoat: .06 }), edgeTop = new THREE.Mesh(new THREE.RingGeometry(grassRadius, config.radius, 128), edgeMaterial); edgeTop.rotation.x = -Math.PI / 2; edgeTop.position.y = .004; edgeTop.receiveShadow = true; scene.add(edgeTop); const grassMaterial = new THREE.MeshPhysicalMaterial({ color: config.topTint || "#ffffff", map: grassTexture, bumpMap: grassTexture, bumpScale: .026, roughness: .78, metalness: 0, clearcoat: .08, clearcoatRoughness: .5 }), grassCap = new THREE.Mesh(new THREE.CircleGeometry(grassRadius, 128), grassMaterial); grassCap.rotation.x = -Math.PI / 2; grassCap.position.y = .008; grassCap.receiveShadow = true; scene.add(grassCap); const quiet = config.quietZone; if (quiet?.enabled) { const quietSurface = new THREE.Mesh(new THREE.CircleGeometry(quiet.radius, 96), new THREE.MeshPhysicalMaterial({ color: quiet.color, transparent: true, opacity: quiet.opacity, roughness: .9, metalness: 0, depthWrite: false })); quietSurface.rotation.x = -Math.PI / 2; quietSurface.position.y = .014; quietSurface.receiveShadow = true; scene.add(quietSurface); } const bottomCap = new THREE.Mesh(new THREE.CircleGeometry(config.bottomRadius, 128), new THREE.MeshPhysicalMaterial({ color: config.bottomColor, roughness: .82, metalness: 0 })); bottomCap.rotation.x = Math.PI / 2; bottomCap.position.y = -height; bottomCap.receiveShadow = true; scene.add(bottomCap); const rim = new THREE.Mesh(new THREE.TorusGeometry(grassRadius - .04, .03, 8, 128), new THREE.MeshPhysicalMaterial({ color: config.rimColor, roughness: .58, clearcoat: .18, clearcoatRoughness: .34 })); rim.rotation.x = Math.PI / 2; rim.position.y = .012; rim.receiveShadow = true; scene.add(rim); createIslandDecorations(config); createIslandCloudBase(config); }
+// ไฟล์ FBX/GLTF จากโปรแกรม 3D อาจพก Light และ Camera มาด้วยโดยไม่ตั้งใจ
+// Main world เป็นเจ้าของไฟและกล้องทั้งหมด จึงตัด scene controls จาก asset ก่อนนำเข้าฉากเสมอ
+function stripImportedSceneControls(root) {
+  const importedControls = [];
+  root?.traverse?.(child => {
+    if (child !== root && (child.isLight || child.isCamera)) importedControls.push(child);
+  });
+  for (const child of importedControls) {
+    child.shadow?.map?.dispose?.();
+    child.removeFromParent();
+  }
+  if (root?.userData) root.userData.removedImportedSceneControls = importedControls.length;
+  return root;
+}
+function createWorldIsland() {
+  const config = setting.ground.island;
+  if (!config?.enabled) return;
+  const castGroundShadow = Boolean(shadowSetting.islandCast);
+  const receiveGroundShadow = shadowSetting.islandReceive !== false;
+  const grassTexture = loadIslandTexture(config.topTexturePath, config.topTextureRepeat) || makeIslandTexture(config);
+  const soilTexture = loadIslandTexture(config.sideTexturePath, config.sideTextureRepeat);
+  const height = config.height;
+  const edgeHeight = clamp(config.straightEdgeHeight ?? .65, .08, height - .08);
+  const curveSegments = Math.max(2, Math.round(config.curveSegments ?? 7));
+  const grassRadius = config.radius - clamp(config.grassEdgeInset ?? .1, .02, .3);
+  const profile = [new THREE.Vector2(config.radius, 0), new THREE.Vector2(config.radius, -edgeHeight)];
+  for (let index = 1; index <= curveSegments; index++) {
+    const progress = index / curveSegments;
+    const eased = progress * progress * (3 - 2 * progress);
+    profile.push(new THREE.Vector2(THREE.MathUtils.lerp(config.radius, config.bottomRadius, eased), -edgeHeight - (height - edgeHeight) * progress));
+  }
+  profile.reverse();
+  const geometry = new THREE.LatheGeometry(profile, 128);
+  const side = new THREE.MeshPhysicalMaterial({ color: config.sideColor, map: soilTexture, bumpMap: soilTexture, bumpScale: .028, roughness: .7, metalness: 0, clearcoat: .1, clearcoatRoughness: .45, side: THREE.DoubleSide });
+  const island = new THREE.Mesh(geometry, side);
+  island.castShadow = castGroundShadow;
+  island.receiveShadow = receiveGroundShadow;
+  scene.add(island);
+  const edgeMaterial = new THREE.MeshPhysicalMaterial({ color: config.edgeColor || config.bottomColor, roughness: .78, metalness: 0, clearcoat: .06 });
+  const edgeTop = new THREE.Mesh(new THREE.RingGeometry(grassRadius, config.radius, 128), edgeMaterial);
+  edgeTop.rotation.x = -Math.PI / 2;
+  edgeTop.position.y = .004;
+  edgeTop.castShadow = castGroundShadow;
+  edgeTop.receiveShadow = receiveGroundShadow;
+  scene.add(edgeTop);
+  const grassMaterial = new THREE.MeshPhysicalMaterial({ color: config.topTint || "#ffffff", map: grassTexture, bumpMap: grassTexture, bumpScale: .026, roughness: .78, metalness: 0, clearcoat: .08, clearcoatRoughness: .5 });
+  const grassCap = new THREE.Mesh(new THREE.CircleGeometry(grassRadius, 128), grassMaterial);
+  grassCap.rotation.x = -Math.PI / 2;
+  grassCap.position.y = .008;
+  grassCap.castShadow = castGroundShadow;
+  grassCap.receiveShadow = receiveGroundShadow;
+  scene.add(grassCap);
+  const quiet = config.quietZone;
+  if (quiet?.enabled) {
+    const quietSurface = new THREE.Mesh(new THREE.CircleGeometry(quiet.radius, 96), new THREE.MeshPhysicalMaterial({ color: quiet.color, transparent: true, opacity: quiet.opacity, roughness: .9, metalness: 0, depthWrite: false }));
+    quietSurface.rotation.x = -Math.PI / 2;
+    quietSurface.position.y = .014;
+    quietSurface.castShadow = castGroundShadow;
+    quietSurface.receiveShadow = receiveGroundShadow;
+    scene.add(quietSurface);
+  }
+  const bottomCap = new THREE.Mesh(new THREE.CircleGeometry(config.bottomRadius, 128), new THREE.MeshPhysicalMaterial({ color: config.bottomColor, roughness: .82, metalness: 0 }));
+  bottomCap.rotation.x = Math.PI / 2;
+  bottomCap.position.y = -height;
+  bottomCap.castShadow = castGroundShadow;
+  bottomCap.receiveShadow = receiveGroundShadow;
+  scene.add(bottomCap);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(grassRadius - .04, .03, 8, 128), new THREE.MeshPhysicalMaterial({ color: config.rimColor, roughness: .58, clearcoat: .18, clearcoatRoughness: .34 }));
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = .012;
+  rim.castShadow = castGroundShadow;
+  rim.receiveShadow = receiveGroundShadow;
+  scene.add(rim);
+  createIslandDecorations(config);
+  createIslandCloudBase(config);
+}
 // เก็บตัวสร้างเกาะ Procedural เดิมไว้เป็น fallback และใช้เมื่อ model.enabled=false
 const createProceduralWorldIsland = createWorldIsland;
 createWorldIsland = function () {
@@ -338,6 +451,7 @@ createWorldIsland = function () {
     roughness: model.useRoughnessMap ? loadModelMap(model.roughnessTexturePath) : null,
     metalness: model.useMetalnessMap ? loadModelMap(model.metalnessTexturePath) : null
   }, applyModel = (island) => {
+    stripImportedSceneControls(island);
     island.name = "world-island-model";
     const importedScale = island.scale.clone(), userScale = new THREE.Vector3().fromArray(model.scale || [1, 1, 1]);
     island.position.set(0, 0, 0);
@@ -345,8 +459,8 @@ createWorldIsland = function () {
     island.scale.copy(importedScale);
     island.traverse(object => {
       if (!object.isMesh) return;
-      object.castShadow = true;
-      object.receiveShadow = true;
+      object.castShadow = Boolean(shadowSetting.islandCast);
+      object.receiveShadow = shadowSetting.islandReceive !== false;
       if (!object.geometry.attributes.normal) object.geometry.computeVertexNormals();
       const sources = Array.isArray(object.material) ? object.material : [object.material], materials = sources.map(source => {
         const MaterialClass = model.materialType === "physical" ? THREE.MeshPhysicalMaterial : THREE.MeshStandardMaterial,
@@ -409,7 +523,6 @@ createWorldIsland = function () {
     scene.add(island);
     createIslandDecorations(config, island);
     createIslandCloudBase(config);
-    requestShadowUpdate();
   }, onLoadError = error => {
     console.warn(`main-world: โหลดโมเดลเกาะไม่สำเร็จ ${model.path}`, error);
     createProceduralWorldIsland();
@@ -453,19 +566,71 @@ function createCircularGrid() {
   }
   gridRing = new THREE.Line(new THREE.BufferGeometry().setFromPoints(ringPoints), new THREE.LineBasicMaterial({ color: ringStyle.color, transparent: true, opacity: .48 * ringStyle.alpha, toneMapped: false, fog: false }));
   scene.add(gridRing);
-  const shadowFloor = new THREE.Mesh(new THREE.CircleGeometry(radius, 96), new THREE.ShadowMaterial({ opacity: setting.ground.shadowOpacity }));
-  shadowFloor.rotation.x = -Math.PI / 2;
-  shadowFloor.position.y = -.012;
-  shadowFloor.receiveShadow = true;
-  scene.add(shadowFloor);
 }
 createWorldIsland();
 createCircularGrid();
 const skyboxGroup = new THREE.Group(), distantDecorGroup = new THREE.Group(), atmosphereGroup = new THREE.Group(), lessonGroup = new THREE.Group(), effectGroup = new THREE.Group(); scene.add(skyboxGroup, distantDecorGroup, atmosphereGroup, lessonGroup, effectGroup);
 function decorRandom(index, salt = 0) { const value = Math.sin((index + 1) * 12.9898 + (salt + 1) * 78.233) * 43758.5453; return value - Math.floor(value); }
-function loadDistantDecorAsset(entry, config) { return new Promise(resolve => { const texture = entry.texture ? new THREE.TextureLoader().load(runtimeAssetUrl(entry.texture), loaded => { loaded.colorSpace = THREE.SRGBColorSpace; loaded.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); loaded.needsUpdate = true; }) : null; if (texture) texture.colorSpace = THREE.SRGBColorSpace; const opacity = clamp(entry.opacity ?? config.opacity ?? 1, 0, 1), finish = object => { object.traverse(child => { if (!child.isMesh) return; if (!child.geometry.attributes.normal) child.geometry.computeVertexNormals(); child.castShadow = false; child.receiveShadow = false; child.material = new THREE.MeshStandardMaterial({ map: texture, color: entry.color || "#ffffff", roughness: config.roughness ?? .72, metalness: 0, fog: config.fog !== false, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 }); }); object.updateMatrixWorld(true); const bounds = new THREE.Box3().setFromObject(object), center = bounds.getCenter(new THREE.Vector3()), size = bounds.getSize(new THREE.Vector3()); object.position.sub(center); object.updateMatrixWorld(true); resolve({ object, size: Math.max(size.x, size.y, size.z) || 1, entry }); }, fail = error => { console.warn(`main-world: โหลด distant decor ไม่สำเร็จ ${entry.path}`, error); resolve(null); }, url = runtimeAssetUrl(entry.path); if (/\.gl(?:b|tf)(?:\?|$)/i.test(entry.path)) import("three/addons/loaders/GLTFLoader.js").then(({ GLTFLoader }) => new GLTFLoader().load(url, gltf => finish(gltf.scene), undefined, fail)).catch(fail); else new FBXLoader().load(url, finish, undefined, fail); }); }
-function createDistantDecor() { const config = setting.distantDecor, models = config?.models?.filter(entry => entry?.path); if (!config?.enabled || !models?.length) return; Promise.all(models.map(entry => loadDistantDecorAsset(entry, config))).then(assets => { const available = assets.filter(Boolean), total = Math.max(0, Math.round(config.count ?? available.length)); if (!available.length) return; const [near, far] = config.radius; for (let index = 0; index < total; index++) { const asset = available[index % available.length], entry = asset.entry, [low, high] = entry.height || [0, 0], [minScale, maxScale] = entry.scale || [1, 1], angle = index / total * Math.PI * 2 + (decorRandom(index, 1) - .5) * .72, radius = THREE.MathUtils.lerp(near, far, decorRandom(index, 2)), height = THREE.MathUtils.lerp(low, high, decorRandom(index, 3)), targetSize = THREE.MathUtils.lerp(minScale, maxScale, decorRandom(index, 4)), object = asset.object.clone(true), canRotate = entry.rotate !== false; object.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius); object.scale.setScalar(targetSize / asset.size); if (canRotate) object.rotation.set((decorRandom(index, 11) - .5) * .5, decorRandom(index, 12) * Math.PI * 2, (decorRandom(index, 13) - .5) * .42); object.userData.distantMotion = { basePosition: object.position.clone(), baseRotation: object.rotation.clone(), phase: decorRandom(index, 5) * Math.PI * 2, floatSpeed: config.floatSpeed * (.72 + decorRandom(index, 6) * .72), floatAmount: config.floatAmount * (.65 + decorRandom(index, 7) * .7), driftAmount: config.driftAmount * (.45 + decorRandom(index, 8) * .8), spinSpeed: canRotate ? config.spinSpeed * (decorRandom(index, 9) > .5 ? 1 : -1) * (.6 + decorRandom(index, 10)) : 0 }; distantDecorGroup.add(object); } }); }
-function createDistantClouds() { const config = setting.distantClouds, entry = config?.model; if (!config?.enabled || !entry?.path) return; loadDistantDecorAsset(entry, config).then(asset => { if (!asset) return; const total = Math.max(0, Math.round(config.count ?? 0)), [near, far] = config.radius, [low, high] = config.height, [minScale, maxScale] = config.scale, [minOrbit, maxOrbit] = config.orbitSpeed || [.000006, .000014], colors = config.colors?.length ? config.colors : ["#ffffff"]; for (let index = 0; index < total; index++) { const angle = index / Math.max(1, total) * Math.PI * 2 + (decorRandom(index, 21) - .5) * .7, radius = THREE.MathUtils.lerp(near, far, decorRandom(index, 22)), height = THREE.MathUtils.lerp(low, high, decorRandom(index, 23)), targetSize = THREE.MathUtils.lerp(minScale, maxScale, decorRandom(index, 24)), cloud = asset.object.clone(true), tint = new THREE.Color(colors[index % colors.length]), direction = decorRandom(index, 25) > .5 ? 1 : -1, orbitSpeed = THREE.MathUtils.lerp(minOrbit, maxOrbit, decorRandom(index, 26)) * direction; cloud.traverse(child => { if (!child.isMesh) return; child.material = child.material.clone(); child.material.color.multiply(tint); }); cloud.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius); cloud.scale.setScalar(targetSize / asset.size); cloud.lookAt(0, height, 0); cloud.userData.distantMotion = { basePosition: cloud.position.clone(), baseRotation: cloud.rotation.clone(), baseY: height, phase: decorRandom(index, 27) * Math.PI * 2, floatSpeed: config.floatSpeed * (.72 + decorRandom(index, 28) * .72), floatAmount: config.floatAmount * (.65 + decorRandom(index, 29) * .7), driftAmount: config.radialDrift * (.55 + decorRandom(index, 30) * .75), orbitAngle: angle, orbitRadius: radius, orbitSpeed, startedAt: performance.now() }; distantDecorGroup.add(cloud); } }); }
+function createMathSymbolDecor(entry) {
+  const group = new THREE.Group(), color = new THREE.Color(entry.color || "#ff8a65"), material = new THREE.MeshPhysicalMaterial({ color, emissive: color.clone().multiplyScalar(.08), emissiveIntensity: .32, roughness: .3, metalness: .03, clearcoat: .72, clearcoatRoughness: .16, fog: entry.fog !== false, transparent: false, opacity: 1 });
+  const addBar = (length, rotation = 0, y = 0) => { const bar = new THREE.Mesh(new RoundedBoxGeometry(length, .48, .5, 6, .17), material); bar.rotation.z = rotation; bar.position.y = y; group.add(bar); };
+  const addDot = y => { const dot = new THREE.Mesh(new THREE.SphereGeometry(.29, 24, 16), material); dot.scale.z = .86; dot.position.y = y; group.add(dot); };
+  if (entry.symbol === "minus") addBar(1.9);
+  else if (entry.symbol === "multiply") { addBar(1.9, Math.PI / 4); addBar(1.9, -Math.PI / 4); }
+  else if (entry.symbol === "divide") { addBar(1.75); addDot(.76); addDot(-.76); }
+  else { addBar(1.9); addBar(1.9, Math.PI / 2); }
+  group.traverse(child => { if (child.isMesh) { child.castShadow = Boolean(shadowSetting.distantCast); child.receiveShadow = Boolean(shadowSetting.distantReceive); } });
+  group.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(group), center = bounds.getCenter(new THREE.Vector3()), size = bounds.getSize(new THREE.Vector3());
+  group.position.sub(center);
+  return { object: group, size: Math.max(size.x, size.y, size.z) || 1, entry };
+}
+function loadDistantDecorAsset(entry, config) {
+  return new Promise(resolve => {
+    const texture = entry.texture ? new THREE.TextureLoader().load(runtimeAssetUrl(entry.texture), loaded => {
+      loaded.colorSpace = THREE.SRGBColorSpace;
+      loaded.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+      loaded.needsUpdate = true;
+    }) : null;
+    if (texture) texture.colorSpace = THREE.SRGBColorSpace;
+    const opacity = clamp(entry.opacity ?? config.opacity ?? 1, 0, 1);
+    const finish = object => {
+      stripImportedSceneControls(object);
+      object.traverse(child => {
+        if (!child.isMesh) return;
+        if (!child.geometry.attributes.normal) child.geometry.computeVertexNormals();
+        child.castShadow = Boolean(shadowSetting.distantCast);
+        child.receiveShadow = Boolean(shadowSetting.distantReceive);
+        child.material = new THREE.MeshStandardMaterial({ map: texture, color: entry.color || "#ffffff", roughness: config.roughness ?? .72, metalness: 0, fog: config.fog !== false, transparent: opacity < 1, opacity, depthWrite: opacity >= 1 });
+      });
+      object.updateMatrixWorld(true);
+      const bounds = new THREE.Box3().setFromObject(object);
+      const center = bounds.getCenter(new THREE.Vector3());
+      const size = bounds.getSize(new THREE.Vector3());
+      object.position.sub(center);
+      object.updateMatrixWorld(true);
+      resolve({ object, size: Math.max(size.x, size.y, size.z) || 1, entry });
+    };
+    const fail = error => {
+      console.warn(`main-world: โหลด distant decor ไม่สำเร็จ ${entry.path}`, error);
+      resolve(null);
+    };
+    const url = runtimeAssetUrl(entry.path);
+    if (/\.gl(?:b|tf)(?:\?|$)/i.test(entry.path)) {
+      import("three/addons/loaders/GLTFLoader.js")
+        .then(({ GLTFLoader }) => new GLTFLoader().load(url, gltf => finish(gltf.scene), undefined, fail))
+        .catch(fail);
+    } else {
+      import("three/addons/loaders/FBXLoader.js").then(({ FBXLoader }) => {
+        const manager = new THREE.LoadingManager();
+        if (entry.texture) manager.setURLModifier(requestUrl => /\.(?:png|jpe?g|webp)(?:\?|$)/i.test(decodeURIComponent(requestUrl)) ? runtimeAssetUrl(entry.texture) : requestUrl);
+        new FBXLoader(manager).load(url, finish, undefined, fail);
+      }).catch(fail);
+    }
+  });
+}
+function createDistantDecor() { const config = setting.distantDecor, models = config?.models?.filter(entry => entry?.path || entry?.type === "mathSymbol"); if (!config?.enabled || !models?.length) return; Promise.all(models.map(entry => entry.type === "mathSymbol" ? Promise.resolve(createMathSymbolDecor(entry)) : loadDistantDecorAsset(entry, config))).then(assets => { const available = assets.filter(Boolean), total = Math.max(0, Math.round(config.count ?? available.length)); if (!available.length) return; for (let index = 0; index < total; index++) { const asset = available[index % available.length], entry = asset.entry, [near, far] = entry.radius || config.radius, [low, high] = entry.height || [0, 0], [minScale, maxScale] = entry.scale || [1, 1], angle = Number.isFinite(entry.angle) ? THREE.MathUtils.degToRad(entry.angle) : index / total * Math.PI * 2 + (decorRandom(index, 1) - .5) * .72, radius = THREE.MathUtils.lerp(near, far, decorRandom(index, 2)), height = THREE.MathUtils.lerp(low, high, decorRandom(index, 3)), targetSize = THREE.MathUtils.lerp(minScale, maxScale, decorRandom(index, 4)), sourceObject = asset.object.clone(true), hasCustomSpin = Number.isFinite(entry.spinSpeed), object = hasCustomSpin ? new THREE.Group() : sourceObject, canRotate = entry.rotate !== false; if (hasCustomSpin) object.add(sourceObject); object.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius); object.scale.setScalar(targetSize / asset.size); if (entry.faceCenter) { object.lookAt(0, height, 0); object.rotateY(THREE.MathUtils.degToRad(entry.facingOffset ?? 180)); } else if (canRotate) object.rotation.set((decorRandom(index, 11) - .5) * .5, decorRandom(index, 12) * Math.PI * 2, (decorRandom(index, 13) - .5) * .42); object.userData.distantMotion = { basePosition: object.position.clone(), baseRotation: object.rotation.clone(), phase: decorRandom(index, 5) * Math.PI * 2, floatSpeed: config.floatSpeed * (.72 + decorRandom(index, 6) * .72), floatAmount: config.floatAmount * (.65 + decorRandom(index, 7) * .7), driftAmount: config.driftAmount * (.45 + decorRandom(index, 8) * .8), spinAxis: entry.spinAxis || "y", spinSpeed: hasCustomSpin ? entry.spinSpeed : canRotate ? config.spinSpeed * (decorRandom(index, 9) > .5 ? 1 : -1) * (.6 + decorRandom(index, 10)) : 0, startedAt: performance.now() }; distantDecorGroup.add(object); } }); }
+function createDistantClouds() { const config = setting.distantClouds, entries = (config?.models?.length ? config.models : [config?.model]).filter(entry => entry?.path); if (!config?.enabled || !entries.length) return; Promise.all(entries.map(entry => loadDistantDecorAsset(entry, config))).then(assets => { const available = assets.filter(Boolean); if (!available.length) return; const total = Math.max(0, Math.round(config.count ?? 0)), [near, far] = config.radius, [low, high] = config.height, [minScale, maxScale] = config.scale, [minOrbit, maxOrbit] = config.orbitSpeed || [.000006, .000014], colors = config.colors?.length ? config.colors : ["#ffffff"]; for (let index = 0; index < total; index++) { const asset = available[Math.floor(decorRandom(index, 31) * available.length)], angle = index / Math.max(1, total) * Math.PI * 2 + (decorRandom(index, 21) - .5) * .7, radius = THREE.MathUtils.lerp(near, far, decorRandom(index, 22)), height = THREE.MathUtils.lerp(low, high, decorRandom(index, 23)), targetSize = THREE.MathUtils.lerp(minScale, maxScale, decorRandom(index, 24)), distanceRatio = clamp((radius - near) / Math.max(far - near, .001), 0, 1), sizeRatio = clamp((targetSize - minScale) / Math.max(maxScale - minScale, .001), 0, 1), fadeStrength = sizeRatio * (1 - distanceRatio), cloudOpacity = THREE.MathUtils.lerp(1, config.largeNearOpacity ?? .84, fadeStrength), cloud = asset.object.clone(true), tint = new THREE.Color(colors[index % colors.length]), direction = decorRandom(index, 25) > .5 ? 1 : -1, orbitSpeed = THREE.MathUtils.lerp(minOrbit, maxOrbit, decorRandom(index, 26)) * direction; cloud.traverse(child => { if (!child.isMesh) return; child.material = child.material.clone(); child.material.color.multiply(tint); child.material.opacity = cloudOpacity; child.material.transparent = cloudOpacity < 1; child.material.depthWrite = cloudOpacity >= 1; child.material.needsUpdate = true; }); cloud.position.set(Math.cos(angle) * radius, height, Math.sin(angle) * radius); cloud.scale.setScalar(targetSize / asset.size); cloud.lookAt(0, height, 0); cloud.userData.distantMotion = { basePosition: cloud.position.clone(), baseRotation: cloud.rotation.clone(), baseY: height, phase: decorRandom(index, 27) * Math.PI * 2, floatSpeed: config.floatSpeed * (.72 + decorRandom(index, 28) * .72), floatAmount: config.floatAmount * (.65 + decorRandom(index, 29) * .7), driftAmount: config.radialDrift * (.55 + decorRandom(index, 30) * .75), orbitAngle: angle, orbitRadius: radius, orbitSpeed, startedAt: performance.now() }; distantDecorGroup.add(cloud); } }); }
 createDistantDecor();
 createDistantClouds();
 const interactive = [], uiDisplays = [], worldCallouts = new Set(), activeGuidelines = new Set(), targetFocusEffects = new Set(), animations = new Map(), commitFlashes = new Map(); let hovered = null, hoveredDisplay = null, selected = null, atmospherePoints = null, fallingLeafSystem = null, backgroundVersion = 0, spawnSequence = 0;
@@ -479,10 +644,10 @@ const ringHaloMaterial = new THREE.MeshBasicMaterial({ color: highlightSetting.h
 const markerSize = highlightSetting.marker?.size || 1, markerGem = new THREE.Group(), markerGeometry = new THREE.OctahedronGeometry(1, 0), markerEdgeMaterial = new THREE.MeshPhysicalMaterial({ color: highlightSetting.marker?.edgeColor || "#5369dc", roughness: .22, metalness: .06, clearcoat: .9, clearcoatRoughness: .1, depthTest: true }), markerCrystalMaterial = new THREE.MeshPhysicalMaterial({ color: highlightSetting.marker?.color || "#63d9ff", emissive: new THREE.Color(highlightSetting.marker?.color || "#63d9ff").multiplyScalar(.16), emissiveIntensity: .5, roughness: .12, metalness: .02, clearcoat: 1, clearcoatRoughness: .06, depthTest: true }), markerCoreMaterial = new THREE.MeshPhysicalMaterial({ color: highlightSetting.marker?.secondaryColor || "#effcff", emissive: highlightSetting.marker?.secondaryColor || "#effcff", emissiveIntensity: .72, roughness: .08, clearcoat: 1, depthTest: true });
 const markerEdge = new THREE.Mesh(markerGeometry, markerEdgeMaterial), markerCrystal = new THREE.Mesh(markerGeometry, markerCrystalMaterial), markerCore = new THREE.Mesh(markerGeometry, markerCoreMaterial); markerEdge.scale.set(.43, .59, .43); markerCrystal.scale.set(.355, .505, .355); markerCore.scale.set(.13, .22, .13); markerGem.scale.setScalar(markerSize); markerGem.add(markerEdge, markerCrystal, markerCore);
 const markerSparkleMaterial = new THREE.MeshBasicMaterial({ color: highlightSetting.marker?.sparkleColor || "#ffffff", transparent: true, opacity: .92, depthWrite: false, depthTest: true, blending: THREE.AdditiveBlending, toneMapped: false }), markerSparkles = [0, 1, 2].map(index => { const sparkle = new THREE.Mesh(new THREE.OctahedronGeometry(.058 - index * .006, 0), markerSparkleMaterial); sparkle.userData.phase = index * Math.PI * 2 / 3; floatingMarker.add(sparkle); return sparkle; }), topRingSetting = highlightSetting.marker?.topRing || {}, markerTopRing = new THREE.Group(), topRingOuter = new THREE.Mesh(new THREE.TorusGeometry(topRingSetting.size ?? .34, (topRingSetting.thickness ?? .035) * 1.65, 10, 48), new THREE.MeshPhysicalMaterial({ color: topRingSetting.edgeColor || "#72dfff", emissive: topRingSetting.edgeColor || "#72dfff", emissiveIntensity: .28, roughness: .18, clearcoat: 1, depthTest: true })), topRingInner = new THREE.Mesh(new THREE.TorusGeometry((topRingSetting.size ?? .34) * .96, topRingSetting.thickness ?? .035, 10, 48), new THREE.MeshPhysicalMaterial({ color: topRingSetting.color || "#ffffff", emissive: topRingSetting.color || "#ffffff", emissiveIntensity: .58, roughness: .12, clearcoat: 1, depthTest: true })); topRingOuter.rotation.x = topRingInner.rotation.x = Math.PI / 2; markerTopRing.add(topRingOuter, topRingInner); markerTopRing.visible = topRingSetting.enabled !== false; floatingMarker.add(markerTopRing, markerGem);
-for (const part of [markerEdge, markerCrystal, markerCore]) { part.castShadow = true; part.receiveShadow = true; }
+for (const part of [markerEdge, markerCrystal, markerCore]) { part.castShadow = Boolean(shadowSetting.markerCast); part.receiveShadow = Boolean(shadowSetting.markerReceive); }
 const markerDownAxis = new THREE.Vector3(0, -1, 0), markerTargetPoint = new THREE.Vector3(), markerDirection = new THREE.Vector3();
 function selectionMarkerMaterial(name = "") { const marker = highlightSetting.marker || {}, role = name.toLowerCase(), isCore = role.includes("core") || role.includes("inner"), color = role.includes("edge") || role.includes("border") ? marker.edgeColor : isCore ? marker.secondaryColor : role.includes("spark") || role.includes("star") ? marker.sparkleColor : marker.color; return new THREE.MeshPhysicalMaterial({ color: color || "#63d9ff", emissive: new THREE.Color(color || "#63d9ff").multiplyScalar(isCore ? .28 : .12), emissiveIntensity: isCore ? .72 : .42, roughness: .14, metalness: .02, clearcoat: 1, clearcoatRoughness: .07, depthTest: true }); }
-function applySelectionMarkerModel(object) { const marker = highlightSetting.marker || {}, offset = marker.modelOffset || [0, 0, 0], rotation = marker.modelRotation || [0, 0, 0]; object.traverse(child => { if (!child.isMesh) return; if (!child.geometry.attributes.normal) child.geometry.computeVertexNormals(); const oldMaterials = Array.isArray(child.material) ? child.material : [child.material]; for (const oldMaterial of oldMaterials) { oldMaterial?.map?.dispose?.(); oldMaterial?.dispose?.(); } child.material = selectionMarkerMaterial(child.name); child.castShadow = true; child.receiveShadow = true; }); object.updateMatrixWorld(true); const bounds = new THREE.Box3().setFromObject(object), center = bounds.getCenter(new THREE.Vector3()), size = bounds.getSize(new THREE.Vector3()), largest = Math.max(size.x, size.y, size.z) || 1, normalized = new THREE.Group(); object.position.sub(center); normalized.add(object); normalized.scale.setScalar(1 / largest); normalized.position.fromArray(offset); normalized.rotation.set(...rotation.map(value => THREE.MathUtils.degToRad(value || 0))); for (const child of [...markerGem.children]) { markerGem.remove(child); disposeObject(child); } markerGem.add(normalized); requestShadowUpdate(); markSceneActive(); }
+function applySelectionMarkerModel(object) { stripImportedSceneControls(object); const marker = highlightSetting.marker || {}, offset = marker.modelOffset || [0, 0, 0], rotation = marker.modelRotation || [0, 0, 0]; object.traverse(child => { if (!child.isMesh) return; if (!child.geometry.attributes.normal) child.geometry.computeVertexNormals(); const oldMaterials = Array.isArray(child.material) ? child.material : [child.material]; for (const oldMaterial of oldMaterials) { oldMaterial?.map?.dispose?.(); oldMaterial?.dispose?.(); } child.material = selectionMarkerMaterial(child.name); child.castShadow = Boolean(shadowSetting.markerCast); child.receiveShadow = Boolean(shadowSetting.markerReceive); }); object.updateMatrixWorld(true); const bounds = new THREE.Box3().setFromObject(object), center = bounds.getCenter(new THREE.Vector3()), size = bounds.getSize(new THREE.Vector3()), largest = Math.max(size.x, size.y, size.z) || 1, normalized = new THREE.Group(); object.position.sub(center); normalized.add(object); normalized.scale.setScalar(1 / largest); normalized.position.fromArray(offset); normalized.rotation.set(...rotation.map(value => THREE.MathUtils.degToRad(value || 0))); for (const child of [...markerGem.children]) { markerGem.remove(child); disposeObject(child); } markerGem.add(normalized); markSceneActive(); }
 function loadSelectionMarkerModel() { const path = highlightSetting.marker?.path; if (!path) return; const url = runtimeAssetUrl(path), fail = error => console.warn(`main-world: โหลด Selection Marker ไม่สำเร็จ จึงใช้เพชร Procedural สำรอง (${path})`, error); if (/\.fbx(?:\?|$)/i.test(path)) import("three/addons/loaders/FBXLoader.js").then(({ FBXLoader }) => new FBXLoader().load(url, applySelectionMarkerModel, undefined, fail)).catch(fail); else import("three/addons/loaders/GLTFLoader.js").then(({ GLTFLoader }) => new GLTFLoader().load(url, gltf => applySelectionMarkerModel(gltf.scene), undefined, fail)).catch(fail); }
 loadSelectionMarkerModel();
 highlightRoot.add(highlightRing, floatingMarker); highlightRoot.visible = false; highlightRoot.userData.hoverBounds = new THREE.Box3(); highlightRoot.userData.selectedBounds = new THREE.Box3(); scene.add(highlightRoot);
@@ -574,12 +739,12 @@ function setHovered(object) {
 }
 function disposeObject(object) { object.traverse(child => { child.userData?.domElement?.remove?.(); child.userData?.worldUiTexture?.dispose?.(); child.geometry?.dispose?.(); if (Array.isArray(child.material)) child.material.forEach(m => m.dispose?.()); else child.material?.dispose?.(); }); }
 function setDisplayHovered(object) { if (hoveredDisplay === object) return; if (hoveredDisplay?.material) hoveredDisplay.material.opacity = hoveredDisplay.userData.idleOpacity; hoveredDisplay = object; if (object?.material) object.material.opacity = object.userData.hoverOpacity; }
-function clearWorld() { setHovered(null); setDisplayHovered(null); setSelected(null); hideDragCue(); removeDragGuideline(); animations.clear(); commitFlashes.clear(); activeGuidelines.clear(); targetFocusEffects.clear(); worldCallouts.clear(); spawnSequence = 0; runtime.sceneEntered = false; for (const child of [...lessonGroup.children]) { lessonGroup.remove(child); disposeObject(child); } interactive.length = 0; uiDisplays.length = 0; while (effectGroup.children.length) { const child = effectGroup.children.pop(); disposeObject(child); } requestShadowUpdate(); markSceneActive(); }
+function clearWorld() { setHovered(null); setDisplayHovered(null); setSelected(null); hideDragCue(); removeDragGuideline(); animations.clear(); commitFlashes.clear(); activeGuidelines.clear(); targetFocusEffects.clear(); worldCallouts.clear(); spawnSequence = 0; runtime.sceneEntered = false; for (const child of [...lessonGroup.children]) { lessonGroup.remove(child); disposeObject(child); } interactive.length = 0; uiDisplays.length = 0; while (effectGroup.children.length) { const child = effectGroup.children.pop(); disposeObject(child); } markSceneActive(); }
 
 function startCommitFlash(object) { const config = setting.object.commit; if (!config?.enabled || !object) return; restoreObjectSurface(object); const materials = []; forEachObjectMaterial(object, material => { if (!material.transparent) materials.push(material); }); if (!materials.length) return; commitFlashes.set(object, { start: performance.now(), duration: config.duration || 780, flashes: config.flashes || 3, color: new THREE.Color(config.color || "#ffffff"), materials: [...new Set(materials)].map(material => ({ material, baseColor: material.color.clone(), emissive: material.emissive?.clone(), emissiveIntensity: material.emissiveIntensity })) }); }
 
 function syncInteractive(object) { const enabled = Boolean(object.userData.draggable || object.userData.clickable), index = interactive.indexOf(object); if (enabled && index < 0) interactive.push(object); if (!enabled && index >= 0) { interactive.splice(index, 1); if (hovered === object) setHovered(null); if (selected === object) setSelected(null); } }
-function makeHandle(mesh) { const changed = () => { markSceneActive(); requestShadowUpdate(); }; const clearHighlight = () => { if (hovered === mesh) setHovered(null); if (selected === mesh) setSelected(null); }; const handle = { object3D: mesh, setPosition(x, y, z) { animations.delete(mesh); mesh.position.set(x, y, z); mesh.userData.groundY = y; changed(); }, setRotation(x = 0, y = 0, z = 0) { mesh.rotation.set(THREE.MathUtils.degToRad(x), THREE.MathUtils.degToRad(y), THREE.MathUtils.degToRad(z)); changed(); }, setScale(x = 1, y = x, z = x) { const visual = mesh.userData.visualRoot || mesh; visual.scale.set(x, y, z); changed(); }, animateTo(x, y, z, { duration = 620, delay = 0, arcHeight = .7 } = {}) { animations.set(mesh, { kind: "move", start: performance.now() + delay, duration, from: mesh.position.clone(), to: new THREE.Vector3(x, y, z), arcHeight }); mesh.userData.groundY = y; changed(); }, stopAnimation() { animations.delete(mesh); }, playCommit() { startCommitFlash(mesh); screenSpark(mesh); markSceneActive(); }, setColor(color) { forEachObjectMaterial(mesh, (value, child) => { value.color.set(color); child.userData.baseColor = value.color.clone(); }); markSceneActive(); }, setVisible(value) { mesh.visible = value; if (!value) clearHighlight(); changed(); }, setDraggable(value) { mesh.userData.draggable = Boolean(value); syncInteractive(mesh); }, setClickable(value) { mesh.userData.clickable = Boolean(value); syncInteractive(mesh); }, setHitArea(size = null, offset = [0, 0, 0]) { setInteractionHitArea(mesh, size, offset); changed(); }, setDragFromCenter(value) { mesh.userData.dragFromCenter = Boolean(value); }, remove() { clearHighlight(); commitFlashes.delete(mesh); activeGuidelines.delete(mesh); mesh.parent?.remove(mesh); const index = interactive.indexOf(mesh); if (index >= 0) interactive.splice(index, 1); disposeObject(mesh); changed(); } }; mesh.userData.lessonHandle = handle; return Object.freeze(handle); }
+function makeHandle(mesh) { const changed = () => markSceneActive(); const clearHighlight = () => { if (hovered === mesh) setHovered(null); if (selected === mesh) setSelected(null); }; const handle = { object3D: mesh, setPosition(x, y, z) { animations.delete(mesh); mesh.position.set(x, y, z); mesh.userData.groundY = y; changed(); }, setRotation(x = 0, y = 0, z = 0) { mesh.rotation.set(THREE.MathUtils.degToRad(x), THREE.MathUtils.degToRad(y), THREE.MathUtils.degToRad(z)); changed(); }, setScale(x = 1, y = x, z = x) { const visual = mesh.userData.visualRoot || mesh; visual.scale.set(x, y, z); changed(); }, animateTo(x, y, z, { duration = 620, delay = 0, arcHeight = .7 } = {}) { animations.set(mesh, { kind: "move", start: performance.now() + delay, duration, from: mesh.position.clone(), to: new THREE.Vector3(x, y, z), arcHeight }); mesh.userData.groundY = y; markSceneActive(); }, stopAnimation() { animations.delete(mesh); }, playCommit() { startCommitFlash(mesh); screenSpark(mesh); markSceneActive(); }, setColor(color) { forEachObjectMaterial(mesh, (value, child) => { value.color.set(color); child.userData.baseColor = value.color.clone(); }); markSceneActive(); }, setVisible(value) { mesh.visible = value; if (!value) clearHighlight(); changed(); }, setDraggable(value) { mesh.userData.draggable = Boolean(value); syncInteractive(mesh); }, setClickable(value) { mesh.userData.clickable = Boolean(value); syncInteractive(mesh); }, setHitArea(size = null, offset = [0, 0, 0]) { setInteractionHitArea(mesh, size, offset); markSceneActive(); }, setDragFromCenter(value) { mesh.userData.dragFromCenter = Boolean(value); }, remove() { clearHighlight(); commitFlashes.delete(mesh); activeGuidelines.delete(mesh); mesh.parent?.remove(mesh); const index = interactive.indexOf(mesh); if (index >= 0) interactive.splice(index, 1); disposeObject(mesh); changed(); } }; mesh.userData.lessonHandle = handle; return Object.freeze(handle); }
 function queueSpawn(object) { if (!setting.object.spawn.enabled) return; object.userData.spawnable = true; object.scale.setScalar(.001); if (runtime.sceneEntered) animations.set(object, { kind: "spawn", start: performance.now(), duration: setting.object.spawn.duration }); }
 function playWorldEntrance() { let index = 0; lessonGroup.traverse(object => { if (object.userData.spawnable) { object.scale.setScalar(.001); animations.set(object, { kind: "spawn", start: performance.now() + index++ * setting.object.spawn.stagger, duration: setting.object.spawn.duration }); } }); }
 function updateGuideline(line) { const from = line.userData.fromObject ? line.userData.fromObject.getWorldPosition(new THREE.Vector3()) : line.userData.guideFrom.clone(), to = line.userData.guideTo, middle = new THREE.Vector3((from.x + to.x) / 2, Math.max(from.y, to.y) + 2.3, (from.z + to.z) / 2), curve = new THREE.QuadraticBezierCurve3(from, middle, to), points = curve.getPoints(40), direction = points.at(-1).clone().sub(points.at(-2)).normalize(); line.geometry.setFromPoints(points); line.computeLineDistances(); line.userData.arrow.position.copy(to).addScaledVector(direction, -line.userData.arrowOffset); line.userData.arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction); }
@@ -640,8 +805,8 @@ function hideDragCue() { clearTimeout(dragCueResumeTimer); dragCue = null; eleme
 function showDragCue(object, to) { if (!object) return; clearTimeout(dragCueResumeTimer); dragCue = { object, to: new THREE.Vector3(...to), startedAt: performance.now() }; elements.sceneHandCue.classList.remove("is-camera-moving"); elements.sceneHandCue.hidden = false; }
 function setOperatorAppearance(group, state) { const valid = state === "valid", style = setting.lessonGraphics.operatorBase; group.userData.operatorState = state; group.userData.operatorBase.material.color.set(valid ? style.validBase : style.neutralBase); group.userData.operatorEdge.material.color.set(valid ? style.validEdge : style.neutralEdge); for (const part of group.userData.operatorParts) { part.material.color.set(valid ? "#26aa72" : "#6049c7"); part.material.emissive.set(valid ? "#0e5a3a" : "#25186f"); } }
 function pulseOperator(group) { cancelAnimationFrame(group.userData.operatorPulseFrame); const start = performance.now(), duration = 760, baseY = group.position.y; const tick = now => { if (!group.parent) return; const progress = clamp((now - start) / duration, 0, 1), fade = 1 - progress, pop = Math.sin(progress * Math.PI), bounce = Math.abs(Math.sin(progress * Math.PI * 2.4)) * fade; group.scale.setScalar(1 + pop * .2 + bounce * .055); group.position.y = baseY + bounce * .3; group.rotation.z = Math.sin(progress * Math.PI * 4) * fade * .055; if (progress < 1) group.userData.operatorPulseFrame = requestAnimationFrame(tick); else { group.scale.setScalar(1); group.position.y = baseY; group.rotation.z = 0; group.userData.operatorPulseFrame = 0; } }; group.userData.operatorPulseFrame = requestAnimationFrame(tick); }
-function createOperatorPart(length = 1.16) { const geometry = new RoundedBoxGeometry(length, .3, .34, 6, .11), part = new THREE.Mesh(geometry, new THREE.MeshPhysicalMaterial({ color: "#6049c7", roughness: .25, metalness: .03, clearcoat: .9, clearcoatRoughness: .1, emissive: "#25186f", emissiveIntensity: .14 })); part.position.y = .48; part.castShadow = true; return part; }
-function createOperatorDot() { const dot = new THREE.Mesh(new THREE.SphereGeometry(.17, 18, 12), new THREE.MeshPhysicalMaterial({ color: "#6049c7", roughness: .25, metalness: .03, clearcoat: .9, clearcoatRoughness: .1, emissive: "#25186f", emissiveIntensity: .14 })); dot.position.y = .48; dot.castShadow = true; return dot; }
+function createOperatorPart(length = 1.16) { const geometry = new RoundedBoxGeometry(length, .3, .34, 6, .11), part = new THREE.Mesh(geometry, new THREE.MeshPhysicalMaterial({ color: "#6049c7", roughness: .25, metalness: .03, clearcoat: .9, clearcoatRoughness: .1, emissive: "#25186f", emissiveIntensity: .14 })); part.position.y = .48; part.castShadow = Boolean(shadowSetting.lessonCast); part.receiveShadow = shadowSetting.lessonReceive !== false; return part; }
+function createOperatorDot() { const dot = new THREE.Mesh(new THREE.SphereGeometry(.17, 18, 12), new THREE.MeshPhysicalMaterial({ color: "#6049c7", roughness: .25, metalness: .03, clearcoat: .9, clearcoatRoughness: .1, emissive: "#25186f", emissiveIntensity: .14 })); dot.position.y = .48; dot.castShadow = Boolean(shadowSetting.lessonCast); dot.receiveShadow = shadowSetting.lessonReceive !== false; return dot; }
 const SUPPORTED_OPERATOR_SIGNS = Object.freeze(["<", ">", "=", "≠", "<=", ">=", "≤", "≥", "+", "-", "−", "×", "x", "X", "÷"]);
 function createOperatorParts(text) {
   text = text === "!=" ? "≠" : text === "<=" ? "≤" : text === ">=" ? "≥" : text;
@@ -658,8 +823,78 @@ function createOperatorParts(text) {
 }
 function roundedZonePoints(width, depth, radius = .45, segments = 5) { const points = [], corners = [[width / 2 - radius, depth / 2 - radius, 0, Math.PI / 2], [-width / 2 + radius, depth / 2 - radius, Math.PI / 2, Math.PI], [-width / 2 + radius, -depth / 2 + radius, Math.PI, Math.PI * 1.5], [width / 2 - radius, -depth / 2 + radius, Math.PI * 1.5, Math.PI * 2]]; for (const [cx, cz, start, end] of corners) for (let index = 0; index <= segments; index++) { const angle = THREE.MathUtils.lerp(start, end, index / segments); points.push(new THREE.Vector3(cx + Math.cos(angle) * radius, 0, cz + Math.sin(angle) * radius)); } points.push(points[0].clone()); return points; }
 function lessonMaterial(options = {}) { const color = options.color || "#ffffff", surface = setting.object.surface, opacity = clamp(options.opacity ?? 1, 0, 1), parameters = { color, roughness: options.roughness ?? surface.roughness, metalness: options.metalness ?? .015, transparent: opacity < 1, opacity, depthWrite: options.depthWrite ?? opacity >= .98, emissive: options.emissive || new THREE.Color(color).multiplyScalar(.12), emissiveIntensity: options.emissiveIntensity ?? surface.emissiveIntensity }; if (options.clearcoat != null) { parameters.clearcoat = options.clearcoat; parameters.clearcoatRoughness = options.clearcoatRoughness ?? .2; } const result = options.clearcoat != null ? new THREE.MeshPhysicalMaterial(parameters) : new THREE.MeshStandardMaterial(parameters); if (options.texture) result.map = lessonTextureRecord(options.texture).texture; return result; }
-function primitiveGeometry(shape = "box") { switch (shape) { case "sphere": return new THREE.SphereGeometry(.5, 24, 16); case "cylinder": return new THREE.CylinderGeometry(.5, .5, 1, 24); case "cone": return new THREE.ConeGeometry(.5, 1, 24); case "torus": return new THREE.TorusGeometry(.5, .08, 12, 40); case "circle": return new THREE.CircleGeometry(.5, 40); case "plane": return new THREE.PlaneGeometry(1, 1); default: return new RoundedBoxGeometry(1, 1, 1, 6, .14); } }
-function createPrimitivePart(definition = {}) { const shape = definition.shape || "box", geometry = primitiveGeometry(shape), mesh = new THREE.Mesh(geometry, lessonMaterial({ ...(definition.material || {}), color: definition.color || (definition.material || {}).color })), size = definition.size || [1, 1, 1], rotation = definition.rotation || [0, 0, 0]; mesh.position.fromArray(definition.position || [0, 0, 0]); mesh.rotation.set(...rotation.map(THREE.MathUtils.degToRad)); mesh.scale.set(size[0] ?? 1, size[1] ?? size[0] ?? 1, size[2] ?? size[0] ?? 1); mesh.castShadow = definition.castShadow !== false; mesh.receiveShadow = definition.receiveShadow !== false; return mesh; }
+const SUPPORTED_PRIMITIVE_SHAPES = Object.freeze([
+  "box", "rounded-box", "sharp-box", "sphere", "hemisphere", "cylinder", "half-cylinder", "quarter-cylinder",
+  "cone", "pyramid", "prism", "frustum", "capsule", "sector", "sector-flat", "ring-sector", "ring-sector-flat",
+  "tube", "torus", "torus-knot", "circle", "plane", "ring", "star", "heart", "cross", "wedge",
+  "tetrahedron", "octahedron", "dodecahedron", "icosahedron", "diamond"
+]);
+function proceduralNumber(value, fallback, min, max) { const numeric = Number(value); return clamp(Number.isFinite(numeric) ? numeric : fallback, min, max); }
+function proceduralInteger(value, fallback, min, max) { return Math.round(proceduralNumber(value, fallback, min, max)); }
+function normalizedPrimitiveShape(value = "box") { return String(value || "box").trim().toLowerCase().replace(/[_\s]+/g, "-"); }
+function extrudedLessonShape(shape, curveSegments = 16) {
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: 1, steps: 1, curveSegments, bevelEnabled: false });
+  geometry.translate(0, 0, -.5);
+  geometry.rotateX(-Math.PI / 2);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+function sectorShape(startAngle, angle, innerRadius = 0) {
+  const outerRadius = .5, endAngle = startAngle + angle, shape = new THREE.Shape();
+  if (angle >= Math.PI * 2 - .0001) {
+    shape.absarc(0, 0, outerRadius, 0, Math.PI * 2, false);
+    if (innerRadius > 0) { const hole = new THREE.Path(); hole.absarc(0, 0, innerRadius, 0, Math.PI * 2, true); shape.holes.push(hole); }
+    return shape;
+  }
+  shape.moveTo(Math.cos(startAngle) * outerRadius, Math.sin(startAngle) * outerRadius);
+  shape.absarc(0, 0, outerRadius, startAngle, endAngle, false);
+  if (innerRadius > 0) {
+    shape.lineTo(Math.cos(endAngle) * innerRadius, Math.sin(endAngle) * innerRadius);
+    shape.absarc(0, 0, innerRadius, endAngle, startAngle, true);
+  } else shape.lineTo(0, 0);
+  shape.closePath();
+  return shape;
+}
+function polygonShape(vertices) { const shape = new THREE.Shape(); vertices.forEach(([x, y], index) => index ? shape.lineTo(x, y) : shape.moveTo(x, y)); shape.closePath(); return shape; }
+function starShape(points, innerRadius = .23) { const vertices = []; for (let index = 0; index < points * 2; index++) { const radius = index % 2 ? innerRadius : .5, angle = -Math.PI / 2 + index * Math.PI / points; vertices.push([Math.cos(angle) * radius, Math.sin(angle) * radius]); } return polygonShape(vertices); }
+function heartShape() { const shape = new THREE.Shape(); shape.moveTo(0, -.45); shape.bezierCurveTo(-.58, -.08, -.56, .34, -.25, .4); shape.bezierCurveTo(-.08, .44, 0, .31, 0, .2); shape.bezierCurveTo(0, .31, .08, .44, .25, .4); shape.bezierCurveTo(.56, .34, .58, -.08, 0, -.45); shape.closePath(); return shape; }
+function primitiveGeometry(shape = "box", definition = {}) {
+  const normalized = normalizedPrimitiveShape(shape), geometryOptions = { ...definition, ...(definition.geometry || {}) }, segments = proceduralInteger(geometryOptions.segments, 32, 6, 96), sides = proceduralInteger(geometryOptions.sides, normalized === "pyramid" ? 4 : 6, 3, 32), points = proceduralInteger(geometryOptions.points, 5, 3, 16), startAngle = THREE.MathUtils.degToRad(proceduralNumber(geometryOptions.startAngle, 0, -360, 360)), requestedAngle = proceduralNumber(geometryOptions.angle, 90, 1, 360), angle = THREE.MathUtils.degToRad(requestedAngle), innerRatio = proceduralNumber(geometryOptions.innerRadius, .56, .04, .94), tubeRatio = proceduralNumber(geometryOptions.tube, .16, .03, .45), openEnded = Boolean(geometryOptions.openEnded);
+  switch (normalized) {
+    case "box": case "rounded-box": return new RoundedBoxGeometry(1, 1, 1, 6, proceduralNumber(geometryOptions.radius, .14, .01, .24));
+    case "sharp-box": return new THREE.BoxGeometry(1, 1, 1);
+    case "sphere": return new THREE.SphereGeometry(.5, segments, Math.max(6, Math.round(segments * .66)));
+    case "hemisphere": return new THREE.SphereGeometry(.5, segments, Math.max(6, Math.round(segments * .5)), 0, Math.PI * 2, 0, Math.PI / 2);
+    case "cylinder": return new THREE.CylinderGeometry(.5, .5, 1, segments, 1, openEnded);
+    case "half-cylinder": return extrudedLessonShape(sectorShape(startAngle, Math.PI), segments);
+    case "quarter-cylinder": return extrudedLessonShape(sectorShape(startAngle, Math.PI / 2), segments);
+    case "cone": return new THREE.ConeGeometry(.5, 1, segments, 1, openEnded);
+    case "pyramid": return new THREE.ConeGeometry(.5, 1, sides, 1, openEnded);
+    case "prism": return new THREE.CylinderGeometry(.5, .5, 1, sides, 1, openEnded);
+    case "frustum": return new THREE.CylinderGeometry(.5 * proceduralNumber(geometryOptions.topRadius, .62, 0, 1), .5 * proceduralNumber(geometryOptions.bottomRadius, 1, .01, 1), 1, sides, 1, openEnded);
+    case "capsule": return new THREE.CapsuleGeometry(.3, .4, Math.max(4, Math.round(segments / 4)), Math.max(8, Math.round(segments / 2)));
+    case "sector": return extrudedLessonShape(sectorShape(startAngle, angle), segments);
+    case "sector-flat": return new THREE.ShapeGeometry(sectorShape(startAngle, angle), segments);
+    case "ring-sector": return extrudedLessonShape(sectorShape(startAngle, angle, innerRatio * .5), segments);
+    case "ring-sector-flat": return new THREE.ShapeGeometry(sectorShape(startAngle, angle, innerRatio * .5), segments);
+    case "tube": return extrudedLessonShape(sectorShape(0, Math.PI * 2, innerRatio * .5), segments);
+    case "torus": return new THREE.TorusGeometry(.5 - tubeRatio * .5, tubeRatio * .5, Math.max(6, Math.round(segments / 3)), segments);
+    case "torus-knot": return new THREE.TorusKnotGeometry(.36, tubeRatio * .25, Math.max(48, segments * 2), Math.max(6, Math.round(segments / 3)), proceduralInteger(geometryOptions.p, 2, 1, 8), proceduralInteger(geometryOptions.q, 3, 1, 12));
+    case "circle": return new THREE.CircleGeometry(.5, segments);
+    case "plane": return new THREE.PlaneGeometry(1, 1);
+    case "ring": return new THREE.RingGeometry(innerRatio * .5, .5, segments);
+    case "star": return extrudedLessonShape(starShape(points, proceduralNumber(geometryOptions.innerRadius, .46, .12, .9) * .5), segments);
+    case "heart": return extrudedLessonShape(heartShape(), segments);
+    case "cross": return extrudedLessonShape(polygonShape([[-.16, -.5], [.16, -.5], [.16, -.16], [.5, -.16], [.5, .16], [.16, .16], [.16, .5], [-.16, .5], [-.16, .16], [-.5, .16], [-.5, -.16], [-.16, -.16]]), segments);
+    case "wedge": return extrudedLessonShape(polygonShape([[-.5, -.5], [.5, -.5], [-.5, .5]]), segments);
+    case "tetrahedron": return new THREE.TetrahedronGeometry(.5);
+    case "octahedron": case "diamond": return new THREE.OctahedronGeometry(.5);
+    case "dodecahedron": return new THREE.DodecahedronGeometry(.5);
+    case "icosahedron": return new THREE.IcosahedronGeometry(.5);
+    default: throw new Error(`LESSON_PRIMITIVE_UNSUPPORTED: addPrimitive ไม่รองรับรูปทรง ${shape}`);
+  }
+}
+function createPrimitivePart(definition = {}) { const shape = normalizedPrimitiveShape(definition.shape || "box"), materialDefinition = definition.material || {}, geometry = primitiveGeometry(shape, definition), mesh = new THREE.Mesh(geometry, lessonMaterial({ ...materialDefinition, color: definition.color || materialDefinition.color })), size = definition.size || [1, 1, 1], scaleValues = [size[0] ?? 1, size[1] ?? size[0] ?? 1, size[2] ?? size[0] ?? 1], rotation = definition.rotation || [0, 0, 0], opaqueSolid = !["plane", "circle", "ring", "sector-flat", "ring-sector-flat"].includes(shape) && (materialDefinition.opacity ?? 1) >= .98 && materialDefinition.depthWrite !== false; mesh.position.fromArray(definition.position || [0, 0, 0]); mesh.rotation.set(...rotation.map(THREE.MathUtils.degToRad)); mesh.scale.set(...scaleValues); mesh.castShadow = Boolean(shadowSetting.lessonCast && opaqueSolid); mesh.receiveShadow = shadowSetting.lessonReceive !== false; return mesh; }
 function prepareLessonVisual(root, interactionRoot) { root.traverse(child => { if (!child.userData.isLessonDecoration) child.userData.interactionRoot = interactionRoot; if (!child.isMesh || child.userData.isLessonDecoration) return; child.userData.baseColor = child.material?.color?.clone?.(); child.userData.baseEmissive = child.material?.emissive?.clone?.(); child.userData.baseEmissiveIntensity = child.material?.emissiveIntensity ?? 0; }); }
 function setInteractionHitArea(root, size = null, offset = [0, 0, 0]) { const previous = root.userData.interactionHitArea; if (previous) { root.remove(previous); previous.geometry?.dispose?.(); previous.material?.dispose?.(); root.userData.interactionHitArea = null; } if (!Array.isArray(size) || size.length < 3 || size.some(value => Number(value) <= 0)) return; const hitArea = new THREE.Mesh(new THREE.BoxGeometry(...size.map(Number)), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false })); hitArea.name = `${root.name || "lesson-object"}-hit-area`; hitArea.position.fromArray(offset); Object.assign(hitArea.userData, { isLessonDecoration: true, interactionRoot: root }); root.add(hitArea); root.userData.interactionHitArea = hitArea; }
 function configureLessonObject(root, visual, options = {}) { const position = options.position || [0, 0, 0], rotation = options.rotation || [0, 0, 0], scale = options.scale ?? 1, scaleValues = Array.isArray(scale) ? scale : [scale, scale, scale]; root.name = options.name || root.name || "lesson-object"; root.position.fromArray(position); root.rotation.set(...rotation.map(THREE.MathUtils.degToRad)); visual.scale.multiply(new THREE.Vector3(...scaleValues)); Object.assign(root.userData, { visualRoot: visual, draggable: Boolean(options.draggable), clickable: Boolean(options.clickable || options.onClick), selectionFeedback: options.selectionFeedback !== false, dragAxis: options.dragAxis || setting.interaction.defaultDragAxis, dragLiftHeight: options.dragLiftHeight, dragFromCenter: Boolean(options.dragFromCenter), hoverMessage: options.hoverMessage || "", guideTarget: options.guideTarget || null, onHover: typeof options.onHover === "function" ? options.onHover : null, onDrag: options.onDrag || null, onDrop: options.onDrop || null, onClick: options.onClick || null, objectiveAction: options.objectiveAction, groundY: position[1] }); prepareLessonVisual(visual, root); setInteractionHitArea(root, options.hitArea, options.hitAreaOffset); lessonGroup.add(root); queueSpawn(root); const handle = makeHandle(root); syncInteractive(root); return handle; }
@@ -680,7 +915,9 @@ function configureWorldDisplay(root, visual, options = {}) {
 function addWorldCounter(options = {}) {
   const config = setting.ui.worldCounter || {}, digits = clamp(Math.round(options.digits ?? 2), 1, config.maxDigits ?? 6), spacing = options.digitSpacing ?? config.digitSpacing ?? .76, digitWidth = config.digitWidth ?? .58, digitDepth = config.digitDepth ?? .82, paddingX = config.paddingX ?? .42, paddingZ = config.paddingZ ?? .28, width = Math.max(1.1, digits * spacing + paddingX * 2), depth = digitDepth + paddingZ * 2, baseHeight = config.baseHeight ?? .16, faceHeight = config.faceHeight ?? .08, root = new THREE.Group(), visual = new THREE.Group(), segments = [];
   const base = new THREE.Mesh(new RoundedBoxGeometry(width, baseHeight, depth, 6, Math.min(.16, depth * .12)), lessonMaterial({ color: options.edgeColor || config.edgeColor || "#527a48", roughness: config.roughness ?? .62, clearcoat: config.clearcoat ?? .22 })), middle = new THREE.Mesh(new RoundedBoxGeometry(width * .95, faceHeight, depth * .9, 6, Math.min(.14, depth * .1)), lessonMaterial({ color: options.baseColor || config.baseColor || "#6b9b55", roughness: config.roughness ?? .62, clearcoat: config.clearcoat ?? .22 })), face = new THREE.Mesh(new RoundedBoxGeometry(width * .86, faceHeight, depth * .78, 6, Math.min(.12, depth * .09)), lessonMaterial({ color: options.faceColor || config.faceColor || "#f3f1cf", roughness: .72 }));
-  base.position.y = baseHeight / 2; middle.position.y = baseHeight + faceHeight / 2; face.position.y = baseHeight + faceHeight * 1.5; base.castShadow = base.receiveShadow = middle.receiveShadow = face.receiveShadow = true; visual.add(base, middle, face);
+  base.position.y = baseHeight / 2; middle.position.y = baseHeight + faceHeight / 2; face.position.y = baseHeight + faceHeight * 1.5;
+  for (const part of [base, middle, face]) { part.castShadow = Boolean(shadowSetting.lessonCast); part.receiveShadow = shadowSetting.lessonReceive !== false; }
+  visual.add(base, middle, face);
   const segmentColor = options.digitColor || config.digitColor || "#315d35", segmentY = baseHeight + faceHeight * 2 + (config.segmentHeight ?? .08) * .52, horizontalLength = digitWidth * .72, verticalLength = digitDepth * .39, segmentThickness = config.segmentThickness ?? .095, segmentHeight = config.segmentHeight ?? .08;
   for (let digitIndex = 0; digitIndex < digits; digitIndex++) {
     const digit = new THREE.Group(), x = (digitIndex - (digits - 1) / 2) * spacing, horizontal = z => createPrimitivePart({ shape: "box", position: [0, segmentY, z], size: [horizontalLength, segmentHeight, segmentThickness], color: segmentColor, material: { roughness: .4, emissive: options.digitEmissive || config.digitEmissive || "#173a1f", emissiveIntensity: config.digitEmissiveIntensity ?? .16 } }), vertical = (offsetX, z) => createPrimitivePart({ shape: "box", position: [offsetX, segmentY, z], size: [segmentThickness, segmentHeight, verticalLength], color: segmentColor, material: { roughness: .4, emissive: options.digitEmissive || config.digitEmissive || "#173a1f", emissiveIntensity: config.digitEmissiveIntensity ?? .16 } });
@@ -1032,10 +1269,60 @@ function addWorldGui(options = {}) {
   return handle;
 }
 async function loadCustomModel(path, options = {}) { if (!path) throw new Error("LESSON_ASSET_PATH_REQUIRED: world.addModel ต้องมี path"); const base = options.baseUrl || runtime.lessonUrl || import.meta.url, url = runtimeAssetUrl(path, base); if (new URL(url).origin !== location.origin) throw new Error("LESSON_ASSET_ORIGIN_ERROR: รองรับเฉพาะโมเดลที่อยู่ origin เดียวกัน"); return new Promise((resolve, reject) => { const finish = object => resolve(object), fail = error => reject(new Error(`LESSON_ASSET_LOAD_FAILED: โหลดโมเดล ${path} ไม่สำเร็จ (${error?.message || "unknown"})`)), extension = new URL(url).pathname.split(".").pop().toLowerCase(); if (extension === "glb" || extension === "gltf") import("three/addons/loaders/GLTFLoader.js").then(({ GLTFLoader }) => new GLTFLoader().load(url, gltf => finish(gltf.scene), undefined, fail)).catch(fail); else if (extension === "fbx") import("three/addons/loaders/FBXLoader.js").then(({ FBXLoader }) => new FBXLoader().load(url, finish, undefined, fail)).catch(fail); else fail(new Error("รองรับเฉพาะ .glb, .gltf และ .fbx")); }); }
-function configureModelObject(object, options = {}) { const root = new THREE.Group(), visual = new THREE.Group(); visual.add(object); root.add(visual); object.traverse(child => { if (!child.isMesh) return; child.geometry = child.geometry.clone(); if (!child.geometry.attributes.normal) child.geometry.computeVertexNormals(); child.castShadow = options.castShadow !== false; child.receiveShadow = options.receiveShadow !== false; const materials = Array.isArray(child.material) ? child.material : [child.material]; child.material = materials.map(source => { const value = source?.clone?.() || lessonMaterial({ color: options.color }); if (value.map) value.map.colorSpace = THREE.SRGBColorSpace; if (options.color) value.color?.set(options.color); if (options.roughness != null) value.roughness = options.roughness; if (options.metalness != null) value.metalness = options.metalness; return value; }); if (child.material.length === 1) child.material = child.material[0]; }); object.updateMatrixWorld(true); if (options.normalize !== false) { const bounds = new THREE.Box3().setFromObject(object), center = bounds.getCenter(new THREE.Vector3()), size = bounds.getSize(new THREE.Vector3()), largest = Math.max(size.x, size.y, size.z) || 1, targetSize = options.targetSize || 3, factor = targetSize / largest; object.scale.multiplyScalar(factor); object.position.set(-center.x * factor, -bounds.min.y * factor, -center.z * factor); } return configureLessonObject(root, visual, options); }
+function platformImportedMaterial(source, options = {}) {
+  const map = source?.map || null;
+  if (map) {
+    map.colorSpace = THREE.SRGBColorSpace;
+    map.needsUpdate = true;
+  }
+  // Texture ต้องคูณด้วยสีขาวเสมอ มิฉะนั้นค่า DiffuseColor #cccccc ที่มากับ FBX จะทำให้สีมืดลง
+  const color = options.color || (map ? "#ffffff" : source?.color || "#ffffff"), value = material(color, map);
+  value.name = source?.name || "platform-imported-material";
+  value.opacity = clamp(source?.opacity ?? 1, 0, 1);
+  value.transparent = Boolean(source?.transparent || value.opacity < 1);
+  value.depthWrite = source?.depthWrite ?? value.opacity >= .98;
+  value.alphaTest = source?.alphaTest ?? 0;
+  value.alphaMap = source?.alphaMap || null;
+  value.side = source?.side ?? THREE.FrontSide;
+  value.visible = source?.visible !== false;
+  // โมเดลจากโปรแกรม 3D บางไฟล์มี vertex color สีเทาติดมาด้วย ซึ่งจะคูณ Base Color ให้มืดซ้ำ
+  value.vertexColors = options.vertexColors === true;
+  if (map) {
+    // Base Color ที่อบแสงมาแล้วต้องมี self-light เล็กน้อย จึงจะสว่างเท่ากับ asset procedural
+    // ยังเป็น MeshPhysicalMaterial ตัวเดียวกันและยังรับแสง/เงา realtime ตามปกติ
+    value.emissive.set("#ffffff");
+    value.emissiveMap = map;
+    value.emissiveIntensity = options.textureLight ?? setting.object.surface.importedTextureLight ?? .32;
+  }
+  if (options.roughness != null) value.roughness = options.roughness;
+  if (options.metalness != null) value.metalness = options.metalness;
+  return value;
+}
+function configureModelObject(object, options = {}) {
+  stripImportedSceneControls(object);
+  const root = new THREE.Group(), visual = new THREE.Group();
+  visual.add(object); root.add(visual);
+  object.traverse(child => {
+    if (!child.isMesh) return;
+    child.geometry = child.geometry.clone();
+    if (!child.geometry.attributes.normal) child.geometry.computeVertexNormals();
+    const materials = Array.isArray(child.material) ? child.material : [child.material], opaqueCaster = child.visible !== false && materials.some(source => source?.visible !== false && (source?.opacity ?? 1) >= .98 && source?.transparent !== true);
+    child.castShadow = Boolean(shadowSetting.lessonCast && opaqueCaster);
+    child.receiveShadow = shadowSetting.lessonReceive !== false && opaqueCaster;
+    child.material = materials.map(source => platformImportedMaterial(source, options));
+    if (child.material.length === 1) child.material = child.material[0];
+  });
+  object.updateMatrixWorld(true);
+  if (options.normalize !== false) {
+    const bounds = new THREE.Box3().setFromObject(object), center = bounds.getCenter(new THREE.Vector3()), size = bounds.getSize(new THREE.Vector3()), largest = Math.max(size.x, size.y, size.z) || 1, targetSize = options.targetSize || 3, factor = targetSize / largest;
+    object.scale.multiplyScalar(factor);
+    object.position.set(-center.x * factor, -bounds.min.y * factor, -center.z * factor);
+  }
+  return configureLessonObject(root, visual, options);
+}
 async function addModel(options = {}) { return configureModelObject(await loadCustomModel(options.path, options), options); }
 function addLibraryObject(options = {}) { const id = options.asset || options.id, definition = libraryAsset(id), common = { ...options, name: options.name || id, scale: options.scale ?? definition.defaultScale ?? 1 }; if (definition.type === "prefab") { const parts = (definition.parts || []).map(part => options.color ? { ...part, color: options.color } : part); return addGroup({ ...common, parts }); } if (definition.type === "model") { if (!libraryModelTemplates.has(id)) libraryModelTemplates.set(id, loadCustomModel(definition.path, { baseUrl: import.meta.url })); return libraryModelTemplates.get(id).then(template => configureModelObject(template.clone(true), { ...common, targetSize: options.targetSize ?? definition.targetSize, normalize: options.normalize ?? definition.normalize })); } throw new Error(`LESSON_ASSET_TYPE_UNSUPPORTED: Asset ${id} ไม่รองรับ type ${definition.type}`); }
-function addObject(options = {}) { const type = options.type || options.source?.type || "primitive", source = options.source || {}; if (type === "library") return addLibraryObject({ ...options, asset: options.asset || source.asset }); if (type === "model") return addModel({ ...options, path: options.path || source.path }); if (type === "text" || type === "text3d") return addText3D(options); if (type === "group" || type === "prefab") return addGroup(options); return addPrimitive({ ...options, shape: options.shape || source.shape }); }
+function addObject(options = {}) { const type = options.type || options.source?.type || "primitive", source = options.source || {}; if (type === "library") return addLibraryObject({ ...options, asset: options.asset || source.asset }); if (type === "model") return addModel({ ...options, path: options.path || source.path }); if (type === "text" || type === "text3d") return addText3D(options); if (type === "group" || type === "prefab") return addGroup(options); return addPrimitive({ ...options, shape: options.shape || source.shape, geometry: options.geometry || source.geometry }); }
 function addConnector({ name = "connector", from = [0, 0, 0], to = [0, 0, 1], color = "#65758b", thickness = .075, opacity = .72 } = {}) {
   const start = new THREE.Vector3(...from), end = new THREE.Vector3(...to), direction = end.clone().sub(start), length = direction.length();
   if (length <= .0001) return addGroup({ name, position: from, parts: [] });
@@ -1057,7 +1344,7 @@ function addConnector({ name = "connector", from = [0, 0, 0], to = [0, 0, 1], co
 }
 const world = Object.freeze({
   clear() { guiService.clearScope("scene", "step", "question"); clearWorld(); },
-  capabilities: Object.freeze({ version: "2.9.0", objects: Object.freeze(["primitive", "group", "text3d", "library", "model", "zone", "callout", "connector", "worldCounter", "worldGui", "guideline", "lineRender"]), interactions: Object.freeze(["drag", "click", "custom-hit-area", "actionable-callout", "actionable-world-gui"]), modelFormats: Object.freeze(["glb", "gltf", "fbx"]) }),
+  capabilities: Object.freeze({ version: "3.0.0", objects: Object.freeze(["primitive", "group", "text3d", "library", "model", "zone", "callout", "connector", "worldCounter", "worldGui", "guideline", "lineRender"]), primitiveShapes: Object.freeze(SUPPORTED_PRIMITIVE_SHAPES), interactions: Object.freeze(["drag", "click", "custom-hit-area", "actionable-callout", "actionable-world-gui"]), modelFormats: Object.freeze(["glb", "gltf", "fbx"]) }),
   assets: Object.freeze({ version: lessonAssetLibrary.version, list() { return Object.entries(lessonAssetLibrary.assets).map(([id, value]) => ({ id, name: value.name || id, type: value.type, tags: [...(value.tags || [])] })); }, get(id) { const value = libraryAsset(id); return JSON.parse(JSON.stringify({ id, ...value })); }, preloadImages(paths = []) { return preloadLessonTextures(paths, runtime.lessonUrl || import.meta.url); } }),
   addObject,
   addPrimitive,
@@ -1068,8 +1355,43 @@ const world = Object.freeze({
   addWorldGui,
   addLibraryObject,
   addModel,
-  addBox({ name = "box", size = [2.4, 1.8, 2.4], position = [0, .9, 0], color = "#ff9fbe", draggable = false, dragAxis = setting.interaction.defaultDragAxis, hoverMessage = "", guideTarget = null, onDrag = null, onDrop = null } = {}) { const [w, h, d] = size, geometry = new RoundedBoxGeometry(w, h, d, 8, Math.min(w, h, d) * .16), mesh = new THREE.Mesh(geometry, material(color)); mesh.name = name; mesh.position.set(...position); mesh.castShadow = mesh.receiveShadow = true; Object.assign(mesh.userData, { draggable, dragAxis, hoverMessage, guideTarget, onDrag, onDrop, groundY: position[1], baseColor: mesh.material.color.clone(), size }); if (setting.object.ambientOcclusion.enabled) { const contact = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.25, d * 1.25), new THREE.MeshBasicMaterial({ map: aoTexture, transparent: true, opacity: setting.object.ambientOcclusion.intensity * .42, depthWrite: false, toneMapped: false })); contact.rotation.x = -Math.PI / 2; contact.position.y = -h / 2 + .025; contact.raycast = () => { }; mesh.add(contact); } lessonGroup.add(mesh); queueSpawn(mesh); if (draggable) interactive.push(mesh); return makeHandle(mesh); },
-  addZone({ name = "zone", size = [5, .18, 5], position = [0, .1, 0], color = "#bcebcf", opacity = .82 } = {}) { const style = setting.lessonGraphics.zone, [width, height, depth] = size, group = new THREE.Group(), floor = new THREE.Mesh(new RoundedBoxGeometry(width, Math.min(height, .14), depth, 8, .2), new THREE.MeshPhysicalMaterial({ color, transparent: true, opacity: Math.min(opacity, style.floorOpacity), roughness: .58, metalness: 0, clearcoat: .25, clearcoatRoughness: .36, depthWrite: false })); floor.receiveShadow = true; floor.position.y = 0; const borderColor = style.borderColor || new THREE.Color(color).offsetHSL(0, .08, -.18), border = new THREE.Line(new THREE.BufferGeometry().setFromPoints(roundedZonePoints(width - .12, depth - .12, Math.min(.55, width * .12, depth * .12), 7)), new THREE.LineDashedMaterial({ color: borderColor, transparent: true, opacity: style.borderOpacity, dashSize: style.dashSize, gapSize: style.gapSize, depthWrite: false, toneMapped: false, fog: false })); border.position.y = height / 2 + .035; border.computeLineDistances(); border.renderOrder = 12; const markerMaterial = new THREE.MeshBasicMaterial({ color: style.cornerMarkerColor, transparent: true, opacity: .9, toneMapped: false }), markerPositions = [[width / 2 - .38, depth / 2 - .38], [-width / 2 + .38, depth / 2 - .38], [-width / 2 + .38, -depth / 2 + .38], [width / 2 - .38, -depth / 2 + .38]]; group.add(floor, border); for (const [x, z] of markerPositions) { const marker = new THREE.Mesh(new THREE.CylinderGeometry(.105, .105, .055, 12), markerMaterial); marker.position.set(x, height / 2 + .045, z); group.add(marker); } group.name = name; group.position.set(...position); lessonGroup.add(group); return makeHandle(group); },
+  addBox({ name = "box", size = [2.4, 1.8, 2.4], position = [0, .9, 0], color = "#ff9fbe", draggable = false, dragAxis = setting.interaction.defaultDragAxis, hoverMessage = "", guideTarget = null, onDrag = null, onDrop = null } = {}) { const [w, h, d] = size, geometry = new RoundedBoxGeometry(w, h, d, 8, Math.min(w, h, d) * .16), mesh = new THREE.Mesh(geometry, material(color)); mesh.name = name; mesh.position.set(...position); mesh.castShadow = Boolean(shadowSetting.lessonCast); mesh.receiveShadow = shadowSetting.lessonReceive !== false; Object.assign(mesh.userData, { draggable, visualRoot: mesh, dragAxis, hoverMessage, guideTarget, onDrag, onDrop, groundY: position[1], baseColor: mesh.material.color.clone(), size }); lessonGroup.add(mesh); queueSpawn(mesh); syncInteractive(mesh); return makeHandle(mesh); },
+  addZone({ name = "zone", size = [5, .18, 5], position = [0, .1, 0], color = "#bcebcf", opacity = .82 } = {}) {
+    const style = setting.lessonGraphics.zone;
+    const [width, height, depth] = size;
+    const group = new THREE.Group();
+    const floor = new THREE.Mesh(
+      new RoundedBoxGeometry(width, Math.min(height, .14), depth, 8, .2),
+      new THREE.MeshPhysicalMaterial({ color, transparent: true, opacity: Math.min(opacity, style.floorOpacity), roughness: .58, metalness: 0, clearcoat: .25, clearcoatRoughness: .36, depthWrite: false })
+    );
+    // Zone เป็นพื้น UI โปร่งใส ไม่ใช่วัตถุทึบ จึงรับเงาอย่างเดียวและห้ามทอดเงาสี่เหลี่ยม
+    floor.castShadow = false;
+    // พื้นเกาะเป็น receiver หลักเพียงชั้นเดียว ป้องกันเงาถูก blend ซ้ำบน Zone โปร่งใส
+    floor.receiveShadow = false;
+    floor.position.y = 0;
+    const borderColor = style.borderColor || new THREE.Color(color).offsetHSL(0, .08, -.18);
+    const border = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(roundedZonePoints(width - .12, depth - .12, Math.min(.55, width * .12, depth * .12), 7)),
+      new THREE.LineDashedMaterial({ color: borderColor, transparent: true, opacity: style.borderOpacity, dashSize: style.dashSize, gapSize: style.gapSize, depthWrite: false, toneMapped: false, fog: false })
+    );
+    border.position.y = height / 2 + .035;
+    border.computeLineDistances();
+    border.renderOrder = 12;
+    const markerMaterial = new THREE.MeshBasicMaterial({ color: style.cornerMarkerColor, transparent: true, opacity: .9, toneMapped: false });
+    const markerPositions = [[width / 2 - .38, depth / 2 - .38], [-width / 2 + .38, depth / 2 - .38], [-width / 2 + .38, -depth / 2 + .38], [width / 2 - .38, -depth / 2 + .38]];
+    group.add(floor, border);
+    for (const [x, z] of markerPositions) {
+      const marker = new THREE.Mesh(new THREE.CylinderGeometry(.105, .105, .055, 12), markerMaterial);
+      marker.position.set(x, height / 2 + .045, z);
+      marker.castShadow = false;
+      marker.receiveShadow = false;
+      group.add(marker);
+    }
+    group.name = name;
+    group.position.set(...position);
+    lessonGroup.add(group);
+    return makeHandle(group);
+  },
   addCallout({ text = "", position = [0, 4, 0], compactPosition = null, anchor = [0, .2, 0], color = setting.ui.worldCallout.fontColor, lineColor = setting.ui.worldCallout.lineColor, scale = [3.05, .86], compactScale = null, insight = null, onClick = null, objectiveAction: calloutObjectiveAction = false } = {}) {
     const style = setting.ui.worldCallout, compact = matchMedia("(max-width: 760px), (orientation: portrait)").matches || isPortraitViewport(), usesCompactScale = compact && Array.isArray(compactScale), calloutPosition = compact && Array.isArray(compactPosition) ? compactPosition : position, calloutScale = usesCompactScale ? compactScale : scale, actionable = Boolean(insight || onClick), group = new THREE.Group(), rawText = String(text).trim(), layout = compact ? (style.mobile || {}) : (style.desktop || {}), widthReference = usesCompactScale ? 2.45 : 3.05, heightReference = usesCompactScale ? .92 : .86, guiWidth = Math.max(72, Math.round((layout.width ?? (compact ? 138 : 136)) * calloutScale[0] / widthReference)), guiHeight = Math.max(30, Math.round((layout.height ?? 40) * calloutScale[1] / heightReference));
     const leaderEnd = new THREE.Vector3(...calloutPosition); leaderEnd.y -= calloutScale[1] * .46; const leaderMaterial = new THREE.LineBasicMaterial({ color: lineColor, transparent: true, opacity: style.lineOpacity, depthWrite: false, depthTest: true, fog: false }), leader = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...anchor), new THREE.Vector3(anchor[0], leaderEnd.y, anchor[2]), leaderEnd]), leaderMaterial), ringMaterial = new THREE.MeshBasicMaterial({ color: style.targetColor || lineColor, transparent: true, opacity: style.lineOpacity, depthWrite: false, fog: false }), ring = new THREE.Mesh(new THREE.TorusGeometry(.24, .045, 8, 28), ringMaterial); ring.rotation.x = Math.PI / 2; ring.position.set(...anchor); leader.raycast = ring.raycast = () => { };
@@ -1111,7 +1433,7 @@ const world = Object.freeze({
     const fit = Math.min(1, radius * .78 / Math.max(extent, .001));
     for (const part of parts) { part.position.x = (part.position.x - center.x) * fit; part.position.z = (part.position.z - center.z) * fit; part.scale.x *= fit; part.scale.z *= fit; }
     edge.position.y = .09; base.position.y = .28; topPlate.position.y = .475;
-    edge.receiveShadow = base.castShadow = base.receiveShadow = topPlate.receiveShadow = true;
+    for (const part of [edge, base, topPlate]) { part.castShadow = Boolean(shadowSetting.lessonCast); part.receiveShadow = shadowSetting.lessonReceive !== false; }
     visual.add(edge, base, topPlate, symbol); visual.scale.setScalar(visualScale);
     group.position.set(...position); group.add(visual);
     Object.assign(group.userData, { visualRoot: visual, operatorBase: base, operatorEdge: edge, operatorParts: parts });
@@ -1250,7 +1572,6 @@ renderer.setAnimationLoop(now => {
     else if (a.kind === "spawn") { const c1 = setting.object.spawn.overshoot, c3 = c1 + 1, t = progress - 1, eased = 1 + c3 * t * t * t + c1 * t * t; object.scale.setScalar(Math.max(.001, eased)); }
     if (progress >= 1) { if (a.to) object.position.copy(a.to); if (a.baseY != null) object.position.y = a.baseY; object.scale.setScalar(1); object.rotation.z = 0; animations.delete(object); }
   }
-  if (animations.size || dragged) { requestShadowUpdate(); }
   if (highlightRoot.visible) updateHighlightBounds(now);
   if (worldCallouts.size) updateWorldCallouts(now);
   // update() จะคืนค่าทันทีเมื่อไม่มี Gizmo จึงไม่สร้าง snapshot object ในทุกเฟรม
@@ -1258,11 +1579,12 @@ renderer.setAnimationLoop(now => {
   for (const effect of targetFocusEffects) { if (!effect.group.parent) { targetFocusEffects.delete(effect); continue; } const config = setting.interaction.targetFocus, wave = Math.sin(now * (config.pulseSpeed ?? .00105) + effect.phase), pulse = 1 + wave * (effect.pulseScale ?? config.pulseScale ?? .024); effect.group.rotation.y = now * (effect.rotateSpeed ?? config.rotateSpeed ?? .00012) + effect.phase; effect.group.scale.setScalar(pulse); effect.material.opacity = effect.baseOpacity * (1 - wave * (effect.opacityPulse ?? config.opacityPulse ?? .08)); }
   for (const [object, flash] of commitFlashes) { const progress = clamp((now - flash.start) / flash.duration, 0, 1), mix = Math.pow(Math.sin(progress * Math.PI * flash.flashes), 2); for (const item of flash.materials) { item.material.color.copy(item.baseColor).lerp(flash.color, mix); if (item.material.emissive) { item.material.emissive.copy(item.emissive || item.baseColor).lerp(flash.color, mix); item.material.emissiveIntensity = THREE.MathUtils.lerp(item.emissiveIntensity ?? 0, setting.object.commit.emissiveIntensity ?? .62, mix); } } if (progress >= 1) { commitFlashes.delete(object); restoreObjectSurface(object); applyObjectHighlight(object, object === hovered ? "hover" : "none"); } }
   for (const material of islandPlantMaterials) if (material.userData.plantTime) material.userData.plantTime.value = now * .001;
+  for (const object of islandPlantObjects) { const motion = object.userData.islandPlantMotion; if (!motion) continue; const wave = Math.sin(now * .001 * motion.speed + motion.phase); object.rotation.x = motion.baseX + wave * motion.amount * .42; object.rotation.z = motion.baseZ + wave * motion.amount; }
   for (const cloud of islandClouds) { const motion = cloud.userData.islandCloud; cloud.position.y = motion.baseY + Math.sin(now * motion.speed + motion.phase) * motion.amount; }
   for (const line of activeGuidelines) { if (!line.parent) { activeGuidelines.delete(line); continue; } if (line.userData.fromObject) updateGuideline(line); if ("dashOffset" in line.material) line.material.dashOffset -= setting.interaction.guideline.flowSpeed * (delta / 16.67); }
   if (dragCue) { const cycle = ((now - dragCue.startedAt) % 1800) / 1800, eased = .5 - .5 * Math.cos(cycle * Math.PI * 2), point = dragCue.object.getWorldPosition(new THREE.Vector3()).lerp(dragCue.to, eased).project(camera), rect = elements.viewport.getBoundingClientRect(); elements.sceneHandCue.style.left = `${(point.x * .5 + .5) * rect.width}px`; elements.sceneHandCue.style.top = `${(-point.y * .5 + .5) * rect.height}px`; }
-  const distantInterval = 1000 / Math.max(1, setting.renderer.distantAnimationFps || 24);
-  if (now - lastDistantUpdateAt >= distantInterval) { lastDistantUpdateAt = now; for (const object of distantDecorGroup.children) { const motion = object.userData.distantMotion; if (!motion) continue; const wave = Math.sin(now * motion.floatSpeed + motion.phase), drift = Math.cos(now * motion.floatSpeed * .63 + motion.phase); if (motion.orbitSpeed) { const elapsed = now - motion.startedAt, angle = motion.orbitAngle + elapsed * motion.orbitSpeed, radius = motion.orbitRadius + drift * motion.driftAmount; object.position.set(Math.cos(angle) * radius, motion.baseY + wave * motion.floatAmount, Math.sin(angle) * radius); object.lookAt(0, object.position.y, 0); } else { object.position.set(motion.basePosition.x + drift * motion.driftAmount, motion.basePosition.y + wave * motion.floatAmount, motion.basePosition.z + wave * motion.driftAmount * .35); if (motion.spinSpeed) { object.rotation.x = motion.baseRotation.x + Math.sin(now * motion.spinSpeed * .6 + motion.phase) * .12; object.rotation.y = motion.baseRotation.y + now * motion.spinSpeed; object.rotation.z = motion.baseRotation.z + Math.cos(now * motion.spinSpeed * .45 + motion.phase) * .08; } } } }
+  const distantInterval = 1000 / Math.max(1, setting.renderer.distantAnimationFps || 15);
+  if (now - lastDistantUpdateAt >= distantInterval) { lastDistantUpdateAt = now; for (const object of distantDecorGroup.children) { const motion = object.userData.distantMotion; if (!motion) continue; const wave = Math.sin(now * motion.floatSpeed + motion.phase), drift = Math.cos(now * motion.floatSpeed * .63 + motion.phase); if (motion.orbitSpeed) { const elapsed = now - motion.startedAt, angle = motion.orbitAngle + elapsed * motion.orbitSpeed, radius = motion.orbitRadius + drift * motion.driftAmount; object.position.set(Math.cos(angle) * radius, motion.baseY + wave * motion.floatAmount, Math.sin(angle) * radius); object.lookAt(0, object.position.y, 0); } else { object.position.set(motion.basePosition.x + drift * motion.driftAmount, motion.basePosition.y + wave * motion.floatAmount, motion.basePosition.z + wave * motion.driftAmount * .35); if (motion.spinSpeed) { const spin = (now - motion.startedAt) * motion.spinSpeed; object.rotation.copy(motion.baseRotation); if (motion.spinAxis === "x") object.rotateX(spin); else if (motion.spinAxis === "z") object.rotateZ(spin); else object.rotateY(spin); } } } }
   if (fallingLeafSystem) for (const { mesh, motions, dummy } of fallingLeafSystem.groups) { for (let index = 0; index < motions.length; index++) { const motion = motions[index]; motion.position.y -= motion.fall * delta; motion.position.x += motion.drift * delta + Math.sin(now * .0016 + motion.phase) * .003 * delta; motion.position.z += Math.cos(now * .0011 + motion.phase) * .0015 * delta; motion.rotation.x += .0018 * delta; motion.rotation.y += .0025 * delta; motion.rotation.z += .0012 * delta; if (motion.position.y < .18) motion.position.set((Math.random() - .5) * 29, 9 + Math.random() * 4, (Math.random() - .5) * 23); dummy.position.copy(motion.position); dummy.rotation.copy(motion.rotation); dummy.scale.set(motion.size, motion.size * 1.65, motion.size); dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix); } mesh.instanceMatrix.needsUpdate = true; }
   if (atmospherePoints) { atmospherePoints.rotation.y += .0006 * (delta / 16.67); atmospherePoints.position.y = Math.sin(now * .0007) * .18; }
   for (const object of atmosphereGroup.children) if (object.userData.windTrail) { object.position.x += object.userData.windTrail.speed * delta * .48; if (object.position.x > 18) object.position.x = -18; }
@@ -1287,7 +1609,7 @@ function resolveLessonDisplayData(lessonData, meta) {
 function modeLabel(mode) { return mode === "student-quiz" ? "QUIZ" : mode === "teacher-lab" ? "TEACHER LAB" : "STUDENT LAB"; }
 function applyRuntimeUi() { elements.runtime.className = `${runtime.mode} ${runtime.meta.worldType === "webPage" ? "web-page-mode" : ""}`; elements.mode.textContent = modeLabel(runtime.mode); elements.title.textContent = runtime.lessonData.title; elements.taxonomy.textContent = [runtime.lessonData.category, runtime.lessonData.subcategory].filter(Boolean).join(" · ") || runtime.meta.description; elements.hint.textContent = runtime.meta.tooltip || "ลากวัตถุไปยังพื้นที่เป้าหมาย"; elements.webRoot.hidden = runtime.meta.worldType !== "webPage"; elements.howto.hidden = runtime.mode === "student-quiz" || !runtime.meta.howto.length; elements.quizPanel.hidden = runtime.mode !== "student-quiz"; elements.mascot.hidden = runtime.meta.worldType === "webPage"; elements.mascot.classList.toggle("is-disabled", mascotSetting.enabled === false); elements.mascot.classList.toggle("is-stationary", mascotBehavior === "stationary"); elements.mascot.dataset.character = activeMascotKey; elements.mascot.dataset.behavior = mascotBehavior; setMascotPose("idle"); scheduleMascotBlink(); requestAnimationFrame(syncConsoleDockHeight); }
 function lessonPayload(extra = {}) { return { values: { ...runtime.values }, mode: runtime.mode, meta: runtime.meta, ...extra }; }
-async function resetLessonScene(extra = {}) { guiService.clearScope("scene", "step", "question"); setLessonQuestion(""); if (runtime.meta.worldType === "3d-world-space") world.clear(); await runtime.lesson.reset?.(lessonPayload(extra)); runtime.sceneEntered = false; requestShadowUpdate(); markSceneActive(); }
+async function resetLessonScene(extra = {}) { guiService.clearScope("scene", "step", "question"); setLessonQuestion(""); if (runtime.meta.worldType === "3d-world-space") world.clear(); await runtime.lesson.reset?.(lessonPayload(extra)); runtime.sceneEntered = false; markSceneActive(); }
 function scheduleMascotBlink() { clearTimeout(runtime.mascotBlinkTimer); clearTimeout(runtime.mascotBlinkReleaseTimer); if (elements.mascot.hidden || mascotSetting.enabled === false) return; const [minimum, maximum] = mascotSetting.idle?.blinkInterval || [2800, 5200], delay = minimum + Math.random() * Math.max(0, maximum - minimum); runtime.mascotBlinkTimer = setTimeout(() => { elements.mascotCharacter.classList.add("is-blinking"); runtime.mascotBlinkReleaseTimer = setTimeout(() => { elements.mascotCharacter.classList.remove("is-blinking"); scheduleMascotBlink(); }, mascotSetting.idle?.blinkDuration || 150); }, delay); }
 function resetMascotTimers() { clearTimeout(runtime.optionCloseTimer); clearTimeout(runtime.mascotFlightTimer); clearTimeout(runtime.mascotLandingTimer); clearTimeout(runtime.mascotSpeechTimer); clearTimeout(runtime.mascotHintTimer); clearTimeout(runtime.mascotPoseTimer); }
 function setMascotPose(pose = "idle") { elements.mascot.dataset.pose = mascotBehavior === "stationary" ? pose : "idle"; }
@@ -1472,7 +1794,7 @@ async function openLesson(payload) {
     runtime.context = createContext(root, language); await runtime.lesson.mount(runtime.context);
     if (sessionId !== runtime.sessionId) return;
     failureStage = "reset";
-    await resetLessonScene(); requestShadowUpdate(); markSceneActive();
+    await resetLessonScene(); markSceneActive();
     failureStage = "finish";
     updateEntry(92, "ตรวจสอบความพร้อมครั้งสุดท้าย…"); await finishEntry();
     if (runtime.mode === "student-quiz") readyQuiz(); else await setStep(0);
@@ -1573,7 +1895,7 @@ function guiLabAction(action, payload) {
   } else throw new Error(`GUI_SERVICE_DEBUG_UNKNOWN: ไม่รู้จัก service ${service}`);
   markSceneActive(); return { action, service, tone, text: message, target: service === "gizmo" ? (selected?.name || interactive[0]?.name || "world [0,2.5,0]") : service.startsWith("world-") ? "world-space" : undefined, active: guiService.counts };
 }
-const runtimeSettingMenu = runtimeSettingTools.setupRuntimeSettingMenu({ 
+const runtimeSettingMenu = runtimeSettingTools.setupRuntimeSettingMenu({
   setting,
   baseline: runtimeSettingBaseline,
   getMode: () => runtime.mode,

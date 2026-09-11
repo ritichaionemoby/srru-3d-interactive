@@ -1,5 +1,5 @@
 {
-  "sdkVersion": "2.9.0",
+  "sdkVersion": "3.0.0",
   "worldOwner": "main-world",
   "accessProfiles": {
     "teacherExternal": {
@@ -14,7 +14,13 @@
   },
   "lessonOwns": ["scene-composition", "interaction-state", "answer-condition", "lab-step-behavior", "quiz-data"],
   "objects": ["primitive", "group", "text3d", "library", "zone", "callout", "world-counter", "world-gui", "guideline", "line-render", "target-focus"],
-  "primitiveShapes": ["box", "sphere", "cylinder", "cone", "torus", "circle", "plane"],
+  "primitiveShapes": [
+    "box", "rounded-box", "sharp-box", "sphere", "hemisphere",
+    "cylinder", "half-cylinder", "quarter-cylinder", "cone", "pyramid", "prism", "frustum", "capsule",
+    "sector", "sector-flat", "ring-sector", "ring-sector-flat", "tube",
+    "torus", "torus-knot", "circle", "plane", "ring", "star", "heart", "cross", "wedge",
+    "tetrahedron", "octahedron", "dodecahedron", "icosahedron", "diamond"
+  ],
   "interactions": ["drag", "click", "custom-hit-area", "actionable-callout"],
   "guiServices": {
     "question": "context.ui.question",
@@ -74,6 +80,6 @@
   "operatorPrefab": ["<", ">", "=", "+", "-", "×", "÷"],
   "questionUi": "context.ui.question.show",
   "compatibilityUi": ["context.ui.setQuestion", "context.ui.clearQuestion", "context.ui.setObjective", "context.ui.toast", "context.ui.setProgress"],
-  "optionalFutureCapabilities": ["throw", "physics", "balance", "cut-state", "pour-state"]
+  "optionalFutureCapabilities": ["throw", "physics", "balance", "pour-state"]
 }
 

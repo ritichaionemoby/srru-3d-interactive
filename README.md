@@ -67,7 +67,7 @@ Repository นี้รวมคู่มือ, Public API, ตัวอย่�
 
 ## รูปแบบและขอบเขตงาน
 
-ค่าเริ่มต้นคือ lesson-only: ส่ง HTML หนึ่งไฟล์ ใช้ primitive/group/text และ Standard Asset ID ตาม catalog ที่มีจริง ไม่แก้ source snapshot, settings, CSS, SDK หรือเพิ่ม asset โดยปริยาย source ที่เห็นมีไว้ตรวจ API และโครงสร้าง
+ค่าเริ่มต้นคือ lesson-only: ส่ง HTML หนึ่งไฟล์ ใช้ procedural primitive/group/text และ Standard Asset ID ตาม catalog ที่มีจริง ไม่แก้ source snapshot, settings, CSS, SDK หรือเพิ่ม asset โดยปริยาย source ที่เห็นมีไว้ตรวจ API และโครงสร้าง รูปทรง procedural ไม่ต้องมี Asset ID และควรถูกใช้ทำบทเรียนให้เล่นจบก่อนขอโมเดลใหม่
 
 สำหรับ workflow `git/DEVGEN` ให้ถือ GitHub Repository เป็น read-only เสมอ AI Chat
 ต้องคืนชื่อ path และ HTML ฉบับเต็มใน code block เพื่อให้ผู้ใช้ Copy ไปบันทึกเอง
@@ -108,7 +108,7 @@ Lesson path จะส่งภายหลังพร้อม `--CREATE`, แ�
 
 ## CREATE — สร้างบทเรียนใหม่
 
-แปลงโจทย์เป็นผลการเรียนรู้, ค่าที่ครูปรับได้, ขั้น Lab ที่มีความหมาย, state/การเปลี่ยน state ที่ยอมรับและปฏิเสธ, คลัง Quiz พร้อม predicate ที่ยอมรับทุกคำตอบที่ถูก, cleanup และการจัดฉากแนวตั้ง ก่อนลงมือเลือก GUI Service และ Asset ID จริง ผลลัพธ์เป็น HTML หนึ่งไฟล์ ไม่ใช่แผนหรือ API ที่สมมติขึ้น
+แปลงโจทย์เป็นผลการเรียนรู้, ค่าที่ครูปรับได้, ขั้น Lab ที่มีความหมาย, state/การเปลี่ยน state ที่ยอมรับและปฏิเสธ, คลัง Quiz พร้อม predicate ที่ยอมรับทุกคำตอบที่ถูก, cleanup และการจัดฉากแนวตั้ง ก่อนลงมือเลือก GUI Service, procedural shape และ Asset ID จริง ให้ใช้ Procedural First และประกอบรูปทรงที่มีเพื่อทำ core interaction ให้จบก่อนแจ้งว่าต้องเพิ่ม Asset ผลลัพธ์เป็น HTML หนึ่งไฟล์ ไม่ใช่แผนหรือ API ที่สมมติขึ้น
 
 ## DEFINE — ตั้งชื่อส่วนต่างๆ เพื่อสั่งแก้ได้ตรงจุด
 

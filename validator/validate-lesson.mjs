@@ -23,6 +23,7 @@ const errors = [];
 const add = (code, stage, message, details = "") => errors.push({ code, stage, message, details });
 let html = "";
 let standardAssetIds = new Set();
+let primitiveShapes = new Set();
 
 function methodBody(source, methodName) {
   const match = new RegExp(`\\b(?:async\\s+)?${methodName}\\s*\\([^)]*\\)\\s*\\{`).exec(source);
@@ -164,6 +165,14 @@ try {
 }
 
 try {
+  const capabilitiesText = await readFile(new URL("../sdk/capabilities.json", import.meta.url), "utf8");
+  const capabilities = JSON.parse(capabilitiesText);
+  primitiveShapes = new Set(capabilities.primitiveShapes || []);
+} catch (error) {
+  add("SDK_CAPABILITIES_INVALID", "validator", `อ่าน Procedural Geometry capabilities ไม่ได้: ${error.message}`);
+}
+
+try {
   html = await readFile(file, "utf8");
 } catch (error) {
   add("LESSON_FETCH_FAILED", "read", `อ่านไฟล์ไม่ได้: ${error.message}`);
@@ -247,6 +256,18 @@ if (html) {
     add("LESSON_OPERATOR_UNSUPPORTED", "validate", `addOperatorSign ไม่รองรับ ${unsupportedOperator[1]}; รองรับ = ≠ < > ≤ ≥ + - × ÷`);
   }
 
+  for (const match of html.matchAll(/\bshape\s*:\s*["']([^"']+)["']/g)) {
+    const shape = match[1].trim().toLowerCase().replace(/[_\s]+/g, "-");
+    if (!primitiveShapes.has(shape)) {
+      add(
+        "LESSON_PRIMITIVE_UNSUPPORTED",
+        "validate",
+        `ไม่พบ Procedural Shape: ${match[1]}`,
+        "เลือก shape จาก sdk/capabilities.json หรือ sdk/LESSON_API_REFERENCE.md; ห้ามสมมติชื่อรูปทรงใหม่"
+      );
+    }
+  }
+
   const requiredPatterns = [
     [/\bid\s*:\s*["'][^"']+["']/, "id"],
     [/\bversion\s*:\s*["'][^"']+["']/, "version"],
@@ -299,7 +320,7 @@ if (html) {
 const report = {
   ok: errors.length === 0,
   file: basename(file),
-  contractVersion: "1.2.2",
+  contractVersion: "1.3.0",
   profile,
   errors
 };

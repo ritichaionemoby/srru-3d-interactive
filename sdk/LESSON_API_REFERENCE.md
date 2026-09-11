@@ -41,7 +41,7 @@ Asset เริ่มต้น:
 
 ### `world.addPrimitive(options)`
 
-สร้างรูปร่างมาตรฐาน รองรับ `box`, `sphere`, `cylinder`, `cone`, `torus`, `circle` และ `plane`
+สร้างรูปร่าง procedural มาตรฐานโดยไม่ต้องเพิ่ม FBX/GLB หรือ Asset ID เหมาะสำหรับทำ prototype ให้จบบทเรียนก่อนส่งทีมหลัก polish ภายหลัง รูปทรงทั้งหมดมีขนาดตั้งต้นประมาณ 1 unit แล้วคูณด้วย `size: [กว้าง, สูง, ลึก]`
 
 ```js
 world.addPrimitive({
@@ -52,6 +52,57 @@ world.addPrimitive({
   draggable: true
 });
 ```
+
+รูปทรงที่รองรับ:
+
+- พื้นฐาน: `box`, `rounded-box`, `sharp-box`, `sphere`, `hemisphere`, `cylinder`, `cone`, `capsule`, `circle`, `plane`, `ring`
+- คณิตศาสตร์และโครงสร้าง: `half-cylinder`, `quarter-cylinder`, `sector`, `sector-flat`, `ring-sector`, `ring-sector-flat`, `tube`, `wedge`
+- รูปทรงหลายหน้า: `pyramid`, `prism`, `frustum`, `tetrahedron`, `octahedron`, `dodecahedron`, `icosahedron`, `diamond`
+- ตกแต่ง: `torus`, `torus-knot`, `star`, `heart`, `cross`
+
+ตัวเลือก `geometry`:
+
+| ค่า | ใช้กับ | ความหมาย |
+|---|---|---|
+| `segments` | ทรงโค้งทั้งหมด | ความละเอียด 6–96 |
+| `sides` | `prism`, `pyramid`, `frustum` | จำนวนด้าน 3–32 |
+| `startAngle`, `angle` | `sector`, `ring-sector` และแบบ `-flat` | มุมเริ่มและขนาดมุม หน่วย degree |
+| `innerRadius` | `ring`, `ring-sector`, `tube`, `star` | สัดส่วนรัศมีด้านใน |
+| `points` | `star` | จำนวนแฉก 3–16 |
+| `topRadius`, `bottomRadius` | `frustum` | สัดส่วนรัศมีบนและล่าง |
+| `tube` | `torus`, `torus-knot` | สัดส่วนความหนาของวง |
+| `p`, `q` | `torus-knot` | จำนวนรอบของปม |
+| `openEnded` | ทรงกรวย/ทรงกระบอก/ปริซึม | เปิดฝาปลาย |
+| `radius` | `box`, `rounded-box` | ระดับความมนของมุม |
+
+ตัวอย่างเค้ก `1/8` ที่ทุกชิ้นเท่ากันทางคณิตศาสตร์ โดยไม่ต้องมีโมเดลใน catalog:
+
+```js
+const denominator = 8;
+for (let index = 0; index < denominator; index += 1) {
+  const middleAngle = (index + .5) * 360 / denominator;
+  const distance = .12;
+  world.addPrimitive({
+    name: `cake-slice-${index}`,
+    shape: "sector",
+    geometry: {
+      startAngle: index * 360 / denominator,
+      angle: 360 / denominator,
+      segments: 48
+    },
+    size: [5, .9, 5],
+    position: [
+      Math.cos(middleAngle * Math.PI / 180) * distance,
+      .5,
+      -Math.sin(middleAngle * Math.PI / 180) * distance
+    ],
+    color: index < 3 ? "#ff8fb5" : "#ffd9a1",
+    draggable: true
+  });
+}
+```
+
+ใช้ `sector` สำหรับชิ้นเค้ก/พิซซ่า/วงกลมเศษส่วนแบบมีความหนา และใช้ `sector-flat` สำหรับแผ่นวงกลมหรือกราฟวงกลม หากต้องการขอบครีมให้ประกอบ `sector` หลายชั้นใน `world.addGroup()` โดยส่ง `geometry` ชุดเดียวกันให้แต่ละ part เพื่อรักษามุมเท่ากัน
 
 ### `world.addGroup(options)`
 
@@ -67,6 +118,8 @@ world.addGroup({
   ]
 });
 ```
+
+ทุก part ใน `addGroup()` รองรับ `geometry` ชุดเดียวกับ `addPrimitive()` จึงประกอบจรวด เค้กหลายชั้น ตัวละคร ของเล่น ภาชนะ และอุปกรณ์การเรียนจาก procedural geometry ได้โดยไม่ต้องขอ Asset ID ใหม่
 
 ถ้าวัตถุคลิกได้แต่บทเรียนมีเอฟเฟกต์ Active ของตัวเอง ให้กำหนด `selectionFeedback: false` เพื่อไม่แสดงวง Hover และลูกศร Select ของระบบกลาง
 

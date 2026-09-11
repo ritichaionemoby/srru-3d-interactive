@@ -1,4 +1,4 @@
-# Lesson Contract 1.2.2
+# Lesson Contract 1.3.0
 
 เอกสารนี้กำหนดรูปแบบบังคับของ `lesson_N.html` สำหรับ World Runtime
 
@@ -37,6 +37,7 @@ Lesson Package เป็น HTML UTF-8 ไฟล์เดียวเพื่�
 - ใช้เฉพาะ API ที่ประกาศใน `sdk/LESSON_API_REFERENCE.md`
 - ออกแบบฉากจากเนื้อหาของบทเรียน ไม่บังคับใช้โครงซ้าย/ขวาหรือกล่องจาก Lesson 0
 - ใช้เฉพาะ Standard Asset ID จาก `sdk/asset-library.catalog.json` ห้าม custom model relative path, `world.addModel()` และ `type: "model"` โดยตรง แต่ Standard Asset ID อาจชี้ไปยังโมเดลที่ระบบกลางดูแลได้
+- รูปทรง procedural ที่ประกาศใน Public API ใช้ได้ทั้งหมดและไม่ถือเป็น custom asset ก่อนแจ้งว่าขาด Asset ต้องลองสร้างด้วย `addPrimitive`/`addGroup` ก่อน โดยเฉพาะ `sector` สำหรับชิ้นเค้กหรือวงกลมเศษส่วน
 - GUI ใช้ Service กลาง `question`, `console`, `topMessage`, `choice`, `gizmo`, `feedback`, `dialog`, `control`, `hint`, `busy` ตามหน้าที่ ห้ามสร้าง UI เหล่านี้ซ้ำด้วย DOM/CSS, Canvas, Sprite, primitive หรือ group ของบทเรียน
 - ก่อนสร้าง UI ทุกชิ้นต้องเลือกชื่อ, ownership และ API ตาม `sdk/UI_CATALOG.md` และตัวอย่างใน `sdk/GUI_SERVICE_REFERENCE.md` ก่อนเสมอ ถ้าไม่มี capability จริงให้รายงานสิ่งที่ขาด ห้ามสมมติ API หรือทำ UI one-off ทดแทน
 - `world.addCallout()` สงวนไว้สำหรับ GUI ล็อกเข้าหาจอที่ชี้พื้นที่ด้วย leader line/ring ในฉาก ไม่ใช่ Gizmo และบทเรียนห้ามสร้าง DOM/Screen-space overlay/Sprite ทดแทนเอง

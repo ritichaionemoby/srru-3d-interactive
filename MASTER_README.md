@@ -86,6 +86,9 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 - ตรวจ Asset ID จริงจาก `Project/interactive/assets/library/catalog.json`; เครื่องหมาย `= ≠ < > ≤ ≥ + - × ÷` ใช้ `world.addOperatorSign` เพื่อให้ได้ polygon 3D และฐานมาตรฐาน ห้ามใช้ `addText3D` ทำเครื่องหมายบนฐาน
 - ห้ามแก้ material, geometry, renderer, scene, camera ภายใน หรือ `userData` ของ object โดยตรง
 - ถ้าต้องใช้ asset ให้ใช้เฉพาะไฟล์ที่มีอยู่จริงและ resolve ผ่าน API ของ runtime ห้ามสมมติ path
+- **Procedural First:** ก่อนสรุปว่าต้องติดต่อทีม Dev หรือขอ Asset ใหม่ ต้องตรวจรูปทรงทั้งหมดใน `sdk/LESSON_API_REFERENCE.md` และลองประกอบด้วย `world.addPrimitive()` / `world.addGroup()` ก่อน รูปทรง procedural ไม่ต้องลงทะเบียนใน Asset Catalog
+- ใช้ `sector`/`ring-sector` สำหรับเค้ก พิซซ่า เศษส่วน และกราฟวงกลม ใช้ `prism`/`pyramid`/`frustum` สำหรับเรขาคณิต และใช้รูปทรงตกแต่งประกอบ prototype ให้บทเรียนเล่นจบได้ ทีมหลักสามารถแทนด้วย FBX/Standard Asset ภายหลังโดยไม่เปลี่ยน learning logic
+- ติดต่อทีม Dev เฉพาะเมื่อรูปทรงและ interaction ที่ประกาศไว้ยังทำแกนการเรียนรู้ไม่ได้จริง เช่น physics, ของเหลว หรือการตัด mesh แบบอิสระ ห้ามหยุดเพียงเพราะไม่มีโมเดลสวยใน Catalog
 
 ## UI กลางของบทเรียน
 

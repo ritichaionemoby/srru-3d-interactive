@@ -165,21 +165,24 @@ DEVGEN MENU
 1. ใช้คำตอบของผู้ใช้เป็น Content Source of Truth แล้วเริ่มสร้างทันที
 2. ทำตาม `MASTER_README.md`, contract, Public API, template และ `TESTING.md`
 3. ตรวจทุก API, Asset ID และ `this.someHelper()` จากไฟล์จริง ห้ามเดา
-4. ตรวจว่ามี `[ Lesson ]` แล้วใช้ค่านั้นเป็นชื่อ path สำหรับส่งมอบ ห้ามเขียนไฟล์
+4. ใช้ Procedural First: ตรวจ `primitiveShapes` และตัวเลือก `geometry` แล้วประกอบ
+   ด้วย `addPrimitive`/`addGroup` ให้ core interaction เล่นจบก่อนขอ Asset ใหม่
+   รูปทรง procedural ไม่ต้องมี Asset ID และห้ามหยุดเพียงเพราะ Catalog ไม่มีโมเดลสวย
+5. ตรวจว่ามี `[ Lesson ]` แล้วใช้ค่านั้นเป็นชื่อ path สำหรับส่งมอบ ห้ามเขียนไฟล์
    กลับ Repository
-5. สร้าง Lesson Package HTML ให้ครบทั้งไฟล์ รองรับ Lab และ Quiz ตามข้อกำหนด
-6. หากมีเครื่องมือ local ชั่วคราว สามารถรัน
+6. สร้าง Lesson Package HTML ให้ครบทั้งไฟล์ รองรับ Lab และ Quiz ตามข้อกำหนด
+7. หากมีเครื่องมือ local ชั่วคราว สามารถรัน
    `node validator/validate-lesson.mjs <temporary-lesson-file>` ได้ แต่ห้าม commit,
    push, เปิด PR หรืออัปโหลดไฟล์กลับ GitHub หากไม่มีเครื่องมือให้ตรวจ static ด้วย
    ตนเองและระบุว่าไม่ได้รัน validator ห้ามอ้างว่าผ่าน
-7. ส่งผลลัพธ์ใน Chat ตามรูปแบบบังคับนี้เสมอ:
+8. ส่งผลลัพธ์ใน Chat ตามรูปแบบบังคับนี้เสมอ:
 
    [ Lesson Output ]
    Path: `Project/interactive/chapters/ep5/lesson5.html`
 
    ตามด้วย code block ภาษา `html` เพียงหนึ่งก้อนที่มีไฟล์ฉบับเต็มตั้งแต่
    `<!doctype html>` ถึง `</html>` เพื่อให้ผู้ใช้กด Copy แล้วนำไปบันทึกได้ทันที
-8. หลัง code block ให้รายงานสั้นๆ เรื่องกิจกรรม เงื่อนไขคำตอบ ผล static/validator
+9. หลัง code block ให้รายงานสั้นๆ เรื่องกิจกรรม เงื่อนไขคำตอบ ผล static/validator
    ที่ทำจริง และ runtime checks ที่ยังรอระบบปลายทาง
-9. ห้ามส่งเพียง diff, patch, fragment, pseudocode, ลิงก์ดาวน์โหลด หรือข้อความว่า
+10. ห้ามส่งเพียง diff, patch, fragment, pseudocode, ลิงก์ดาวน์โหลด หรือข้อความว่า
    `403` เป็นผลส่งมอบ หากเขียน GitHub ไม่ได้ให้ดำเนินการสร้างใน Chat ต่อจนจบ

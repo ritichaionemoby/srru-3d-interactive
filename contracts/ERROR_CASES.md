@@ -20,11 +20,12 @@
 | `LESSON_RESET_FAILED` | reset | error ระหว่างสร้างฉาก/คำถาม | ตรวจ values, handles, array และ quiz data |
 | `LESSON_STEP_FAILED` | step | error เมื่อเปลี่ยน Lab step | ตรวจ index, step และ handle ที่อาจไม่มี |
 | `LESSON_ASSET_NOT_FOUND` | asset | path asset ไม่ถูกต้อง | ใช้ `context.resolveAsset` และ asset ที่มีจริง |
-| `LESSON_EXTERNAL_ASSET_FORBIDDEN` | validate | TEACHER_EXTERNAL เรียก custom model หรือ path asset | ใช้ primitive/Standard Asset ID หรือส่งคำขอ asset ให้ทีม Dev |
+| `LESSON_EXTERNAL_ASSET_FORBIDDEN` | validate | TEACHER_EXTERNAL เรียก custom model หรือ path asset | ใช้ Procedural Shape/`addGroup` ให้ core interaction จบก่อน แล้วใช้ Standard Asset ID เมื่อมี; ติดต่อทีม Dev เฉพาะเมื่อ Public API ทำแกนบทเรียนไม่ได้จริง |
 | `LESSON_ASSET_PATH_REQUIRED` | asset | DEV_WORKSPACE เรียก custom model โดยไม่มี path | ทีม Dev กำหนดและ deploy relative path ที่ตรวจสอบแล้ว |
 | `LESSON_ASSET_LOAD_FAILED` | asset | asset ของ DEV_WORKSPACE โหลดหรือ parse ไม่สำเร็จ | ทีม Dev ตรวจ path, format, texture และ deployment case sensitivity |
 | `LESSON_ASSET_ORIGIN_ERROR` | asset | asset ของ DEV_WORKSPACE อยู่นอก origin | ทีม Dev นำ asset เข้า Platform origin และอัปเดต catalog/contract หากจะเปิดให้อาจารย์ใช้ |
 | `LESSON_OPERATOR_UNSUPPORTED` | runtime | ส่งอักขระที่ prefab ไม่รองรับ | ใช้ addOperatorSign เฉพาะ `= ≠ < > ≤ ≥ + - × ÷`; ข้อความทั่วไปใช้ addText3D |
+| `LESSON_PRIMITIVE_UNSUPPORTED` | runtime | ส่งชื่อรูปทรง procedural ที่ระบบไม่รองรับ | เลือก shape จาก `context.world.capabilities.primitiveShapes` หรือ `sdk/LESSON_API_REFERENCE.md`; ห้ามสมมติชื่อใหม่ |
 | `LESSON_LOAD_TIMEOUT` | load | lifecycle หรือ asset รอนานเกินกำหนด | เอา network/dependency ออกและตรวจ Promise |
 | `SDK_VERSION_MISMATCH` | validate | lesson ต้องการ API คนละเวอร์ชัน | ปรับ lesson ให้ตรง Github contract ปัจจุบัน |
 | `LESSON_RUNTIME_ERROR` | runtime | exception อื่นใน lesson | ใช้ stack/message หา lifecycle และบรรทัดที่ผิด |

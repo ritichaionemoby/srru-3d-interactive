@@ -2,7 +2,15 @@ export type Vec2 = [number, number];
 export type Vec3 = [number, number, number];
 export type LessonMode = "teacher-lab" | "student-lab" | "student-quiz";
 export type DragAxis = "xz" | "xy";
-export type PrimitiveShape = "box" | "sphere" | "cylinder" | "cone" | "torus" | "circle" | "plane";
+export type PrimitiveShape =
+  | "box" | "rounded-box" | "sharp-box"
+  | "sphere" | "hemisphere"
+  | "cylinder" | "half-cylinder" | "quarter-cylinder"
+  | "cone" | "pyramid" | "prism" | "frustum" | "capsule"
+  | "sector" | "sector-flat" | "ring-sector" | "ring-sector-flat" | "tube"
+  | "torus" | "torus-knot" | "circle" | "plane" | "ring"
+  | "star" | "heart" | "cross" | "wedge"
+  | "tetrahedron" | "octahedron" | "dodecahedron" | "icosahedron" | "diamond";
 export type GuiScope = "lesson" | "scene" | "step" | "question" | "manual";
 export type GuiTone = "default" | "primary" | "info" | "success" | "warning" | "error";
 
@@ -42,8 +50,37 @@ export interface LessonMaterialOptions {
   depthWrite?: boolean;
 }
 
+/** ตัวเลือก geometry ใช้หน่วยเป็นสัดส่วนก่อนคูณด้วย size; มุมใช้ degree */
+export interface ProceduralGeometryOptions {
+  /** ความละเอียดผิว 6-96 */
+  segments?: number;
+  /** จำนวนด้านของ prism/pyramid/frustum 3-32 */
+  sides?: number;
+  /** จำนวนแฉกของ star 3-16 */
+  points?: number;
+  /** มุมเริ่มต้นของ sector/ring-sector */
+  startAngle?: number;
+  /** ขนาดมุมของ sector/ring-sector 1-360 */
+  angle?: number;
+  /** สัดส่วนรัศมีด้านในของ ring/ring-sector/tube หรือรัศมีด้านในของ star */
+  innerRadius?: number;
+  /** สัดส่วนความหนาของ torus/torus-knot */
+  tube?: number;
+  /** สัดส่วนรัศมีบนและล่างของ frustum */
+  topRadius?: number;
+  bottomRadius?: number;
+  /** จำนวนรอบของ torus-knot */
+  p?: number;
+  q?: number;
+  /** เปิดฝาบน/ล่างของ cylinder/cone/prism/pyramid/frustum */
+  openEnded?: boolean;
+  /** ความมนของ box/rounded-box 0.01-0.24 */
+  radius?: number;
+}
+
 export interface PrimitivePart {
   shape?: PrimitiveShape;
+  geometry?: ProceduralGeometryOptions;
   size?: Vec3;
   position?: Vec3;
   rotation?: Vec3;
@@ -105,6 +142,7 @@ export interface LessonWorld {
   readonly capabilities: {
     readonly version: string;
     readonly objects: readonly string[];
+    readonly primitiveShapes: readonly PrimitiveShape[];
     readonly interactions: readonly string[];
     readonly modelFormats: readonly string[];
   };
