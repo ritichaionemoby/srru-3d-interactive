@@ -2,6 +2,12 @@
 
 คลังวัตถุมาตรฐานสำหรับบทเรียน ใช้ผ่าน Asset ID ใน `catalog.json` เช่น `food/apple`, `food/pizza`, `math/balance-scale` และ `space/rocket`
 
+โมเดลมาตรฐานจัดกลุ่มตามหน้าที่เพื่อค้นหาได้ง่าย เช่น `animal`, `character`,
+`classroom`, `environment`, `food`, `fruit`, `math`, `nature`, `reward`, `science`
+และ `toy` ชื่อ ID เป็น lowercase kebab-case และสามารถค้นเพิ่มจาก `tags` ใน Catalog
+
+ไฟล์ใหม่ต้องพักไว้ที่ `../myMake/` ก่อน แล้วใช้คำสั่ง `AI/UpdateAssetsLibrary.md` เพื่อตรวจ ย้ายไฟล์ และลงทะเบียนใน catalog ห้ามให้ lesson อ้างไฟล์จาก `myMake` โดยตรง
+
 - `type: prefab` ประกอบจาก primitive ของ runtime จึงเบาและไม่ต้องโหลดโมเดลภายนอก
 - `type: model` คือโมเดลมาตรฐาน FBX/GLB ที่อยู่ภายในคลังและโหลดผ่าน Asset ID เท่านั้น เช่น `food/carrot`
 - บทเรียนสามารถเปลี่ยนตำแหน่ง rotation scale สี และ interaction ได้

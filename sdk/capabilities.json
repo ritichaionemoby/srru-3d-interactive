@@ -63,6 +63,8 @@
     "guiServiceLab": ["preview", "update", "clear"]
   },
   "backgrounds": ["green"],
+  "assetCatalogVersion": "1.2.4",
+  "standardAssetCount": 212,
   "centralGridSettings": ["ground.gridColor", "ground.gridOpacity", "ground.ringColor"],
   "worldCalloutPurpose": "point-to-world-area-and-optionally-open-insight",
   "worldCounterPurpose": "display-numeric-count-on-world-surface",
@@ -71,11 +73,14 @@
   "standardAssets": [
     "food/apple",
     "food/pizza",
+    "food/pizza-slice",
     "sports/ball",
     "science/water-tank",
     "math/balance-scale",
     "space/rocket",
-    "classroom/counter"
+    "classroom/counter",
+    "environment/wooden-plate",
+    "environment/picnic-blanket"
   ],
   "operatorPrefab": ["<", ">", "=", "+", "-", "×", "÷"],
   "questionUi": "context.ui.question.show",

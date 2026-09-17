@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-17 — Asset Catalog 1.2.4
+
+- เพิ่ม Standard Asset โมเดล 136 รายการจากทีม Art ครอบคลุมสัตว์ ตัวละคร ห้องเรียน ฉาก อาหาร ผลไม้ คณิตศาสตร์ ธรรมชาติ รางวัล วิทยาศาสตร์ และของเล่น
+- เก็บ FBX ต้นฉบับพร้อม texture dependency ครบชุด และตั้ง Asset ID แบบ lowercase kebab-case โดยไม่ทับ ID เดิม
+- sync runtime catalog, portable catalogs, capabilities, source manifest และ regression test
+
+## 2026-09-14 — Asset Catalog 1.2.3
+
+- เพิ่ม Standard Asset `food/pizza-slice`, `environment/wooden-plate` และ `environment/picnic-blanket`
+- sync runtime catalog, portable SDK catalog, capabilities และ source manifest
+- ปรับ dependency path ภายใน FBX ให้ texture โหลดผ่าน browser ได้ครบถ้วน
+
 ## 2026-09-11 — 0.1.0 Procedural Geometry First
 
 - เพิ่ม Public Procedural Geometry เป็น 32 รูปทรง พร้อมตัวเลือกมุม จำนวนด้าน รัศมีด้านใน และความละเอียด

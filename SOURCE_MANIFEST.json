@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-11",
+  "generatedAt": "2026-09-17",
   "purpose": "AI reference only; not a runnable deployment",
   "source": "Owner project working tree; copied files may contain uncommitted edits",
   "excluded": [
@@ -13,12 +13,12 @@
     {
       "path": "Project/interactive/assets/library/catalog.json",
       "sourcePath": "Project/interactive/assets/library/catalog.json",
-      "sha256": "cffa41a868e0f0f63a2886fc9d56f9a5b26957fd4a929c8fc9d9def114ef6e10"
+      "sha256": "90fae7a54c5e56b8e2daedbebc5b7f47fb96863c160d88da59a7002e0c24d67e"
     },
     {
       "path": "Project/interactive/assets/library/README.md",
       "sourcePath": "Project/interactive/assets/library/README.md",
-      "sha256": "754a635ea26b807bfcc1358a81b91b29ba29eb7d8bd8cb29d564453c275e3120"
+      "sha256": "7865e49682a1df720c0920352023193bd3d07ae1ea37d7eb58c28c6d8ead2b42"
     },
     {
       "path": "Project/interactive/chapters/ep1/lesson1.html",
