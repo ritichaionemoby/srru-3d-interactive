@@ -38,7 +38,7 @@
     {
       "path": "Project/interactive/chapters/ep3/lesson3.html",
       "sourcePath": "Project/interactive/chapters/ep3/lesson3.html",
-      "sha256": "67022cef4331af67351195affa3a0e0f8da74309c95bb05b902f8e89a0e1b22a"
+      "sha256": "2b21db2351893bfddd7a5086a5aa27ccb966c6d4889fddc19ce49a52da239f63"
     },
     {
       "path": "Project/interactive/chapters/ep10/lesson1.html",
@@ -98,7 +98,7 @@
     {
       "path": "Project/interactive/main-world.js",
       "sourcePath": "Project/interactive/main-world.js",
-      "sha256": "5ba8e9918981a237f4a52f57887a5213746f9f04c5c041859bb31ac14fac2aae"
+      "sha256": "d9f5ca9433e25b3612047b48f6701b2060a6e4d6a9aaf247d556732aa2a6bfa3"
     },
     {
       "path": "Project/interactive/runtime-setting-menu.js",
@@ -108,7 +108,7 @@
     {
       "path": "Project/interactive/world.css",
       "sourcePath": "Project/interactive/world.css",
-      "sha256": "7878d817571ed3f4d8d89db99bfaf991d9f228a93f14b793b2dfab207de032ec"
+      "sha256": "d47f22f0468982463a7dfd8f7170676bf949e9cb26f78929585b0cbc3ff5d326"
     },
     {
       "path": "Project/interactive/world-gui-system.js",

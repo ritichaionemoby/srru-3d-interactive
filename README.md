@@ -74,6 +74,8 @@ Repository นี้รวมคู่มือ, Public API, ตัวอย่�
 ต้องคืนชื่อ path และ HTML ฉบับเต็มใน code block เพื่อให้ผู้ใช้ Copy ไปบันทึกเอง
 ห้ามพยายามเขียนกลับ Repository, ขอสิทธิ์ write, สร้าง branch, commit, PR หรือ push
 
+เมื่อเจ้าของโปรเจกต์นำ HTML ที่ได้รับจากภายนอกเข้า workspace ให้ใช้คำสั่งภายใน `AI/UpdateLesson` โดยต้องทราบชื่อบทเรียน, `epXX/lessonXX` ปลายทาง และ path/ไฟล์แนบ HTML ต้นทางครบก่อนเริ่ม หากข้อมูลใดขาดต้องถามก่อนและห้ามเดา คำสั่งนี้อยู่ฝั่ง DEV_WORKSPACE จึงไม่เปลี่ยนข้อกำหนด read-only ของ `git/DEVGEN`
+
 Host เรียก EduSDK → ตรวจ `script[data-lesson-app]` → เปิด main-world → เรียก PuzzleLesson.define และ lifecycle → บทเรียนสร้างฉากผ่าน context ส่วน runtime ดูแล renderer, GUI, กล้อง, Lab, Quiz และการปิด บทเรียนจึงไม่สร้าง renderer, canvas หรือแผง UI กลางซ้ำ
 
 GUI ที่ใช้ได้มี question, console, topMessage, choice, gizmo, worldGuiSystem, feedback, dialog, insight, control, hint และ busy พร้อมตัวอย่างใน GUI Service Reference; `worldGuiSystem` ใช้ป้ายเล็กที่ยึดกับพิกัดหรือโมเดล ส่วน Callout, World Counter, World GUI, Target Focus และ Guideline ดูใน Public API
@@ -81,6 +83,8 @@ GUI ที่ใช้ได้มี question, console, topMessage, choice, giz
 Runtime เป็นผู้บังคับกฎ Control กลาง: ระหว่างขั้นสอนแสดงได้เฉพาะปุ่มข้ามการสอน เมื่อเข้า Lab ขั้นสุดท้าย/การทดลองหรือ Quiz จึงแสดง Control ของบทเรียน และเมื่อย้อนกลับไปขั้นสอนระบบต้องซ่อนให้อัตโนมัติ รูปลักษณ์บทเรียน 3D ปัจจุบันใช้ Storybook UI สีน้ำตาล/ครีม โดยคง felt environment เป็นฉากพื้นฐาน
 
 บทเรียนที่ใช้ฉากหลักเดิมทุกข้อเลือก `meta.scenePersistence: "lesson"` ได้ เพื่อคง World และรีใช้ object ระหว่าง `reset()` โดยบทเรียนต้องล้างเฉพาะส่วน dynamic และ cleanup ทั้งหมดเมื่อ `dispose()`; ดูตัวอย่าง `Project/interactive/chapters/ep3/lesson3.html`
+
+Runtime เป็นเจ้าของ entrance animation หลังเปิดฉากและหลังเปลี่ยนข้อ Quiz บทเรียนจึงไม่ควรเรียก `world.playEntrance()` ซ้ำจาก `reset()` หรือฟังก์ชัน render; ใช้เมธอดนี้เฉพาะการเล่นซ้ำที่เกิดจาก action ของผู้เรียนโดยตั้งใจ
 
 คำขอผู้ใช้กำหนดงาน → Master กำหนดกฎ → source snapshot ยืนยัน implementation → SDK/contract อธิบายการใช้งาน → ตัวอย่างแสดง pattern หากไม่ตรงกันให้ตรวจ public API ใน source และรายงานความต่าง ไม่เข้าถึง internal API เพียงเพราะค้นพบ
 

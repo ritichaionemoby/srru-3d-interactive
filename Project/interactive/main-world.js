@@ -1406,7 +1406,8 @@ function addWorldLabel(options = {}) {
 }
 async function loadCustomModel(path, options = {}) { if (!path) throw new Error("LESSON_ASSET_PATH_REQUIRED: world.addModel ต้องมี path"); const base = options.baseUrl || runtime.lessonUrl || import.meta.url, url = runtimeAssetUrl(path, base); if (new URL(url).origin !== location.origin) throw new Error("LESSON_ASSET_ORIGIN_ERROR: รองรับเฉพาะโมเดลที่อยู่ origin เดียวกัน"); return new Promise((resolve, reject) => { const finish = object => resolve(object), fail = error => reject(new Error(`LESSON_ASSET_LOAD_FAILED: โหลดโมเดล ${path} ไม่สำเร็จ (${error?.message || "unknown"})`)), extension = new URL(url).pathname.split(".").pop().toLowerCase(); if (extension === "glb" || extension === "gltf") import("three/addons/loaders/GLTFLoader.js").then(({ GLTFLoader }) => new GLTFLoader().load(url, gltf => finish(gltf.scene), undefined, fail)).catch(fail); else if (extension === "fbx") import("three/addons/loaders/FBXLoader.js").then(({ FBXLoader }) => new FBXLoader().load(url, finish, undefined, fail)).catch(fail); else fail(new Error("รองรับเฉพาะ .glb, .gltf และ .fbx")); }); }
 function platformImportedMaterial(source, options = {}) {
-  const map = source?.map || null;
+  const textureEnabled = options.textureEnabled !== false;
+  const map = textureEnabled ? source?.map || null : null;
   if (map) {
     map.colorSpace = THREE.SRGBColorSpace;
     map.needsUpdate = true;
@@ -1414,11 +1415,11 @@ function platformImportedMaterial(source, options = {}) {
   // Texture ต้องคูณด้วยสีขาวเสมอ มิฉะนั้นค่า DiffuseColor #cccccc ที่มากับ FBX จะทำให้สีมืดลง
   const color = options.color || (map ? "#ffffff" : source?.color || "#ffffff"), value = material(color, map);
   value.name = source?.name || "platform-imported-material";
-  value.opacity = clamp(source?.opacity ?? 1, 0, 1);
+  value.opacity = clamp(options.opacity ?? source?.opacity ?? 1, 0, 1);
   value.transparent = Boolean(source?.transparent || value.opacity < 1);
-  value.depthWrite = source?.depthWrite ?? value.opacity >= .98;
+  value.depthWrite = options.depthWrite ?? source?.depthWrite ?? value.opacity >= .98;
   value.alphaTest = source?.alphaTest ?? 0;
-  value.alphaMap = source?.alphaMap || null;
+  value.alphaMap = textureEnabled ? source?.alphaMap || null : null;
   value.side = source?.side ?? THREE.FrontSide;
   value.visible = source?.visible !== false;
   // โมเดลจากโปรแกรม 3D บางไฟล์มี vertex color สีเทาติดมาด้วย ซึ่งจะคูณ Base Color ให้มืดซ้ำ
@@ -1473,8 +1474,7 @@ function addConnector({ name = "connector", from = [0, 0, 0], to = [0, 0, 1], co
   visual.add(connector);
   root.add(visual);
   const handle = configureLessonObject(root, visual, { name, position: from });
-  // เก็บแนวเส้นไว้ใน visual: spawn animation ของระบบคืน rotation.z ที่ root เมื่อจบ
-  // แต่จะไม่แตะ quaternion ชั้นนี้ จึงคงแนว from → to ได้ทุกมุม
+  // เก็บแนวเส้นไว้ใน visual เพื่อแยก quaternion ของ from → to ออกจาก transform ที่ root ใช้กับ interaction
   visual.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
   return handle;
 }
@@ -1758,7 +1758,7 @@ renderer.setAnimationLoop(now => {
     else if (a.kind === "move") { const eased = progress < .5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2; object.position.lerpVectors(a.from, a.to, eased); object.position.y += Math.sin(progress * Math.PI) * a.arcHeight; }
     else if (a.kind === "drop") { const fade = 1 - progress, bounce = Math.abs(Math.sin(progress * Math.PI * 2.5)) * fade; object.position.y = a.baseY + bounce * a.height; const squash = Math.sin(progress * Math.PI * 3) * fade * a.strength; object.scale.set(1 + squash * .65, 1 - squash, 1 + squash * .65); }
     else if (a.kind === "spawn") { const c1 = setting.object.spawn.overshoot, c3 = c1 + 1, t = progress - 1, eased = 1 + c3 * t * t * t + c1 * t * t; object.scale.setScalar(Math.max(.001, eased)); }
-    if (progress >= 1) { if (a.to) object.position.copy(a.to); if (a.baseY != null) object.position.y = a.baseY; object.scale.setScalar(1); object.rotation.z = 0; animations.delete(object); }
+    if (progress >= 1) { if (a.to) object.position.copy(a.to); if (a.baseY != null) object.position.y = a.baseY; object.scale.setScalar(1); animations.delete(object); }
   }
   if (highlightRoot.visible) updateHighlightBounds(now);
   if (worldCallouts.size) updateWorldCallouts(now);

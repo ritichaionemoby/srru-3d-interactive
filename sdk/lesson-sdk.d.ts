@@ -163,7 +163,7 @@ export interface LessonWorld {
     fontWeight?: number;
     depthTest?: boolean;
   }): LessonHandle;
-  addLibraryObject(options: LessonObjectOptions & { asset: string; color?: string | number; targetSize?: number; normalize?: boolean }): LessonHandle | Promise<LessonHandle>;
+  addLibraryObject(options: LessonObjectOptions & { asset: string; color?: string | number; opacity?: number; textureEnabled?: boolean; depthWrite?: boolean; targetSize?: number; normalize?: boolean }): LessonHandle | Promise<LessonHandle>;
   addObject(options: LessonObjectOptions & Record<string, unknown>): LessonHandle | Promise<LessonHandle>;
   addBox(options?: {
     name?: string;

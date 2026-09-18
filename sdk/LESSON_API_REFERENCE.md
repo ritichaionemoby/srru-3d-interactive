@@ -27,6 +27,18 @@ const apple = world.addLibraryObject({
 });
 ```
 
+Model asset รองรับ `color`, `opacity`, `textureEnabled` และ `depthWrite` สำหรับสร้าง state ทางภาพ เช่นวัตถุ disabled แบบขาวโปร่งโดยไม่ใช้ texture:
+
+```js
+const disabledFruit = await world.addLibraryObject({
+  asset: "fruit/red-apple",
+  color: "#ffffff",
+  opacity: 0.4,
+  textureEnabled: false,
+  depthWrite: false
+});
+```
+
 Asset เริ่มต้น:
 
 - `food/apple`
@@ -394,6 +406,8 @@ world.addLineRender({
 - `world.showDragCue(handle, to)` — แสดงมือสาธิตลาก
 - `world.hideDragCue()` — ซ่อน cue และต้องเรียกตอนเปลี่ยน step/dispose
 - `world.playEntrance()` — เล่น spawn animation ของ scene
+
+Runtime เรียก entrance ให้อัตโนมัติหลังเปิดขั้นแรกของ Lab และหลัง reset แต่ละข้อใน Quiz จึงห้ามเรียกซ้ำจาก `reset()` หรือฟังก์ชัน render ของบทเรียน เพราะวัตถุจะ scale เข้า 2 รอบ ใช้ API นี้เมื่อมีปุ่มหรือ interaction ที่ต้องการเล่น entrance ซ้ำโดยตั้งใจเท่านั้น
 - `world.camera.reset()` — reset camera
 - `world.camera.configure(options)` — เปลี่ยน camera config (ปกติใช้ `meta.camera`)
 - `world.getObject(name)` — ค้น object ด้วยชื่อ; ใช้ handle ที่เก็บไว้จะปลอดภัยกว่า

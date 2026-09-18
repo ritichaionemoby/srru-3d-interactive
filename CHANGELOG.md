@@ -1,5 +1,57 @@
 # Changelog
 
+## 2026-09-18 — 0.1.10 NPC Jump-only Success
+
+- ตัด scale animation ออกจากท่าดีใจเมื่อตอบถูกใน `ep3/lesson3`
+- คืน NPC เป็นสเกลปกติก่อนกระโดด ใช้เฉพาะการขยับแกน Y และ white commit flash
+- เริ่ม idle scale แกน Y อีกครั้งหลัง NPC ลงพื้นเรียบร้อย
+- sync lesson snapshot และ source manifest จาก owner project
+
+## 2026-09-18 — 0.1.9 Preview Placement and Rotation Stability
+
+- แยกผลไม้ที่กำลังเติมออกจากผลไม้เดิมในตะกร้า และวางเป็นแถวภายนอกห่าง 2.45 หน่วย
+- เลือกทิศวาง preview ออกจากศูนย์กลางของกลุ่ม เพื่อไม่ให้ชนตะกร้าแถวอื่น
+- ปิด spawn scale สำหรับผลไม้ preview และแก้ runtime ไม่ให้รีเซ็ต `rotation.z` เมื่อ shared animation จบ
+- sync lesson/runtime snapshots และ source manifest จาก owner project
+
+## 2026-09-18 — 0.1.8 Incoming Fruit Preview
+
+- ใช้ visual state สีขาวโปร่ง 40% แบบไม่มี texture กับผลไม้ที่กำลังเพิ่มเข้ามาใน `ep3/lesson3`
+- ทำให้ผลไม้ที่นำออกและผลไม้ที่กำลังเพิ่มใช้ภาษาภาพเดียวกัน โดยแยกความหมายด้วยตำแหน่งและข้อความกำกับ
+- sync lesson snapshot และ source manifest จาก owner project
+
+## 2026-09-18 — 0.1.7 Translucent Disabled Models
+
+- เพิ่ม `opacity`, `textureEnabled` และ `depthWrite` ให้ material options ของ Standard Library model ใน runtime
+- เปลี่ยนผลไม้ที่นำออกใน `ep3/lesson3` เป็นสีขาวโปร่ง 40% และปิด texture เพื่อสื่อสถานะ disabled ชัดเจน
+- อัปเดต Public API, types, capabilities, lesson/runtime snapshots และ source manifest
+
+## 2026-09-18 — 0.1.6 Removed Fruit Contrast
+
+- ทำผลไม้ที่นำออกใน `ep3/lesson3` ให้เกือบดำสนิทและปิด texture light เพื่อแยกจากผลไม้ปกติอย่างชัดเจน
+- ย้ายแถวผลไม้ที่คัดออกให้ห่างจากตะกร้ามากขึ้น ป้องกันการตีความว่ายังอยู่ในกลุ่มเดิม
+- sync lesson snapshot และ source manifest จาก owner project
+
+## 2026-09-18 — 0.1.5 NPC Y-axis Idle Bounce
+
+- ปรับ idle ของ NPC ใน `ep3/lesson3` ให้ล็อก scale แกน X/Z ที่ 1 และยืด–หดช้า ๆ เฉพาะแกน Y
+- แยก idle squash/stretch ออกจากท่ากระโดดดีใจเมื่อผู้เรียนตอบถูก
+- sync lesson snapshot และ source manifest จาก owner project
+
+## 2026-09-18 — 0.1.4 EP3 Lesson 3 Motion and Scenario Update
+
+- แก้ Feedback และ scene entrance ที่เล่นซ้ำสองรอบ โดยให้ service motion และ runtime เป็นเจ้าของแอนิเมชันอย่างละจุด
+- เพิ่ม Lab success reaction: NPC กระโดดพร้อม white commit flash และพื้นที่โจทย์เปลี่ยนเป็นสีเขียว โดย Quiz ยังไม่เปิดเผยว่าคำตอบถูกหรือผิด
+- เพิ่ม NPC idle scale แบบช้า และคืน pose ได้ถูกต้องเมื่อเปลี่ยนขั้นหรือเปลี่ยนคำตอบ
+- เพิ่มโจทย์บวก ลบ และหารแบบตรงไปตรงมา พร้อม layout แบบสองกอง, นำออก และแบ่งเท่า ๆ กัน รวมคลัง Quiz เป็น 18 ข้อ
+- sync `ep3/lesson3`, runtime CSS และ source manifest จาก owner project
+
+## 2026-09-18 — 0.1.3 Owner UpdateLesson Workflow
+
+- บันทึก workflow ฝั่งเจ้าของสำหรับนำ Lesson HTML ภายนอกเข้าบทเรียนเดิมผ่าน `AI/UpdateLesson`
+- กำหนดให้รู้ชื่อบทเรียน, `epXX/lessonXX` ปลายทาง และไฟล์ HTML ต้นทางก่อนเริ่ม ห้ามเดาข้อมูลที่ขาด
+- รักษา `git/DEVGEN` เป็น GitHub Chat workflow แบบ read-only เช่นเดิม
+
 ## 2026-09-18 — 0.1.2 Persistent Lesson Scene
 
 - เพิ่ม `meta.scenePersistence: "lesson"` แบบ opt-in เพื่อคงฉากหลักและรีใช้ object ระหว่างโจทย์ ลดการกระตุกจากการสร้าง World ใหม่ทั้งฉาก

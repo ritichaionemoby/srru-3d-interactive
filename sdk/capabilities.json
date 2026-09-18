@@ -75,6 +75,7 @@
   },
   "backgrounds": ["green"],
   "assetCatalogVersion": "1.2.4",
+  "libraryModelMaterialOptions": ["color", "opacity", "textureEnabled", "depthWrite", "roughness", "metalness", "textureLight"],
   "standardAssetCount": 212,
   "centralGridSettings": ["ground.gridColor", "ground.gridOpacity", "ground.ringColor"],
   "worldCalloutPurpose": "point-to-world-area-and-optionally-open-insight",
