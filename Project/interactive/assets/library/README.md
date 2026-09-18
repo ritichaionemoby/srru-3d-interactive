@@ -8,6 +8,8 @@
 
 ไฟล์ใหม่ต้องพักไว้ที่ `../myMake/` ก่อน แล้วใช้คำสั่ง `AI/UpdateAssetsLibrary.md` เพื่อตรวจ ย้ายไฟล์ และลงทะเบียนใน catalog ห้ามให้ lesson อ้างไฟล์จาก `myMake` โดยตรง
 
+ทีมพัฒนาสามารถเปิด `Project/index.html?tab=assets` เพื่อค้นหาและดูโมเดลจาก Catalog ได้ หน้า Grid จะสร้างภาพ Preview ชั่วคราวใน Browser ทีละรายการและโหลดโมเดลจริงเฉพาะเมื่อเปิด 3D Viewer จึงไม่ต้องสร้างหรือเก็บไฟล์ภาพ Preview แยก
+
 - `type: prefab` ประกอบจาก primitive ของ runtime จึงเบาและไม่ต้องโหลดโมเดลภายนอก
 - `type: model` คือโมเดลมาตรฐาน FBX/GLB ที่อยู่ภายในคลังและโหลดผ่าน Asset ID เท่านั้น เช่น `food/carrot`
 - บทเรียนสามารถเปลี่ยนตำแหน่ง rotation scale สี และ interaction ได้
