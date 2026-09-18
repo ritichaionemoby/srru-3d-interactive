@@ -1,0 +1,808 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>ตลาดผลไม้ไขรหัสโจทย์จำนวนเต็ม</title>
+</head>
+<body>
+  <script data-lesson-app>
+    (() => {
+      const FRUITS = new Set([
+        "fruit/red-apple", "fruit/banana", "fruit/orange", "fruit/mango",
+        "fruit/grapes", "fruit/strawberry", "fruit/watermelon", "fruit/green-pear",
+        "fruit/pineapple", "fruit/plum-purple"
+      ]);
+      const NPCS = new Set([
+        "character/cartoon-farmer", "character/cute-schoolboy",
+        "character/cute-schoolgirl", "animal/bunny", "animal/cute-puppy"
+      ]);
+      const NPC_NAMES = Object.freeze({
+        "character/cartoon-farmer": "ลุงชาวสวน",
+        "character/cute-schoolboy": "น้องต้น",
+        "character/cute-schoolgirl": "น้องเมย์",
+        "animal/bunny": "เจ้ากระต่าย",
+        "animal/cute-puppy": "เจ้าลูกสุนัข"
+      });
+      const SCENARIOS = new Set([
+        "add-groups", "subtract-each", "divide-then-add",
+        "subtract-groups", "add-to-each", "debt-groups"
+      ]);
+      const FRUIT_NAMES = Object.freeze({
+        "fruit/red-apple": "แอปเปิล", "fruit/banana": "กล้วย", "fruit/orange": "ส้ม",
+        "fruit/mango": "มะม่วง", "fruit/grapes": "องุ่น", "fruit/strawberry": "สตรอว์เบอร์รี",
+        "fruit/watermelon": "แตงโม", "fruit/green-pear": "ลูกแพร์",
+        "fruit/pineapple": "สับปะรด", "fruit/plum-purple": "ลูกพลัม"
+      });
+      const COLORS = Object.freeze({
+        source: "#d9efff", groups: "#fff0c9", action: "#e8dcff", debt: "#ffd9cf",
+        wood: "#9b6437", woodLight: "#d7a35d", success: "#65c98b", warning: "#f1a653"
+      });
+      const LAYOUT = Object.freeze({
+        sourceX: -5.35,
+        groupX: 2.75,
+        storyZ: 1.15,
+        basketY: .58,
+        basketSize: 3,
+        npcZ: -3.2,
+        npcSingleYaw: 270,
+        npcPairX: 1.35,
+        npcPairLeftYaw: 0,
+        npcPairRightYaw: 180,
+        housePosition: [5.8, .04, -5.55],
+        houseYaw: -132,
+        truckPosition: [-7.55, .12, -4.25],
+        truckYaw: 48,
+        truckSize: 3.8
+      });
+
+      const quizRows = [
+        ["add-groups", 5, 3, 2, "fruit/red-apple", "character/cute-schoolboy"],
+        ["add-groups", 4, 2, 3, "fruit/banana", "character/cute-schoolgirl"],
+        ["subtract-each", 4, 5, 2, "fruit/mango", "character/cartoon-farmer"],
+        ["subtract-each", 3, 6, 1, "fruit/orange", "animal/cute-puppy"],
+        ["divide-then-add", 6, 4, 2, "fruit/strawberry", "character/cute-schoolgirl"],
+        ["divide-then-add", 4, 3, 1, "fruit/grapes", "character/cute-schoolboy"],
+        ["subtract-groups", 15, 2, 3, "fruit/orange", "character/cartoon-farmer"],
+        ["subtract-groups", 14, 3, 2, "fruit/pineapple", "character/cute-schoolboy"],
+        ["add-to-each", 4, 2, 3, "fruit/green-pear", "animal/bunny"],
+        ["add-to-each", 2, 6, 2, "fruit/watermelon", "animal/cute-puppy"],
+        ["debt-groups", 3, 2, 4, "fruit/red-apple", "character/cartoon-farmer"],
+        ["debt-groups", 2, 3, 2, "fruit/plum-purple", "character/cute-schoolgirl"]
+      ];
+      const quiz = quizRows.map(([scenarioType, firstNumber, secondNumber, thirdNumber, fruitAsset, npcAsset]) => {
+        const preview = buildScenario({ scenarioType, firstNumber, secondNumber, thirdNumber, fruitAsset, npcAsset });
+        return {
+          question: preview.question,
+          data: [
+            { key: "scenarioType", value: scenarioType },
+            { key: "firstNumber", value: firstNumber },
+            { key: "secondNumber", value: secondNumber },
+            { key: "thirdNumber", value: thirdNumber },
+            { key: "fruitAsset", value: fruitAsset },
+            { key: "npcAsset", value: npcAsset }
+          ]
+        };
+      });
+
+      function clampInteger(value, minimum, maximum, fallback) {
+        const parsed = Number(value);
+        return Math.min(maximum, Math.max(minimum, Number.isFinite(parsed) ? Math.round(parsed) : fallback));
+      }
+
+      function buildScenario(values) {
+        const scenarioType = SCENARIOS.has(values.scenarioType) ? values.scenarioType : "add-groups";
+        const fruitAsset = FRUITS.has(values.fruitAsset) ? values.fruitAsset : "fruit/red-apple";
+        const npcAsset = NPCS.has(values.npcAsset) ? values.npcAsset : "character/cartoon-farmer";
+        const fruitName = FRUIT_NAMES[fruitAsset] || "ผลไม้";
+        const actorName = NPC_NAMES[npcAsset] || "ลุงชาวสวน";
+        const rawA = clampInteger(values.firstNumber, 1, 24, 5);
+        const rawB = clampInteger(values.secondNumber, 1, 6, 3);
+        const rawC = clampInteger(values.thirdNumber, 1, 8, 2);
+        let problem;
+
+        if (scenarioType === "subtract-each") {
+          const groups = Math.min(4, Math.max(2, rawA));
+          const perGroup = Math.min(6, Math.max(2, rawB));
+          const removed = Math.min(perGroup - 1, rawC);
+          problem = {
+            scenarioType, fruitAsset, npcAsset, fruitName, actorName, a: groups, b: perGroup, c: removed,
+            groupCount: groups, perGroup, changePerGroup: -removed,
+            question: `${actorName}มี${fruitName} ${groups} ตะกร้า ตะกร้าละ ${perGroup} ลูก พบผลเสียตะกร้าละ ${removed} ลูกจึงนำออก เหลือ${fruitName}ทั้งหมดกี่ลูก?`,
+            correctExpression: `${groups} × (${perGroup} − ${removed}) = ?`,
+            distractorExpression: `(${groups} × ${perGroup}) − ${removed} = ?`,
+            result: groups * (perGroup - removed),
+            misconception: "subtract-once-instead-of-each-group",
+            labels: ["แต่ละตะกร้า", `นำออกใบละ ${removed}`]
+          };
+        } else if (scenarioType === "divide-then-add") {
+          const perGroup = Math.min(6, Math.max(2, rawA));
+          const groups = Math.min(4, Math.max(2, rawB));
+          const added = Math.min(3, rawC);
+          const total = perGroup * groups;
+          problem = {
+            scenarioType, fruitAsset, npcAsset, fruitName, actorName, a: total, b: groups, c: added,
+            groupCount: groups, perGroup, changePerGroup: added,
+            question: `${actorName}แบ่ง${fruitName} ${total} ลูกใส่ ${groups} ตะกร้าเท่า ๆ กัน แล้วเติมตะกร้าละ ${added} ลูก แต่ละตะกร้ามี${fruitName}กี่ลูก?`,
+            correctExpression: `(${total} ÷ ${groups}) + ${added} = ?`,
+            distractorExpression: `${total} ÷ (${groups} + ${added}) = ?`,
+            result: perGroup + added,
+            misconception: "add-to-divisor-instead-of-each-group",
+            labels: ["แบ่งเท่า ๆ กัน", `เพิ่มใบละ ${added}`]
+          };
+        } else if (scenarioType === "subtract-groups") {
+          const groups = Math.min(4, Math.max(2, rawB));
+          const perGroup = Math.min(5, Math.max(1, rawC));
+          const total = Math.min(24, Math.max(rawA, groups * perGroup + 1));
+          problem = {
+            scenarioType, fruitAsset, npcAsset, fruitName, actorName, a: total, b: groups, c: perGroup,
+            groupCount: groups, perGroup, totalCount: total,
+            question: `${actorName}มี${fruitName} ${total} ลูก รถรับไป ${groups} ตะกร้า ตะกร้าละ ${perGroup} ลูก เหลือ${fruitName}กี่ลูก?`,
+            correctExpression: `${total} − (${groups} × ${perGroup}) = ?`,
+            distractorExpression: `(${total} − ${groups}) × ${perGroup} = ?`,
+            result: total - groups * perGroup,
+            misconception: "subtract-group-count-before-multiplying",
+            labels: ["ของทั้งหมด", `ขนออก ${groups} กลุ่ม`]
+          };
+        } else if (scenarioType === "add-to-each") {
+          const groups = Math.min(4, Math.max(2, rawA));
+          const perGroup = Math.min(6, Math.max(1, rawB));
+          const added = Math.min(3, rawC);
+          problem = {
+            scenarioType, fruitAsset, npcAsset, fruitName, actorName, a: groups, b: perGroup, c: added,
+            groupCount: groups, perGroup, changePerGroup: added,
+            question: `${actorName}มี${fruitName} ${groups} ตะกร้า ตะกร้าละ ${perGroup} ลูก แล้วเติมตะกร้าละ ${added} ลูก ตอนนี้มี${fruitName}ทั้งหมดกี่ลูก?`,
+            correctExpression: `${groups} × (${perGroup} + ${added}) = ?`,
+            distractorExpression: `(${groups} × ${perGroup}) + ${added} = ?`,
+            result: groups * (perGroup + added),
+            misconception: "add-once-instead-of-each-group",
+            labels: ["ทุกกลุ่ม", `เพิ่มกลุ่มละ ${added}`]
+          };
+        } else if (scenarioType === "debt-groups") {
+          const groups = Math.min(4, Math.max(1, rawA));
+          const perGroup = Math.min(4, Math.max(1, rawB));
+          const returned = Math.min(8, rawC);
+          problem = {
+            scenarioType, fruitAsset, npcAsset, fruitName, actorName, a: groups, b: perGroup, c: returned,
+            groupCount: groups, perGroup, returned, negative: true,
+            question: `ร้านของ${actorName}ค้างส่ง${fruitName} ${groups} ชุด ชุดละ ${perGroup} ลูก แล้วส่งชดเชย ${returned} ลูก หากของที่ค้างเป็นจำนวนลบ จะเหลือค่าเท่าใด?`,
+            correctExpression: `−(${groups} × ${perGroup}) + ${returned} = ?`,
+            distractorExpression: `−${groups} × (${perGroup} + ${returned}) = ?`,
+            result: -(groups * perGroup) + returned,
+            misconception: "include-returned-items-in-every-debt-group",
+            labels: ["ค้างส่ง = ลบ", `คืนมา ${returned}`]
+          };
+        } else {
+          const existing = Math.min(12, rawA);
+          const groups = Math.min(4, Math.max(2, rawB));
+          const perGroup = Math.min(5, Math.max(2, rawC));
+          problem = {
+            scenarioType: "add-groups", fruitAsset, npcAsset, fruitName, actorName, a: existing, b: groups, c: perGroup,
+            groupCount: groups, perGroup, totalCount: existing,
+            question: `${actorName}มี${fruitName} ${existing} ลูก แล้วเก็บเพิ่ม ${groups} ตะกร้า ตะกร้าละ ${perGroup} ลูก ตอนนี้มี${fruitName}ทั้งหมดกี่ลูก?`,
+            correctExpression: `${existing} + (${groups} × ${perGroup}) = ?`,
+            distractorExpression: `(${existing} + ${groups}) × ${perGroup} = ?`,
+            result: existing + groups * perGroup,
+            misconception: "add-existing-count-into-every-group",
+            labels: ["ของเดิม", `${groups} กลุ่ม กลุ่มละ ${perGroup}`]
+          };
+        }
+        return problem;
+      }
+
+      PuzzleLesson.define({
+        id: "ep3-lesson3-integer-word-problems",
+        version: "1.4.0",
+
+        meta: {
+          worldType: "3d-world-space",
+          scenePersistence: "lesson",
+          lessonId: "ep3-lesson3-integer-word-problems",
+          title: "ตลาดผลไม้ไขรหัสโจทย์จำนวนเต็ม",
+          category: "คณิตศาสตร์",
+          subcategory: "โจทย์ปัญหาเกี่ยวกับจำนวนเต็ม",
+          description: "ดูสถานการณ์ตลาดผลไม้ 3D แล้วเลือกประโยคสัญลักษณ์ที่ตรงกับการบวก ลบ คูณ หาร และวงเล็บ",
+          keyResult: "ผู้เรียนแยกจำนวนตั้ง จำนวนกลุ่ม จำนวนต่อกลุ่ม และวางวงเล็บให้ตรงกับลำดับเหตุการณ์ได้",
+          background: "green",
+          camera: {
+            fov: 42, startYaw: 18, startPitch: 49, startDistance: 27,
+            minDistance: 14, maxDistance: 38, minPitch: 24, maxPitch: 74,
+            target: [0, .48, -.25]
+          },
+          welcomeMessage: [
+            "ดูว่าในฉากมีของเดิมกี่ชิ้น",
+            "นับจำนวนกลุ่มและจำนวนต่อกลุ่ม",
+            "ดูตะกร้าและรั้วว่าแบ่งของเป็นกลุ่มอย่างไร"
+          ],
+          tooltip: "หมุนดูฉาก กดตะกร้าเพื่อนับกลุ่ม แล้วเลือกประโยคสัญลักษณ์ 1 จาก 2 ข้อ",
+          defaultValue: {
+            scenarioType: "add-groups", firstNumber: 5, secondNumber: 3, thirdNumber: 2,
+            fruitAsset: "fruit/red-apple", npcAsset: "character/cartoon-farmer"
+          },
+          editSchema: [
+            { key: "scenarioType", name: "รูปแบบโจทย์", type: "dropdown", option: [
+              { value: "add-groups", label: "ของเดิม + หลายกลุ่ม" },
+              { value: "subtract-each", label: "นำออกจากทุกกลุ่ม" },
+              { value: "divide-then-add", label: "แบ่งแล้วเพิ่มต่อกลุ่ม" },
+              { value: "subtract-groups", label: "ทั้งหมด − หลายกลุ่ม" },
+              { value: "add-to-each", label: "เพิ่มในทุกกลุ่ม" },
+              { value: "debt-groups", label: "ค้างส่งเป็นจำนวนลบ" }
+            ] },
+            { key: "firstNumber", name: "จำนวน ก", type: "slider", option: [1, 24], step: 1 },
+            { key: "secondNumber", name: "จำนวน ข", type: "slider", option: [1, 6], step: 1 },
+            { key: "thirdNumber", name: "จำนวน ค", type: "slider", option: [1, 8], step: 1 },
+            { key: "fruitAsset", name: "ผลไม้หลัก", type: "dropdown", option: [
+              { value: "fruit/red-apple", label: "แอปเปิล" }, { value: "fruit/banana", label: "กล้วย" },
+              { value: "fruit/orange", label: "ส้ม" }, { value: "fruit/mango", label: "มะม่วง" },
+              { value: "fruit/grapes", label: "องุ่น" }, { value: "fruit/strawberry", label: "สตรอว์เบอร์รี" },
+              { value: "fruit/watermelon", label: "แตงโม" }, { value: "fruit/green-pear", label: "ลูกแพร์" },
+              { value: "fruit/pineapple", label: "สับปะรด" }, { value: "fruit/plum-purple", label: "ลูกพลัม" }
+            ] },
+            { key: "npcAsset", name: "ตัวละครประกอบ", type: "dropdown", option: [
+              { value: "character/cartoon-farmer", label: "ชาวสวน" },
+              { value: "character/cute-schoolboy", label: "นักเรียนชาย" },
+              { value: "character/cute-schoolgirl", label: "นักเรียนหญิง" },
+              { value: "animal/bunny", label: "กระต่าย" },
+              { value: "animal/cute-puppy", label: "สุนัข" }
+            ] }
+          ],
+          howto: [
+            { index: 0, title: "มองจำนวนเริ่มต้น", type: "sequence", desc: "ดูของเดิมหรือจำนวนทั้งหมดทางซ้ายก่อน" },
+            { index: 1, title: "นับกลุ่ม", type: "sequence", desc: "นับตะกร้า แล้วดูว่าแต่ละตะกร้ามีกี่ลูก" },
+            { index: 2, title: "ดูขอบเขตของแต่ละกลุ่ม", type: "sequence", desc: "ผลไม้ที่อยู่ในตะกร้าและรั้วเดียวกันเป็นหนึ่งกลุ่ม" },
+            { index: 3, title: "เลือกประโยคที่ตรงกับภาพ", type: "freestyle", desc: "เลือก 1 จาก 2 ประโยค แล้วดูภาพพิสูจน์ลำดับการคิด" }
+          ],
+          quiz
+        },
+
+        mount(context) {
+          this.context = context;
+          this.timers = [];
+          this.staticHandles = [];
+          this.dynamicHandles = [];
+          this.uiHandles = [];
+          this.fruitRecords = [];
+          this.groupRecords = [];
+          this.basketPool = [];
+          this.sceneBuilt = false;
+          this.isInteractive = false;
+          this.choiceHandle = null;
+          this.controlHandle = null;
+          this.selection = null;
+          this.randomCursor = -1;
+          this.randomizing = false;
+        },
+
+        async reset({ values, mode, questionIndex }) {
+          this.clearTimers();
+          this.values = { ...values };
+          this.mode = mode;
+          this.questionIndex = Number(questionIndex) || 0;
+          this.problem = buildScenario(values);
+          if (this.sceneBuilt) this.clearDynamicScene();
+          this.uiHandles = [];
+          this.dynamicHandles = [];
+          this.fruitRecords = [];
+          this.groupRecords = [];
+          this.selection = null;
+          this.isInteractive = mode === "student-quiz";
+
+          await this.renderProblem();
+        },
+
+        async renderProblem() {
+          if (!this.sceneBuilt) {
+            await Promise.all([this.buildGround(), this.buildEnvironment(), this.buildBasketPool()]);
+            this.sceneBuilt = true;
+          } else {
+            this.updateGround();
+          }
+          await this.buildStoryScene();
+          await this.buildCharacters();
+          this.createChoice();
+          this.createControls();
+          this.setInteractive(this.isInteractive);
+
+          this.context.ui.question.show({ label: "โจทย์สถานการณ์", text: this.problem.question, tone: "primary" });
+          this.context.ui.console.set({
+            objective: "เลือกประโยคสัญลักษณ์ที่ตรงกับภาพ",
+            title: this.mode === "student-quiz" ? "ดูภาพก่อนเลือก" : "เริ่มจากจำนวน กลุ่ม และสิ่งที่เกิดก่อน",
+            message: this.mode === "student-quiz"
+              ? "กดตะกร้าเพื่อนับซ้ำหรือเล่นภาพ แล้วเลือกได้หนึ่งข้อ"
+              : "ขั้นสุดท้ายจึงจะเปิดตัวเลือกให้ลองตอบ",
+            tone: "info"
+          });
+          this.context.world.playEntrance();
+        },
+
+        buildProblem(values) {
+          return buildScenario(values);
+        },
+
+        async buildGround() {
+          const world = this.context.world;
+          this.sourceZone = world.addZone({ name: "market-source-zone", size: [5.55, .2, 5.55], position: [LAYOUT.sourceX, .12, LAYOUT.storyZ], color: COLORS.source, opacity: .88 });
+          this.groupZone = world.addZone({ name: "market-group-zone", size: [10.65, .2, 6.4], position: [LAYOUT.groupX, .12, LAYOUT.storyZ], color: this.problem.negative ? COLORS.debt : COLORS.groups, opacity: .86 });
+          this.sourceFocus = world.addTargetFocus({ position: [LAYOUT.sourceX, .28, LAYOUT.storyZ], radius: 2.6, color: "#4c9ed5", opacity: .72 });
+          this.groupFocus = world.addTargetFocus({ position: [LAYOUT.groupX, .28, LAYOUT.storyZ], radius: 4.75, color: this.problem.negative ? "#e2765f" : "#e0a53a", opacity: .72 });
+          this.sourceFocus.setVisible(false);
+          this.groupFocus.setVisible(false);
+          this.staticHandles.push(this.sourceZone, this.groupZone, this.sourceFocus, this.groupFocus);
+          const sourceFence = await this.addFence("source-fence", [LAYOUT.sourceX, .02, LAYOUT.storyZ], false, { width: 4.9, depth: 4.8 });
+          this.sourceCallout = world.addCallout({ text: this.sourceLabel(), position: [LAYOUT.sourceX, 3.4, LAYOUT.storyZ - 2.25], compactPosition: [-3.85, 3.15, LAYOUT.storyZ - 3.45], anchor: [LAYOUT.sourceX, .28, LAYOUT.storyZ], scale: [3.05, .86], compactScale: [2.45, .86] });
+          this.groupCallout = world.addCallout({ text: this.groupLabel(), position: [LAYOUT.groupX, 3.4, LAYOUT.storyZ - 2.55], compactPosition: [1.95, 3.15, LAYOUT.storyZ - 3.55], anchor: [LAYOUT.groupX, .28, LAYOUT.storyZ], scale: [3.4, .86], compactScale: [2.65, .86] });
+          this.staticHandles.push(sourceFence, this.sourceCallout, this.groupCallout);
+        },
+
+        updateGround() {
+          const negative = Boolean(this.problem.negative);
+          this.groupZone.setColor(negative ? COLORS.debt : COLORS.groups);
+          this.groupFocus.setColor(negative ? "#e2765f" : "#e0a53a");
+          this.sourceFocus.setVisible(false);
+          this.groupFocus.setVisible(false);
+          this.sourceCallout.setText(this.sourceLabel());
+          this.groupCallout.setText(this.groupLabel());
+        },
+
+        sourceLabel() {
+          if (this.problem.scenarioType === "divide-then-add") return `ทั้งหมด ${this.problem.a}`;
+          if (this.problem.scenarioType === "subtract-groups") return `มีทั้งหมด ${this.problem.a}`;
+          if (this.problem.scenarioType === "debt-groups") return `ส่งคืน ${this.problem.returned}`;
+          if (this.problem.scenarioType === "add-groups") return `ของเดิม ${this.problem.a}`;
+          if (this.problem.scenarioType === "subtract-each") return `คัดออกตะกร้าละ ${this.problem.c} ลูก`;
+          if (this.problem.scenarioType === "add-to-each") return `เติมตะกร้าละ ${this.problem.c} ลูก`;
+          return "ดูการเปลี่ยนแปลง";
+        },
+
+        groupLabel() {
+          if (this.problem.negative) return `${this.problem.groupCount} ชุดที่ค้างส่ง`;
+          return `${this.problem.groupCount} กลุ่ม · กลุ่มละ ${this.problem.perGroup}`;
+        },
+
+        async buildStoryScene() {
+          const type = this.problem.scenarioType;
+          if (type === "add-groups") {
+            await this.addFruitPile([LAYOUT.sourceX, .35, LAYOUT.storyZ], this.problem.a, "existing");
+            await this.addBasketGroups(this.problem.groupCount, this.problem.perGroup, { label: `กลุ่มละ ${this.problem.perGroup}` });
+          } else if (type === "subtract-each") {
+            await this.addFruitPile([LAYOUT.sourceX, .35, LAYOUT.storyZ], this.problem.c, "removed-sample");
+            await this.addBasketGroups(this.problem.groupCount, this.problem.perGroup - this.problem.c, { removed: this.problem.c, label: `เหลือ ${this.problem.perGroup - this.problem.c}` });
+          } else if (type === "divide-then-add") {
+            await this.addFruitPile([LAYOUT.sourceX, .35, LAYOUT.storyZ], this.problem.a, "total");
+            await this.addBasketGroups(this.problem.groupCount, this.problem.perGroup + this.problem.c, { added: this.problem.c, label: `เดิม ${this.problem.perGroup} เติม ${this.problem.c}` });
+          } else if (type === "subtract-groups") {
+            await this.addFruitPile([LAYOUT.sourceX, .35, LAYOUT.storyZ], this.problem.a, "total");
+            await this.addBasketGroups(this.problem.groupCount, this.problem.perGroup, { outgoing: true, label: `ขนออก ${this.problem.perGroup}` });
+          } else if (type === "add-to-each") {
+            await this.addFruitPile([LAYOUT.sourceX, .35, LAYOUT.storyZ], this.problem.c, "added-sample");
+            await this.addBasketGroups(this.problem.groupCount, this.problem.perGroup + this.problem.c, { added: this.problem.c, label: `เดิม ${this.problem.perGroup} เติม ${this.problem.c}` });
+          } else {
+            await this.addFruitPile([LAYOUT.sourceX, .35, LAYOUT.storyZ], this.problem.returned, "returned");
+            await this.addBasketGroups(this.problem.groupCount, this.problem.perGroup, { negative: true, label: `−${this.problem.perGroup}` });
+          }
+        },
+
+        async buildEnvironment() {
+          const decorations = [
+            ["environment/tree-stylized", "island-tree-left", [-9.35, .05, -5.8], 3.05, [0, 18, 0]],
+            ["environment/tree", "island-tree-right", [9.35, .05, -5.7], 3.2, [0, -22, 0]],
+            ["environment/stylized-house", "market-house", LAYOUT.housePosition, 3.9, [0, LAYOUT.houseYaw, 0]],
+            ["environment/fence-wood", "decor-fence-back-left", [-8.15, .06, -7.05], 3.0, [0, 90, 0], false],
+            ["environment/fence-wood", "decor-fence-back-center", [-4.85, .06, -7.15], 3.0, [0, 90, 0], false],
+            ["environment/fence-wood", "decor-fence-back-right", [-1.55, .06, -7.25], 3.0, [0, 90, 0], false],
+            ["environment/flower-yellow", "flower-left", [-9.55, .08, 3.5], .68, [0, 12, 0]],
+            ["environment/succulent-green", "plant-right", [9.55, .08, 3.45], .76, [0, -16, 0]],
+            ["environment/rock-01", "rock-left", [-9.25, .04, 5.55], 1.0, [0, 25, 0]],
+            ["environment/rock-02", "rock-right", [9.25, .04, 5.55], 1.0, [0, -30, 0]],
+            ["toy/pickup-truck", "market-truck", LAYOUT.truckPosition, LAYOUT.truckSize, [0, LAYOUT.truckYaw, 0]]
+          ];
+          const handles = await Promise.all(decorations.map(([asset, name, position, targetSize, rotation, spawn]) =>
+            this.context.world.addLibraryObject({ asset, name, position, targetSize, rotation, spawn })
+          ));
+          this.staticHandles.push(...handles);
+          this.truck = handles.at(-1);
+        },
+
+        async buildBasketPool() {
+          this.basketPool = await Promise.all(Array.from({ length: 4 }, (_, index) =>
+            this.context.world.addLibraryObject({
+              asset: "environment/basket-woven", name: `basket-${index}`,
+              position: [LAYOUT.groupX, LAYOUT.basketY, LAYOUT.storyZ], targetSize: LAYOUT.basketSize,
+              clickable: false, objectiveAction: false,
+              hoverMessage: `ตะกร้าที่ ${index + 1}`,
+              onClick: () => this.inspectGroup(index)
+            })
+          ));
+          this.basketPool.forEach(basket => basket.setVisible(false));
+          this.staticHandles.push(...this.basketPool);
+        },
+
+        async addFruitPile(center, count, role) {
+          const safeCount = Math.min(24, Math.max(0, count));
+          const tasks = [];
+          for (let index = 0; index < safeCount; index += 1) {
+            const position = this.pilePosition(center, index, safeCount);
+            tasks.push(this.addFruit({ name: `${role}-fruit-${index}`, position, role, groupIndex: null }));
+          }
+          await Promise.all(tasks);
+        },
+
+        pilePosition(center, index, count) {
+          const columns = Math.min(6, Math.max(1, count));
+          const rows = Math.ceil(Math.max(1, count) / columns);
+          const row = Math.floor(index / columns);
+          const rowCount = Math.min(columns, count - row * columns);
+          return [center[0] + (index % columns - (rowCount - 1) / 2) * .68, center[1], center[2] + (row - (rows - 1) / 2) * .76];
+        },
+
+        groupCenters(count) {
+          const spacing = count >= 4 ? 2.35 : 2.72;
+          return Array.from({ length: count }, (_, index) => [LAYOUT.groupX + (index - (count - 1) / 2) * spacing, .24, LAYOUT.storyZ]);
+        },
+
+        async addBasketGroups(count, fruitCount, options = {}) {
+          const centers = this.groupCenters(count);
+          const tasks = centers.map(async (center, groupIndex) => {
+            const basket = this.basketPool[groupIndex];
+            basket.setPosition(center[0], LAYOUT.basketY, center[2]);
+            basket.setVisible(true);
+            basket.setClickable(this.isInteractive);
+            const record = { index: groupIndex, center, basket, fruit: [], label: options.label };
+            this.groupRecords.push(record);
+            const fruitTasks = [];
+            for (let itemIndex = 0; itemIndex < fruitCount; itemIndex += 1) {
+              const columns = Math.min(3, Math.max(1, fruitCount));
+              const row = Math.floor(itemIndex / columns);
+              const rowCount = Math.min(columns, fruitCount - row * columns);
+              const position = [center[0] + (itemIndex % columns - (rowCount - 1) / 2) * .64, .88, center[2] + (row - .3) * .7];
+              fruitTasks.push(this.addFruit({
+                name: `group-${groupIndex}-fruit-${itemIndex}`, position,
+                role: options.negative ? "debt" : options.outgoing ? "outgoing" : options.added && itemIndex >= fruitCount - options.added ? "added" : "group",
+                groupIndex
+              }).then(fruitRecord => record.fruit.push(fruitRecord)));
+            }
+            await Promise.all(fruitTasks);
+            const basketBadge = this.context.ui.gizmo.attach(basket, {
+              id: `basket-count-${groupIndex}`, scope: "scene", type: "badge",
+              text: options.negative ? `ค้าง ${fruitCount}` : options.label || String(fruitCount),
+              tone: options.negative || options.removed || options.outgoing ? "warning" : options.added ? "success" : "info",
+              placement: "bottom", worldOffset: [0, .35, 0], priority: 2
+            });
+            this.uiHandles.push(basketBadge);
+            if (options.removed) await this.addRemovedFruit(center, options.removed, groupIndex);
+          });
+          await Promise.all(tasks);
+          this.groupRecords.sort((left, right) => left.index - right.index);
+        },
+
+        async addFence(name, center, negative = false, dimensions = {}) {
+          const width = dimensions.width || 2.3, depth = dimensions.depth || 3.7;
+          const railColor = negative ? "#b95f4f" : COLORS.wood;
+          const postColor = negative ? "#dc8c72" : COLORS.woodLight;
+          const parts = [];
+          const addPost = (x, z) => parts.push(
+            { shape: "cylinder", position: [x, .57, z], size: [.25, 1.14, .25], color: postColor, material: { roughness: .84 } },
+            { shape: "sphere", position: [x, 1.15, z], size: [.31, .25, .31], color: postColor, material: { roughness: .78 } }
+          );
+          for (const railY of [.34, .72]) {
+            parts.push(
+              { shape: "box", position: [0, railY, -depth / 2], size: [width, .15, .14], color: railColor, material: { roughness: .88 } },
+              { shape: "box", position: [0, railY, depth / 2], size: [width, .15, .14], color: railColor, material: { roughness: .88 } },
+              { shape: "box", position: [-width / 2, railY, 0], size: [.14, .15, depth], color: railColor, material: { roughness: .88 } },
+              { shape: "box", position: [width / 2, railY, 0], size: [.14, .15, depth], color: railColor, material: { roughness: .88 } }
+            );
+          }
+          const postPositions = [
+            [-width / 2, -depth / 2], [0, -depth / 2], [width / 2, -depth / 2],
+            [-width / 2, 0], [width / 2, 0],
+            [-width / 2, depth / 2], [0, depth / 2], [width / 2, depth / 2]
+          ];
+          postPositions.forEach(([x, z]) => addPost(x, z));
+          return this.context.world.addGroup({ name, position: [center[0], .02, center[2]], parts });
+        },
+
+        async addRemovedFruit(center, count, groupIndex) {
+          await Promise.all(Array.from({ length: count }, (_, index) => this.addFruit({
+            name: `removed-${groupIndex}-${index}`,
+            position: [center[0] + (index - (count - 1) / 2) * .62, .68, center[2] + 1.38],
+            role: "removed",
+            groupIndex
+          })));
+        },
+
+        async addFruit({ name, position, role, groupIndex }) {
+          const removed = role === "removed" || role === "removed-sample";
+          const handle = await this.context.world.addLibraryObject({
+            asset: this.problem.fruitAsset, name, position, targetSize: removed ? .72 : .82,
+            rotation: removed ? [0, 0, 78] : [0, 0, 0],
+            color: role === "debt" ? "#a74f45" : role === "added" || role === "added-sample" ? "#7ecb79" : removed ? "#1d1715" : undefined,
+            textureLight: removed ? .03 : undefined,
+            roughness: removed ? 1 : undefined,
+            clickable: true, objectiveAction: false,
+            hoverMessage: role === "debt" ? "ผลไม้ที่ร้านยังค้างส่ง" : removed ? "ผลไม้เสียสีคล้ำที่คัดออก" : "ผลไม้ 1 ลูก",
+            onClick: () => this.inspectFruit(role, groupIndex)
+          });
+          const record = { handle, position: [...position], role, groupIndex };
+          this.fruitRecords.push(record);
+          this.dynamicHandles.push(handle);
+          return record;
+        },
+
+        async buildCharacters() {
+          const hasConversation = ["subtract-groups", "debt-groups"].includes(this.problem.scenarioType);
+          const companionAsset = this.problem.npcAsset === "character/cartoon-farmer"
+            ? "character/cute-schoolboy"
+            : "character/cartoon-farmer";
+          const characterTasks = hasConversation
+            ? [
+                this.context.world.addLibraryObject({ asset: this.problem.npcAsset, name: "market-npc", position: [-LAYOUT.npcPairX, .08, LAYOUT.npcZ], targetSize: 2.55, rotation: [0, LAYOUT.npcPairLeftYaw, 0] }),
+                this.context.world.addLibraryObject({ asset: companionAsset, name: "market-npc-companion", position: [LAYOUT.npcPairX, .08, LAYOUT.npcZ], targetSize: 2.55, rotation: [0, LAYOUT.npcPairRightYaw, 0] })
+              ]
+            : [this.context.world.addLibraryObject({ asset: this.problem.npcAsset, name: "market-npc", position: [0, .08, LAYOUT.npcZ], targetSize: 2.7, rotation: [0, LAYOUT.npcSingleYaw, 0] })];
+          const npcs = await Promise.all(characterTasks);
+          this.dynamicHandles.push(...npcs);
+          this.npcs = npcs;
+          const npc = npcs[0];
+          this.npc = npc;
+        },
+
+        inspectGroup(groupIndex) {
+          if (!this.isInteractive) return;
+          const group = this.groupRecords[groupIndex];
+          if (!group) return;
+          group.basket.playCommit();
+          group.fruit.forEach((record, index) => this.bounce(record, index * 45));
+          const inspectionLabel = this.context.ui.gizmo.attach(group.basket, {
+            id: "group-inspection", scope: "scene", type: "label",
+            text: `กลุ่มที่ ${groupIndex + 1}: ${group.fruit.length} ลูก`, tone: "info",
+            placement: "top", worldOffset: [0, 1.25, 0], priority: 8
+          });
+          this.uiHandles.push(inspectionLabel);
+        },
+
+        inspectFruit(role, groupIndex) {
+          if (!this.isInteractive) return;
+          const message = role === "debt" ? "ผลไม้นี้อยู่ในรายการที่ร้านยังค้างส่ง" : role === "removed" || role === "removed-sample" ? "ผลไม้เสียลูกนี้ถูกคัดออกแล้ว" : role === "added" || role === "added-sample" ? "ผลไม้นี้เป็นของที่เติมให้แต่ละตะกร้า" : "ผลไม้หนึ่งลูกแทน 1 หน่วย";
+          this.context.ui.feedback.info(message, { duration: 1800 });
+          if (Number.isInteger(groupIndex)) this.inspectGroup(groupIndex);
+        },
+
+        createChoice() {
+          const correctFirst = this.questionIndex % 2 === 0;
+          const correctItem = { id: "correct", value: "correct", label: this.problem.correctExpression };
+          const distractorItem = { id: "distractor", value: "distractor", label: this.problem.distractorExpression };
+          this.choiceHandle = this.context.ui.choice.show({
+            id: "integer-story-choice", scope: this.mode === "student-quiz" ? "question" : "scene",
+            title: "ข้อใดเขียนแทนเรื่องนี้ได้ถูกต้อง?", layout: "row",
+            items: correctFirst ? [correctItem, distractorItem] : [distractorItem, correctItem],
+            onSelect: event => this.selectExpression(event.value)
+          });
+          if (this.mode !== "student-quiz") this.choiceHandle.hide();
+        },
+
+        createControls() {
+          this.controlHandle = this.context.ui.control.show({
+            id: "integer-story-tools", scope: "scene", position: "bottom-right",
+            ariaLabel: "เครื่องมือดูสถานการณ์", objectiveAction: false,
+            items: [
+              ...(this.mode === "student-quiz" ? [] : [{ id: "random", label: "สุ่มโจทย์", icon: "reset.svg" }]),
+              { id: "replay", label: "เล่นภาพ", icon: "next.svg" },
+              { id: "camera", label: "ตั้งกล้อง", icon: "home.svg" }
+            ],
+            onAction: event => {
+              if (event.id === "random") void this.randomizeProblem();
+              if (event.id === "replay") this.playStory();
+              if (event.id === "camera") this.context.world.camera.reset();
+            }
+          });
+        },
+
+        async randomizeProblem() {
+          if (this.mode === "student-quiz" || this.randomizing) return;
+          this.randomizing = true;
+          try {
+            const previous = JSON.stringify(this.values);
+            let values;
+            for (let attempt = 0; attempt < quizRows.length; attempt += 1) {
+              this.randomCursor = (this.randomCursor + 1 + Math.floor(Math.random() * (quizRows.length - 1))) % quizRows.length;
+              const [scenarioType, firstNumber, secondNumber, thirdNumber, fruitAsset, npcAsset] = quizRows[this.randomCursor];
+              values = { scenarioType, firstNumber, secondNumber, thirdNumber, fruitAsset, npcAsset };
+              if (JSON.stringify(values) !== previous) break;
+            }
+            this.clearDynamicScene();
+            this.values = values;
+            this.problem = buildScenario(values);
+            this.questionIndex += 1;
+            this.selection = null;
+            this.isInteractive = true;
+            await this.renderProblem();
+            this.setInteractive(true);
+            this.context.ui.feedback.info("สุ่มโจทย์ใหม่แล้ว ลองอ่านเรื่องและนับจากฉากอีกครั้ง", { duration: 2200 });
+          } finally {
+            this.randomizing = false;
+          }
+        },
+
+        clearDynamicScene() {
+          this.clearTimers();
+          this.choiceHandle?.remove?.();
+          this.controlHandle?.remove?.();
+          this.uiHandles.forEach(handle => handle?.remove?.());
+          this.dynamicHandles.forEach(handle => handle?.remove?.());
+          this.basketPool.forEach(basket => {
+            basket.setClickable(false);
+            basket.setVisible(false);
+          });
+          this.choiceHandle = null;
+          this.controlHandle = null;
+          this.uiHandles = [];
+          this.dynamicHandles = [];
+          this.fruitRecords = [];
+          this.groupRecords = [];
+          this.npcs = [];
+          this.npc = null;
+        },
+
+        clearRenderedScene() {
+          this.clearDynamicScene();
+          this.staticHandles.forEach(handle => handle?.remove?.());
+          this.staticHandles = [];
+          this.basketPool = [];
+          this.sourceCallout = null;
+          this.groupCallout = null;
+          this.sceneBuilt = false;
+        },
+
+        selectExpression(value) {
+          if (!this.isInteractive) return;
+          const selectedCorrect = value === "correct";
+          this.selection = value;
+          this.playChoiceOrder(selectedCorrect);
+          if (this.mode === "student-quiz") {
+            this.context.quiz.answer(selectedCorrect, {
+              scenarioType: this.problem.scenarioType,
+              selectedExpression: selectedCorrect ? this.problem.correctExpression : this.problem.distractorExpression,
+              correctExpression: this.problem.correctExpression,
+              misconception: selectedCorrect ? null : this.problem.misconception,
+              result: this.problem.result
+            });
+            this.context.ui.console.update({ title: "รับคำตอบแล้ว", message: "ยังเปลี่ยนตัวเลือกหรือเล่นภาพซ้ำได้ก่อนกดไปต่อ", tone: "info" });
+            return;
+          }
+          if (selectedCorrect) {
+            this.context.audio.play("success");
+            this.context.ui.console.set({
+              objective: "เชื่อมภาพกับวงเล็บ",
+              title: `ตรงกับภาพ · คำตอบ ${this.problem.result}`,
+              message: this.summaryMessage(), tone: "success"
+            });
+            this.context.ui.feedback.success("เลือกโครงสร้างได้ถูกต้อง", { duration: 2200 });
+          } else {
+            this.context.ui.console.set({
+              objective: "ลองดูว่าเหตุการณ์เกิดกับทุกกลุ่มหรือครั้งเดียว",
+              title: "ภาพนี้เริ่มคิดคนละจุด",
+              message: this.hintMessage(), tone: "info"
+            });
+            this.context.ui.hint.show({ id: "story-choice-hint", scope: "step", title: "ลองสังเกต", message: this.hintMessage(), type: "hint", duration: 3600 });
+          }
+        },
+
+        summaryMessage() {
+          const type = this.problem.scenarioType;
+          if (type === "divide-then-add") return "แบ่งเท่า ๆ กันก่อน แล้วจึงเพิ่มให้แต่ละตะกร้า";
+          if (type === "subtract-groups") return "หาจำนวนที่ขนออกทั้งหมดก่อน แล้วจึงลบจากของทั้งหมด";
+          if (type === "subtract-each") return "นำออกจากแต่ละตะกร้าก่อน แล้วจึงนับทุกกลุ่ม";
+          if (type === "add-to-each") return "รวมของเดิมกับของเพิ่มในหนึ่งกลุ่มก่อน แล้วทำซ้ำทุกกลุ่ม";
+          if (type === "debt-groups") return "หาจำนวนที่ค้างทั้งหมดก่อน แล้วใช้ของที่คืนมาหักล้าง";
+          return "หาจำนวนจากหลายกลุ่มก่อน แล้วจึงรวมกับของเดิม";
+        },
+
+        hintMessage() {
+          const type = this.problem.scenarioType;
+          if (type === "divide-then-add") return "เพิ่มหลังแบ่ง ไม่ได้เพิ่มจำนวนตะกร้า";
+          if (type === "subtract-groups") return "รถขนออกเป็นหลายตะกร้า ต้องหาจำนวนที่ขนออกทั้งหมดก่อน";
+          if (type === "subtract-each") return "คำว่า แต่ละตะกร้า หมายถึงต้องนำออกซ้ำทุกกลุ่ม";
+          if (type === "add-to-each") return "คำว่า กลุ่มละ หมายถึงเพิ่มให้ทุกกลุ่ม ไม่ใช่เพิ่มครั้งเดียว";
+          if (type === "debt-groups") return "ของที่ส่งคืนเกิดครั้งเดียว ไม่ได้เพิ่มเข้าไปในทุกชุดที่ค้าง";
+          return "ของเดิมอยู่ครั้งเดียว ส่วนกลุ่มละต้องคูณกันก่อน";
+        },
+
+        playStory() {
+          if (!this.isInteractive) return;
+          this.clearTimers();
+          this.sourceFocus.setVisible(true);
+          this.groupFocus.setVisible(false);
+          this.fruitRecords.filter(record => record.groupIndex === null).forEach((record, index) => this.bounce(record, index * 28));
+          this.timers.push(setTimeout(() => {
+            this.sourceFocus.setVisible(false);
+            this.groupFocus.setVisible(true);
+            this.groupRecords.forEach((group, index) => {
+              this.timers.push(setTimeout(() => {
+                group.basket.playCommit();
+                group.fruit.forEach((record, fruitIndex) => this.bounce(record, fruitIndex * 30));
+              }, index * 190));
+            });
+          }, 620));
+          this.timers.push(setTimeout(() => this.groupFocus.setVisible(false), 620 + this.groupRecords.length * 190 + 850));
+        },
+
+        playChoiceOrder(selectedCorrect) {
+          this.clearTimers();
+          const groupFirst = selectedCorrect || ["subtract-each", "add-to-each"].includes(this.problem.scenarioType);
+          const firstFocus = groupFirst ? this.groupFocus : this.sourceFocus;
+          const secondFocus = groupFirst ? this.sourceFocus : this.groupFocus;
+          firstFocus.setVisible(true);
+          secondFocus.setVisible(false);
+          this.groupRecords.forEach((group, index) => this.timers.push(setTimeout(() => {
+            group.basket.playCommit();
+            group.fruit.forEach((record, fruitIndex) => this.bounce(record, fruitIndex * 22));
+          }, groupFirst ? index * 150 : 620 + index * 150)));
+          this.fruitRecords.filter(record => record.groupIndex === null).forEach((record, index) => this.timers.push(setTimeout(() => this.bounce(record, index * 20), groupFirst ? 640 : index * 20)));
+          this.timers.push(setTimeout(() => {
+            firstFocus.setVisible(false);
+            secondFocus.setVisible(true);
+          }, 560));
+          this.timers.push(setTimeout(() => secondFocus.setVisible(false), 1500));
+        },
+
+        bounce(record, delay = 0) {
+          if (!record?.handle) return;
+          const [x, y, z] = record.position;
+          record.handle.stopAnimation();
+          record.handle.animateTo(x, y + .42, z, { duration: 280, delay, arcHeight: .18 });
+          this.timers.push(setTimeout(() => record.handle?.animateTo(x, y, z, { duration: 320, arcHeight: .2 }), delay + 310));
+        },
+
+        setInteractive(value) {
+          this.isInteractive = Boolean(value);
+          this.groupRecords.forEach(group => group.basket.setClickable(this.isInteractive));
+          this.fruitRecords.forEach(record => record.handle.setClickable(this.isInteractive));
+          if (this.isInteractive) {
+            this.choiceHandle?.show();
+          } else {
+            this.choiceHandle?.hide();
+          }
+        },
+
+        onStep(index, step) {
+          this.clearTimers();
+          this.context.world.hideDragCue();
+          this.sourceFocus?.setVisible(index === 0);
+          this.groupFocus?.setVisible(index === 1 || index === 2);
+          const freestyle = step.type === "freestyle";
+          this.setInteractive(freestyle);
+          if (index === 0) {
+            this.fruitRecords.filter(record => record.groupIndex === null).forEach((record, itemIndex) => this.bounce(record, itemIndex * 35));
+          } else if (index === 1) {
+            this.groupRecords.forEach((group, groupIndex) => this.timers.push(setTimeout(() => {
+              group.basket.playCommit();
+              group.fruit.forEach((record, itemIndex) => this.bounce(record, itemIndex * 28));
+            }, groupIndex * 210)));
+          } else if (index === 2) {
+            this.groupRecords.forEach(group => group.basket.playCommit());
+          } else if (freestyle) {
+            this.playStory();
+          }
+          const messages = [
+            `ทางซ้ายแสดง ${this.sourceLabel()}`,
+            `มี ${this.problem.groupCount} กลุ่ม และแต่ละกลุ่มแสดงจำนวนอย่างชัดเจน`,
+            "ตะกร้าแต่ละใบแสดงผลไม้หนึ่งกลุ่มโดยไม่ต้องมีรั้วซ้อน",
+            "เลือกประโยคหนึ่งข้อ แล้วระบบจะเล่นลำดับการคิดตามที่เลือก"
+          ];
+          this.context.ui.console.set({ objective: step.desc, title: step.title, message: messages[index] || step.desc, tone: "info" });
+        },
+
+        clearTimers() {
+          this.timers.forEach(clearTimeout);
+          this.timers = [];
+        },
+
+        dispose() {
+          this.context?.world.hideDragCue();
+          this.clearRenderedScene();
+          this.context = null;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

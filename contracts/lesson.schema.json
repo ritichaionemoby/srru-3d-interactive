@@ -13,6 +13,7 @@
       "required": ["worldType", "lessonId", "title", "category", "subcategory", "description", "keyResult", "defaultValue", "editSchema", "howto", "quiz"],
       "properties": {
         "worldType": { "const": "3d-world-space" },
+        "scenePersistence": { "enum": ["reset", "lesson"] },
         "lessonId": { "type": "string", "minLength": 1 },
         "title": { "type": "string", "minLength": 1 },
         "category": { "type": "string", "minLength": 1 },

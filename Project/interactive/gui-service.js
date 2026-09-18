@@ -54,8 +54,9 @@ function safeInsightFragment(value, resolveAsset) {
 }
 
 export function createGuiService({ setting, elements, camera, iconUrl, resolveAsset, objectiveAction, animateConsole, typeText, getMode, onChoiceShow, onHintShow, onHintHide, playUiSound }) {
-  const scopes = new Map(), choices = new Map(), gizmos = new Map(), feedbacks = new Map(), dialogs = new Map(), controls = new Map(), hints = new Map(), projected = new THREE.Vector3(), worldPoint = new THREE.Vector3(), viewPoint = new THREE.Vector3();
+  const scopes = new Map(), choices = new Map(), gizmos = new Map(), feedbacks = new Map(), dialogs = new Map(), controls = new Map(), controlEntries = new Map(), hints = new Map(), projected = new THREE.Vector3(), worldPoint = new THREE.Vector3(), viewPoint = new THREE.Vector3();
   let sequence = 0, topMessageHandle = null, questionState = { label: setting.ui?.questionPanel?.label || "โจทย์", text: "", tone: "primary" };
+  let lessonControlPhase = "lab";
   const motionDuration = Math.max(80, Number(setting.ui?.animation?.serviceExitDuration ?? 180));
   function showAnimated(element) { clearTimeout(element.__guiMotionTimer); element.hidden = true; element.classList.remove("is-leaving", "is-entering"); void element.offsetWidth; element.classList.add("is-entering"); element.hidden = false; element.__guiMotionTimer = setTimeout(() => element.classList.remove("is-entering"), 360); }
   function hideAnimated(element, after, remove = false) { clearTimeout(element.__guiMotionTimer); element.classList.remove("is-entering"); element.classList.add("is-leaving"); element.__guiMotionTimer = setTimeout(() => { element.classList.remove("is-leaving"); if (remove) element.remove(); else element.hidden = true; after?.(); }, motionDuration); }
@@ -170,11 +171,16 @@ export function createGuiService({ setting, elements, camera, iconUrl, resolveAs
     root.setAttribute("aria-label", text(options.ariaLabel || options.text || options.value || (Array.isArray(options.segments) ? options.segments.map(item => text(item?.text)).join("") : type)));
   }
   function createGizmo(target, options = {}) {
-    const id = text(options.id) || `gizmo-${++sequence}`, scope = normalizeScope(options.scope), root = document.createElement("div"), entry = { id, target, options: { placement: "top", clamp: true, ...options }, root, visible: true, width: 80, height: 32 };
+    const id = text(options.id) || `gizmo-${++sequence}`, scope = normalizeScope(options.scope), root = document.createElement("div"), leader = document.createElement("i"), entry = { id, target, options: { placement: "top", clamp: true, ...options }, root, leader, visible: true, width: 80, height: 32 };
     if (!gizmos.has(id) && gizmos.size >= Math.max(1, setting.ui?.gizmo?.maxVisible ?? 24)) throw new Error(`GUI_GIZMO_LIMIT: แสดง Gizmo ได้สูงสุด ${setting.ui?.gizmo?.maxVisible ?? 24} รายการพร้อมกัน`);
-    if (gizmos.has(id)) gizmos.get(id).handle.remove(); root.className = "gui-gizmo"; root.dataset.gizmoId = id; root.style.zIndex = String(20 + clamp(Number(options.priority) || 0, 0, 50)); elements.gizmoLayer.append(root); gizmoSizeObserver.observe(root); renderGizmoContent(root, entry.options);
-    function remove() { if (!gizmos.has(id)) return; gizmoSizeObserver.unobserve(root); if (gizmos.get(id) === entry) gizmos.delete(id); unregister(handle, scope); hideAnimated(root, null, true); }
-    const handle = Object.freeze({ id, scope, update(next = {}) { Object.assign(entry.options, next); renderGizmoContent(root, entry.options); gizmoSizeObserver.observe(root); return this; }, setTarget(next) { entry.target = next; return this; }, show() { entry.visible = true; showAnimated(root); return this; }, hide() { entry.visible = false; if (!root.hidden) hideAnimated(root); return this; }, remove, get element() { return root; } }); entry.handle = handle; gizmos.set(id, entry); register(handle, scope); showAnimated(root); return handle;
+    if (gizmos.has(id)) gizmos.get(id).handle.remove(); root.className = "gui-gizmo"; leader.className = "gui-gizmo-leader"; leader.hidden = true; root.dataset.gizmoId = id; root.style.zIndex = String(20 + clamp(Number(options.priority) || 0, 0, 50)); elements.gizmoLayer.append(leader, root); gizmoSizeObserver.observe(root); renderGizmoContent(root, entry.options);
+    const syncInteraction = () => { const actionable = typeof entry.options.onClick === "function"; root.classList.toggle("is-actionable", actionable); if (actionable) { root.setAttribute("role", "button"); root.tabIndex = 0; } else { root.removeAttribute("role"); root.removeAttribute("tabindex"); } };
+    const activate = event => { if (typeof entry.options.onClick !== "function") return; event.preventDefault(); event.stopPropagation(); entry.options.onClick({ handle, target: entry.target, sourceEvent: event }); };
+    root.addEventListener("pointerdown", event => { if (typeof entry.options.onClick === "function") event.stopPropagation(); });
+    root.addEventListener("click", activate);
+    root.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") activate(event); });
+    function remove() { if (!gizmos.has(id)) return; gizmoSizeObserver.unobserve(root); leader.remove(); if (gizmos.get(id) === entry) gizmos.delete(id); unregister(handle, scope); hideAnimated(root, null, true); }
+    const handle = Object.freeze({ id, scope, update(next = {}) { Object.assign(entry.options, next); renderGizmoContent(root, entry.options); syncInteraction(); gizmoSizeObserver.observe(root); return this; }, setTarget(next) { entry.target = next; return this; }, show() { entry.visible = true; showAnimated(root); return this; }, hide() { entry.visible = false; leader.hidden = true; if (!root.hidden) hideAnimated(root); return this; }, remove, get element() { return root; } }); entry.handle = handle; syncInteraction(); gizmos.set(id, entry); register(handle, scope); showAnimated(root); return handle;
   }
   const gizmo = Object.freeze({
     attach(target, options = {}) { if (!target) throw new Error("GUI_GIZMO_TARGET_REQUIRED: attach ต้องมี Object หรือ LessonHandle"); return createGizmo(target, options); },
@@ -220,18 +226,46 @@ export function createGuiService({ setting, elements, camera, iconUrl, resolveAs
 
   function syncControlLayout() {
     const indexes = new Map(); let hasTop = false;
-    for (const handle of controls.values()) { const root = handle.element, position = root.dataset.position || "middle-right", index = indexes.get(position) || 0; root.style.setProperty("--gui-control-index", String(index)); indexes.set(position, index + 1); if (position === "top-right") hasTop = true; }
+    for (const handle of controls.values()) { const root = handle.element; if (root.hidden) continue; const position = root.dataset.position || "middle-right", index = indexes.get(position) || 0; root.style.setProperty("--gui-control-index", String(index)); indexes.set(position, index + 1); if (position === "top-right") hasTop = true; }
     elements.feedbackLayer.classList.toggle("has-top-control", hasTop);
+  }
+
+  function controlAllowed(entry) {
+    const isTeachingSkip = entry.options.systemRole === "skip-teaching";
+    return lessonControlPhase === "teaching" ? isTeachingSkip : !isTeachingSkip;
+  }
+  function syncControlVisibility(entry, animate = false) {
+    if (!entry || entry.removed) return;
+    const visible = entry.requestedVisible && controlAllowed(entry);
+    clearTimeout(entry.root.__guiMotionTimer);
+    if (visible) {
+      elements.controlDock.hidden = false;
+      if (animate) showAnimated(entry.root);
+      else { entry.root.classList.remove("is-leaving", "is-entering"); entry.root.hidden = false; }
+    } else {
+      entry.root.classList.remove("is-leaving", "is-entering");
+      entry.root.hidden = true;
+    }
+    syncControlLayout();
+    elements.controlDock.hidden = ![...controlEntries.values()].some(value => !value.removed && !value.root.hidden);
+  }
+  function setLessonControlPhase(value) {
+    const phase = String(value || "lab");
+    if (!new Set(["teaching", "lab", "quiz"]).has(phase)) throw new Error(`GUI_CONTROL_PHASE_INVALID: ไม่รองรับ phase "${phase}"`);
+    lessonControlPhase = phase;
+    for (const entry of controlEntries.values()) syncControlVisibility(entry);
+    return lessonControlPhase;
   }
 
   function createControl(value = {}) {
     const options = normalizeServiceOptions(value), id = text(options.id) || `control-${++sequence}`, scope = normalizeScope(options.scope, "scene"), root = document.createElement("nav"), itemsRoot = document.createElement("div"); let removed = false;
+    const entry = { id, options, root, requestedVisible: true, removed: false };
     controls.get(id)?.remove(); root.className = "gui-control"; root.dataset.controlId = id; root.setAttribute("aria-label", text(options.ariaLabel || options.title) || "เครื่องมือบทเรียน"); root.append(itemsRoot); elements.controlDock.append(root); elements.controlDock.hidden = false;
     function render() { const requested = text(options.position) || "middle-right"; root.dataset.position = VALID_CONTROL_POSITIONS.has(requested) ? requested : "middle-right"; root.dataset.tone = normalizeTone(options.tone || "default"); itemsRoot.replaceChildren(); for (const item of normalizeItems(options.items || [])) { const button = document.createElement("button"); button.type = "button"; button.dataset.controlValue = item.id; button.disabled = Boolean(item.disabled); button.setAttribute("aria-label", item.ariaLabel || item.label); const media = serviceMedia(item.icon, true); if (media) button.append(media); const span = document.createElement("span"); span.textContent = item.label; button.append(span); button.addEventListener("click", () => { if (button.disabled) return; playUiSound?.(); if (options.objectiveAction === true) objectiveAction(); safeCallback(options.onAction, { id: item.id, value: item.value ?? item.id, item: { ...item }, handle }, `control:${id}`); }); itemsRoot.append(button); } syncControlLayout(); }
-    function remove() { if (removed) return; removed = true; if (controls.get(id) === handle) controls.delete(id); unregister(handle, scope); hideAnimated(root, () => { syncControlLayout(); if (!elements.controlDock.children.length) elements.controlDock.hidden = true; }, true); }
-    const handle = Object.freeze({ id, scope, update(next = {}) { Object.assign(options, next); render(); return this; }, setItems(items) { options.items = items; render(); return this; }, setDisabled(value, disabled = true) { const items = normalizeItems(options.items || []), item = items.find(entry => entry.id === String(value)); if (item) item.disabled = disabled; options.items = items; render(); return this; }, show() { if (!removed) { elements.controlDock.hidden = false; showAnimated(root); } return this; }, hide() { if (!root.hidden) hideAnimated(root); return this; }, remove, get element() { return root; } }); controls.set(id, handle); register(handle, scope); render(); syncControlLayout(); showAnimated(root); return handle;
+    function remove() { if (removed) return; removed = true; entry.removed = true; if (controls.get(id) === handle) controls.delete(id); if (controlEntries.get(id) === entry) controlEntries.delete(id); unregister(handle, scope); hideAnimated(root, () => { syncControlLayout(); if (!elements.controlDock.children.length) elements.controlDock.hidden = true; }, true); }
+    const handle = Object.freeze({ id, scope, update(next = {}) { Object.assign(options, next); render(); syncControlVisibility(entry); return this; }, setItems(items) { options.items = items; render(); return this; }, setDisabled(value, disabled = true) { const items = normalizeItems(options.items || []), item = items.find(entry => entry.id === String(value)); if (item) item.disabled = disabled; options.items = items; render(); return this; }, show() { entry.requestedVisible = true; syncControlVisibility(entry, true); return this; }, hide() { entry.requestedVisible = false; syncControlVisibility(entry); return this; }, remove, get element() { return root; } }); controls.set(id, handle); controlEntries.set(id, entry); register(handle, scope); render(); syncControlVisibility(entry, true); return handle;
   }
-  const control = Object.freeze({ show: createControl, create: createControl, get(id) { return controls.get(String(id)) || null; }, clear(scope) { if (scope) clearScope(scope); else for (const handle of [...controls.values()]) handle.remove(); } });
+  const control = Object.freeze({ show: createControl, create: createControl, get(id) { return controls.get(String(id)) || null; }, setLessonPhase: setLessonControlPhase, get lessonPhase() { return lessonControlPhase; }, clear(scope) { if (scope) clearScope(scope); else for (const handle of [...controls.values()]) handle.remove(); } });
 
   function createHint(value = {}) {
     const options = normalizeServiceOptions(value), id = text(options.id) || "lesson-hint", scope = normalizeScope(options.scope, "step"); let timer = 0, removed = false;
@@ -257,13 +291,25 @@ export function createGuiService({ setting, elements, camera, iconUrl, resolveAs
     if (!gizmos.size) return; camera.updateMatrixWorld(); const rect = elements.viewport.getBoundingClientRect(), width = Math.max(1, rect.width), height = Math.max(1, rect.height), config = setting.ui?.gizmo || {}, margin = config.safeMargin ?? 14;
     let safeTop = margin, safeBottom = height - margin; for (const element of [elements.topbar, elements.question]) if (element && !element.hidden) { const bounds = element.getBoundingClientRect(); if (bounds.height) safeTop = Math.max(safeTop, bounds.bottom - rect.top + margin); } for (const element of [elements.choiceDock, elements.labConsole, elements.quizConsole]) if (element && !element.hidden) { const bounds = element.getBoundingClientRect(); if (bounds.height) safeBottom = Math.min(safeBottom, bounds.top - rect.top - margin); } if (safeBottom - safeTop < 80) { safeTop = margin; safeBottom = height - margin; }
     for (const entry of gizmos.values()) {
-      const { root, options } = entry; if (!entry.visible) { if (!root.classList.contains("is-leaving")) root.hidden = true; continue; } const target = targetObject(entry.target); let valid = true;
+      const { root, leader, options } = entry; if (!entry.visible) { leader.hidden = true; if (!root.classList.contains("is-leaving")) root.hidden = true; continue; } const target = targetObject(entry.target); let valid = true;
       if (Array.isArray(target)) worldPoint.fromArray(target); else if (target?.getWorldPosition) { if (!target.parent) valid = false; target.getWorldPosition(worldPoint); } else valid = false;
-      if (!valid) { root.hidden = true; continue; } const offset = options.worldOffset || [0, 0, 0]; worldPoint.x += offset[0] || 0; worldPoint.y += offset[1] || 0; worldPoint.z += offset[2] || 0; viewPoint.copy(worldPoint).applyMatrix4(camera.matrixWorldInverse); projected.copy(worldPoint).project(camera);
-      if (viewPoint.z >= -.01 || projected.z < -1 || projected.z > 1) { root.hidden = true; continue; } root.hidden = false;
+      if (!valid) { root.hidden = leader.hidden = true; continue; }
+      viewPoint.copy(worldPoint).applyMatrix4(camera.matrixWorldInverse); projected.copy(worldPoint).project(camera); const targetVisible = viewPoint.z < -.01 && projected.z >= -1 && projected.z <= 1, targetX = (projected.x * .5 + .5) * width, targetY = (-projected.y * .5 + .5) * height;
+      const offset = options.worldOffset || [0, 0, 0]; worldPoint.x += offset[0] || 0; worldPoint.y += offset[1] || 0; worldPoint.z += offset[2] || 0; viewPoint.copy(worldPoint).applyMatrix4(camera.matrixWorldInverse); projected.copy(worldPoint).project(camera);
+      if (viewPoint.z >= -.01 || projected.z < -1 || projected.z > 1) { root.hidden = leader.hidden = true; continue; } root.hidden = false;
       const screenOffset = options.offset || [0, 0], elementWidth = entry.width, elementHeight = entry.height; let x = (projected.x * .5 + .5) * width + (screenOffset[0] || 0), y = (-projected.y * .5 + .5) * height + (screenOffset[1] || 0); const placement = options.placement || "top", gap = options.gap ?? 12;
       if (placement === "top") y -= elementHeight / 2 + gap; else if (placement === "bottom") y += elementHeight / 2 + gap; else if (placement === "left") x -= elementWidth / 2 + gap; else if (placement === "right") x += elementWidth / 2 + gap;
       const rawX = x, rawY = y; if (options.clamp !== false) { x = clamp(x, margin + elementWidth / 2, width - margin - elementWidth / 2); y = clamp(y, safeTop + elementHeight / 2, safeBottom - elementHeight / 2); } root.classList.toggle("is-clamped", Math.abs(rawX - x) > 1 || Math.abs(rawY - y) > 1); root.style.transform = `translate3d(${Math.round(x)}px,${Math.round(y)}px,0) translate(-50%,-50%)`; root.style.setProperty("--gizmo-depth", String(projected.z));
+      const lineOptions = options.leaderLine === true ? {} : options.leaderLine && typeof options.leaderLine === "object" && options.leaderLine.enabled !== false ? options.leaderLine : null;
+      if (!lineOptions || !targetVisible) leader.hidden = true;
+      else {
+        const dx = targetX - x, dy = targetY - y, distance = Math.hypot(dx, dy), halfWidth = elementWidth / 2, halfHeight = elementHeight / 2;
+        if (distance < 2) leader.hidden = true;
+        else {
+          const edgeRatio = Math.min(Math.abs(dx) > .001 ? halfWidth / Math.abs(dx) : Infinity, Math.abs(dy) > .001 ? halfHeight / Math.abs(dy) : Infinity, 1), unitX = dx / distance, unitY = dy / distance, targetInset = Math.max(0, Number(lineOptions.targetInset) || 0), startX = x + dx * edgeRatio, startY = y + dy * edgeRatio, endX = targetX - unitX * targetInset, endY = targetY - unitY * targetInset, lineLength = Math.hypot(endX - startX, endY - startY);
+          leader.hidden = lineLength < 2; leader.style.left = `${Math.round(startX)}px`; leader.style.top = `${Math.round(startY)}px`; leader.style.width = `${Math.round(lineLength)}px`; leader.style.height = `${Math.max(1, Number(lineOptions.width) || 2)}px`; leader.style.background = String(lineOptions.color || "var(--gui-gizmo-leader, rgba(58, 71, 91, .72))"); leader.style.transform = `rotate(${Math.atan2(endY - startY, endX - startX)}rad)`;
+        }
+      }
     }
   }
 

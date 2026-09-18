@@ -3,329 +3,1237 @@
 
 <head>
   <meta charset="UTF-8" />
-  <title>เปรียบเทียบจำนวนด้วย = ≠ &lt; &gt; ≤ ≥</title>
+  <title>ภารกิจสร้างคำตอบ ทำอะไรก่อน</title>
 </head>
 
 <body>
   <script data-lesson-app>
     (() => {
-      const LAB_OPERATORS = Object.freeze(["=", "≠", "<", ">", "≤", "≥"]);
-      const makeQuestion = (question, givenSide, givenCount, operator, answerCount) => ({ question, data: [
-        { key: "givenSide", value: givenSide }, { key: "givenCount", value: givenCount },
-        { key: "operator", value: operator }, { key: "answerCount", value: answerCount }
-      ] });
+      const PROBLEM_TYPES = new Set(["multiplication", "division"]);
       const quiz = [
-        makeQuestion("วางด้านขวาให้ 4 > จำนวนด้านขวา", "left", 4, ">", 2),
-        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายน้อยกว่า 5", "right", 5, "<", 3),
-        makeQuestion("ทำให้ 3 = จำนวนด้านขวา เป็นจริง", "left", 3, "=", 3),
-        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายมากกว่า 2", "right", 2, ">", 4),
-        makeQuestion("ทำให้ 1 < จำนวนด้านขวา เป็นจริง", "left", 1, "<", 4),
-        makeQuestion("วางด้านซ้ายให้มีจำนวนเท่ากับ 4", "right", 4, "=", 4),
-        makeQuestion("ทำให้ 2 ≠ จำนวนด้านขวา เป็นจริง", "left", 2, "≠", 4),
-        makeQuestion("วางด้านซ้ายให้มีจำนวนไม่เท่ากับ 5", "right", 5, "≠", 1),
-        makeQuestion("ทำให้ 6 ≠ จำนวนด้านขวา เป็นจริง", "left", 6, "≠", 3),
-        makeQuestion("วางด้านขวาให้ 3 ≤ จำนวนด้านขวา", "left", 3, "≤", 3),
-        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายน้อยกว่าหรือเท่ากับ 5", "right", 5, "≤", 4),
-        makeQuestion("ทำให้ 2 ≤ จำนวนด้านขวา เป็นจริง", "left", 2, "≤", 6),
-        makeQuestion("วางด้านขวาให้ 4 ≥ จำนวนด้านขวา", "left", 4, "≥", 4),
-        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายมากกว่าหรือเท่ากับ 2", "right", 2, "≥", 5),
-        makeQuestion("ทำให้ 6 ≥ จำนวนด้านขวา เป็นจริง", "left", 6, "≥", 3),
-        makeQuestion("ทำให้ 5 > จำนวนด้านขวา เป็นจริง", "left", 5, ">", 3),
-        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายน้อยกว่า 6", "right", 6, "<", 4),
-        makeQuestion("ทำให้ 2 = จำนวนด้านขวา เป็นจริง", "left", 2, "=", 2),
-        makeQuestion("วางด้านซ้ายให้มีจำนวนเท่ากับ 6", "right", 6, "=", 6),
-        makeQuestion("วางด้านซ้ายให้มีจำนวนไม่เท่ากับ 1", "right", 1, "≠", 4),
-        makeQuestion("ทำให้ 4 < จำนวนด้านขวา เป็นจริง", "left", 4, "<", 6),
-        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายมากกว่า 3", "right", 3, ">", 5),
-        makeQuestion("วางด้านซ้ายให้จำนวนด้านซ้ายน้อยกว่าหรือเท่ากับ 4", "right", 4, "≤", 4),
-        makeQuestion("ทำให้ 5 ≥ จำนวนด้านขวา เป็นจริง", "left", 5, "≥", 2)
-      ];
+        ["multiplication",2,3],["division",3,2],["multiplication",4,2],["division",4,3],["multiplication",3,3],
+        ["division",2,4],["multiplication",5,2],["division",5,2],["multiplication",2,4],["division",3,4],
+        ["multiplication",4,3],["division",2,3],["multiplication",3,4],["division",4,2],["multiplication",5,3],
+        ["division",5,3],["multiplication",2,2],["division",3,3],["multiplication",4,4],["division",4,4]
+      ].map(([problemType, firstNumber, secondNumber]) => {
+        const expression = problemType === "multiplication" ? `${firstNumber} × ${secondNumber}` : `${firstNumber * secondNumber} ÷ ${secondNumber}`;
+        return { question: `${expression} มีค่าเท่าไร`, data: [{ key: "problemType", value: problemType }, { key: "firstNumber", value: firstNumber }, { key: "secondNumber", value: secondNumber }] };
+      });
 
       PuzzleLesson.define({
-        id: "lesson0-comparison",
-        version: "2.2.0",
+        id: "ep1-lesson2-multiply-divide",
+        version: "2.1.0",
+
         meta: {
           worldType: "3d-world-space",
-          lessonId: "lesson0-comparison",
-          title: "สัญลักษณ์แสดงความสัมพันธ์ = ≠ < > ≤ ≥",
+          lessonId: "ep1-lesson2-multiply-divide",
+          title: "การคูณและการหาร",
           category: "คณิตศาสตร์",
           subcategory: "สัญลักษณ์พื้นฐานทางคณิตศาสตร์",
-          description: "ฝึกอ่านและสร้างประโยคเปรียบเทียบจำนวน โดยลากแอปเปิลให้จำนวนทั้งสองฝั่งสัมพันธ์กับเครื่องหมาย = ≠ < > ≤ ≥",
-          keyResult: "ผู้เรียนแยกความหมายของ เท่ากับ ไม่เท่ากับ มากกว่า น้อยกว่า มากกว่าหรือเท่ากับ และน้อยกว่าหรือเท่ากับได้",
+          description: "เรียนรู้การคูณและการหารด้วยการยกตะกร้าทั้งกลุ่มและแจกแครอททีละหัวจากบทเรียนต้นฉบับ",
+          keyResult: "ผู้เรียนสร้างกลุ่มซ้ำสำหรับการคูณ และแบ่งสิ่งของเป็นกลุ่มเท่า ๆ กันสำหรับการหารได้",
           background: "green",
-          // แต่ละ lesson ปรับ framing ของกล้องเองได้ โดยไม่กระทบ lesson อื่น
           camera: {
             fov: 43,
-            startYaw: 25,
-            startPitch: 44,
-            startDistance: 21.8,
-            minDistance: 10,
-            maxDistance: 32,
-            minPitch: 18,
+            startYaw: 18,
+            startPitch: 48,
+            startDistance: 31,
+            minDistance: 12,
+            maxDistance: 36,
+            minPitch: 22,
             maxPitch: 76,
-            // จุดหมุนอยู่กลางเกาะเสมอ; ปรับความสูงของ framing ด้วยค่า Y เท่านั้น
-            target: [0, 0.25, 0]
+            target: [0, 0.35, -0.25]
           },
-          welcomeMessage: ["สังเกตจำนวนแอปเปิลด้านที่กำหนด", "อ่านเครื่องหมายตรงกลางจากซ้ายไปขวา", "ลากแอปเปิลลงพื้นที่ว่างให้เงื่อนไขเป็นจริง"],
-          tooltip: "ลากแอปเปิลจากแถวพัก ไปวางบนพื้นที่ว่างที่มีเส้นประนำทาง",
-          defaultValue: { givenSide: "left", givenCount: 4, operator: ">", answerCount: 2 },
+          welcomeMessage: ["คูณให้ยกตะกร้าพร้อมแครอทไปทั้งกลุ่ม", "หารให้แจกแครอททีละหัวลงทุกช่อง", "ทุกช่องของการหารต้องมีจำนวนเท่ากัน"],
+          tooltip: "คูณลากทั้งตะกร้า หารลากแครอททีละหัว",
+          defaultValue: { problemType: "multiplication", firstNumber: 2, secondNumber: 3 },
           editSchema: [
-            { key: "givenSide", name: "ด้านที่กำหนดแอปเปิลไว้", type: "dropdown", option: ["left", "right"] },
-            { key: "givenCount", name: "จำนวนแอปเปิลที่กำหนด", type: "slider", option: [1, 6] },
-            { key: "answerCount", name: "จำนวนแอปเปิลตัวอย่าง", type: "slider", option: [1, 6], step: 1 },
-            { key: "operator", name: "เครื่องหมาย", type: "dropdown", option: ["=", "≠", "<", ">", "≤", "≥"] }
+            { key: "problemType", name: "เลือกแบบโจทย์", type: "dropdown", option: [
+              { value: "multiplication", label: "การคูณ ก × ข" },
+              { value: "division", label: "การหาร ก ÷ ข" }
+            ] },
+            { key: "firstNumber", name: "จำนวนต่อกลุ่ม", type: "slider", option: [2, 6], step: 1 },
+            { key: "secondNumber", name: "จำนวนกลุ่ม", type: "slider", option: [2, 4], step: 1 }
           ],
           howto: [
-            { index: 0, title: "สำรวจจำนวนที่มีอยู่", type: "sequence", desc: "เริ่มจากนับแอปเปิลในพื้นที่ที่กำหนดให้", option: { type: "instruction", header: "เทคนิคการนับ", message: "นับแอปเปิลทีละผลจากหน้าไปหลัง และตรวจซ้ำอีกครั้งก่อนดูเครื่องหมาย" } },
-            { index: 1, title: "อ่านเครื่องหมาย", type: "sequence", desc: "อ่านประโยคจากซ้ายไปขวา แยกความหมายของ = ≠ < > ≤ และ ≥ ให้ถูกต้อง" },
-            { index: 2, title: "วางแผนคำตอบ", type: "sequence", desc: "มองตามเส้นประไปยังพื้นที่ว่าง แล้วคิดว่าควรใช้แอปเปิลกี่ผล", option: { type: "hint", header: "จำง่าย ๆ", message: "ขีดใต้ของ ≤ และ ≥ หมายถึงสามารถมีจำนวนเท่ากันได้ ส่วน ≠ หมายถึงจำนวนต้องต่างกัน" } },
-            { index: 3, title: "ลองสร้างประโยคจริง", type: "freestyle", desc: "ลากแอปเปิลไปยังพื้นที่ว่างให้ครบตามเงื่อนไข ลองผิดลองถูกได้ไม่จำกัด" }
+            { index: 0, title: "สำรวจโจทย์", type: "sequence", desc: "ดูจำนวนต่อกลุ่มและจำนวนกลุ่ม" },
+            { index: 1, title: "เปิดดูวิธีคิด", type: "sequence", desc: "คูณคือกลุ่มซ้ำ หารคือการแบ่งให้เท่ากัน" },
+            { index: 2, title: "ดูวิธีลาก", type: "sequence", desc: "คูณยกทั้งตะกร้า ส่วนหารแจกทีละแครอท" },
+            { index: 3, title: "ลองจัดกลุ่ม", type: "freestyle", desc: "วางกลุ่มให้ครบ หรือแบ่งแครอททั้งหมดให้เท่ากัน" }
           ],
           quiz
         },
 
         mount(context) {
           this.context = context;
-          this.handles = [];
+          this.timers = [];
+          this.items = [];
+          this.multiplyGroups = [];
+          this.multiplySourceSerial = 0;
+          this.divisionItems = [];
+          this.answerBins = [];
           this.placement = new Map();
-          this.startPositions = [];
-          this.demoTimers = [];
-          this.labControls = null;
+          this.nextItemId = 0;
         },
 
-        async reset({ values, mode, question }) {
-          this.demoTimers.forEach(clearTimeout);
-          this.demoTimers = [];
+        async reset({ values, mode }) {
+          this.clearTimers();
           this.values = { ...values };
           this.mode = mode;
+          this.problem = this.buildProblem(values);
+          this.configureActivityLayout();
+          this.items = [];
           this.placement = new Map();
-          this.handles = [];
-          this.startPositions = [];
-          this.labOperatorIndex = -1;
-          const world = this.context.world;
-          const leftX = -5.1;
-          const rightX = 5.1;
-          const targetX = values.givenSide === "left" ? rightX : leftX;
-          const givenX = values.givenSide === "left" ? leftX : rightX;
-          this.targetX = targetX;
-          this.leftX = leftX;
-          this.rightX = rightX;
+          this.nextItemId = 0;
+          this.sourceItems = new Map();
+          this.sourcePromise = null;
+          this.pendingPickups = 0;
+          this.pickupQueue = null;
+          this.pickupEpoch = 0;
+          this.isInteractive = mode === "student-quiz";
+          this.wasCorrect = false;
+          this.successAnimating = false;
+          this.multiplyGroups = [];
+          this.divisionItems = [];
+          this.answerBins = [];
+          this.resultCounter = null;
+          this.answerFloorHandles = [];
+          this.multiplySlotReactions = [];
+          this.multiplySource = null;
+          this.equalsSign = null;
+          this.answerZoneHandles = [];
+          this.successTimers = [];
+          this.successWave = [];
+          this.answerSurface = null;
+          this.multiplyPool = [];
 
-          world.addZone({ name: "left-zone", size: [7.4, .28, 6.6], position: [leftX, .15, -1], color: values.givenSide === "left" ? "#c8e5ff" : "#d8f5df" });
-          world.addZone({ name: "right-zone", size: [7.4, .28, 6.6], position: [rightX, .15, -1], color: values.givenSide === "right" ? "#c8e5ff" : "#d8f5df" });
-          this.operatorSign = world.addOperatorSign({ text: values.operator, position: [0, .24, -1], scale: [2.45, 2.45] });
-          this.targetFocus = world.addTargetFocus({ position: [targetX, .34, -.8], radius: 2.05 });
-          this.targetFocus.setVisible(false);
-          this.refreshCallouts();
+          if (this.isParenthesesProblem()) await this.renderParenthesesProblem();
+          else if (this.problem.type === "multiplication") await this.renderMultiplicationProblem();
+          else if (this.problem.type === "division") await this.renderDivisionProblem();
+          else await this.renderBasicProblem();
 
-          const givenPromises = [];
-          for (let index = 0; index < values.givenCount; index += 1) {
-            const column = index % 3;
-            const row = Math.floor(index / 3);
-            givenPromises.push(world.addLibraryObject({
-              asset: "food/apple-orange",
-              name: `given-${index}`,
-              position: [givenX + (column - 1) * 1.65, .18, -1.5 + row * 1.75],
-              rotation: [0, (index % 3 - 1) * 12, 0],
-              scale: .92,
-              hoverMessage: "แอปเปิลฝั่งที่กำหนดให้"
-            }));
-          }
+          this.problemFocus = this.context.world.addTargetFocus({
+            position: [this.problemFocusX, .3, -1.55],
+            radius: this.problemFocusRadius,
+            color: "#4f83c5",
+            secondaryColor: "#f0c46a"
+          });
+          this.problemFocus.setVisible(false);
 
-          const supply = 6;
-          const answerPromises = [];
-          for (let index = 0; index < supply; index += 1) {
-            const startX = -4.5 + index * 1.8;
-            const startPosition = [startX, .18, 4.05];
-            answerPromises.push(world.addLibraryObject({
-              asset: "food/apple",
-              name: `answer-${index}`,
-              position: startPosition,
-              rotation: [0, (index % 3 - 1) * 10, 0],
-              scale: .86,
-              draggable: mode === "student-quiz",
-              dragAxis: "xz",
-              dragLiftHeight: 1.1,
-              hitArea: [1.55, 1.85, 1.55],
-              hitAreaOffset: [0, .78, 0],
-              guideTarget: [targetX, .35, -.8],
-              hoverMessage: "ลากแอปเปิลนี้ไปยังพื้นที่คำตอบ",
-              onDrop: (position, droppedHandle) => this.handleDrop(index, position, droppedHandle, targetX)
-            }));
-            this.startPositions[index] = startPosition;
-          }
+          if (this.problem.type !== "multiplication" && this.problem.type !== "division") this.renderAnswerArea();
+          await this.renderSupply();
+          this.createInsightCallouts();
+          this.createControls();
+          // Control เป็นเครื่องมือสำหรับลงมือทำ จึงแสดงทันทีเฉพาะ Quiz
+          // ส่วน Lab จะเปิดเมื่อเข้าสู่ขั้น freestyle ใน onStep() เท่านั้น
+          if (this.mode === "student-quiz") this.answerControls?.show();
+          else this.answerControls?.hide();
 
-          await Promise.all(givenPromises);
-          this.handles = await Promise.all(answerPromises);
+          this.context.ui.question.show({ label: "โจทย์", text: `${this.problem.expression} = ?`, tone: "primary" });
+          this.context.ui.console.set({
+            objective: this.activityObjective(),
+            title: this.mode === "student-quiz" ? "สร้างคำตอบของคุณ" : "กดป้ายข้อมูลเพื่อดูวิธีคิด",
+            message: this.mode === "student-quiz" ? "นับแครอททุกหัว และแก้คำตอบได้ก่อนกดไปข้อต่อไป" : "ป้ายที่มีสัญลักษณ์ i สามารถกดเปิดคำอธิบายเพิ่มเติมได้",
+            tone: "info"
+          });
 
-          if (mode !== "student-quiz") {
-            this.createLabControls();
-            this.guideline = world.addGuideline({ fromObject: this.handles[0].object3D, to: [targetX, .35, -.8] });
-            this.guideline.setVisible(false);
-          }
-
-          this.updateObjective();
         },
 
-        createLabControls() {
-          this.labControls = this.context.ui.control.show({
-            id: "comparison-lab-tools",
-            scope: "scene",
-            position: "middle-right",
-            ariaLabel: "เครื่องมือทดลองเปรียบเทียบจำนวน",
-            items: [
-              { id: "change-operator", label: "เปลี่ยนเครื่องหมาย", icon: "rotate-right.svg" },
-              { id: "clear-answer", label: "ล้างคำตอบ", icon: "reset.svg" }
-            ],
-            onAction: event => {
-              if (event.id === "change-operator") this.changeOperator();
-              if (event.id === "clear-answer") this.clearAnswer();
+        buildProblem(values) {
+          const clampInt = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, Math.round(Number(value) || minimum)));
+          const type = PROBLEM_TYPES.has(values.problemType) ? values.problemType : "multiplication";
+          const first = clampInt(values.firstNumber, 2, 6);
+          const second = clampInt(values.secondNumber, 1, 4);
+          const third = clampInt(values.thirdNumber, 1, 4);
+
+          if (type === "subtraction") {
+            let left = Math.max(first, second);
+            const right = Math.min(first, second);
+            if (left === right) left += 1;
+            return { type, operands: [left, right], operators: ["−"], result: left - right, expression: `${left} − ${right}` };
+          }
+          if (type === "multiplication") return { type, operands: [first, second], operators: ["×"], result: first * second, expression: `${first} × ${second}` };
+          if (type === "division") {
+            const dividend = first * second;
+            return { type, operands: [dividend, second], operators: ["÷"], result: first, expression: `${dividend} ÷ ${second}` };
+          }
+          if (type === "parentheses") {
+            const insideResult = first + second;
+            return { type, operands: [first, second, third], operators: ["+", "×"], insideOperands: [first, second], outsideOperand: third, insideResult, result: insideResult * third, expression: `(${first} + ${second}) × ${third}`, withoutParenthesesExpression: `${first} + ${second} × ${third}`, withoutParenthesesResult: first + second * third };
+          }
+          if (type === "parenthesesBack") {
+            const insideResult = second + third;
+            return { type, operands: [first, second, third], operators: ["×", "+"], insideOperands: [second, third], outsideOperand: first, insideResult, result: first * insideResult, expression: `${first} × (${second} + ${third})`, withoutParenthesesExpression: `${first} × ${second} + ${third}`, withoutParenthesesResult: first * second + third };
+          }
+          return { type: "addition", operands: [first, second], operators: ["+"], result: first + second, expression: `${first} + ${second}` };
+        },
+
+        activityObjective() {
+          if (this.problem.type === "multiplication") return "ยกกลุ่มแครอทไปวางให้ครบจำนวนกลุ่ม";
+          if (this.problem.type === "division") return "แบ่งแครอททั้งหมดลงทุกช่องให้เท่ากัน";
+          return "หยิบแครอทหนึ่งหน่วยมาสร้างคำตอบ";
+        },
+
+        isParenthesesProblem() {
+          return this.problem?.type === "parentheses" || this.problem?.type === "parenthesesBack";
+        },
+
+        configureActivityLayout() {
+          this.answerWidth = 6.4;
+          this.answerDepth = 5.25;
+          this.answerZ = -1.35;
+          this.maxSlots = 48;
+          const operandHalfWidth = 3.35 / 2;
+          const answerHalfWidth = this.answerWidth / 2;
+          let problemLeft;
+          if (this.isParenthesesProblem()) {
+            problemLeft = -7.15 - operandHalfWidth;
+            this.answerBaseX = 10.85;
+          } else if (this.problem.type === "multiplication" || this.problem.type === "division") {
+            problemLeft = -8;
+            this.answerBaseX = 0;
+          } else {
+            problemLeft = -5.65 - operandHalfWidth;
+            this.answerBaseX = 6.35;
+          }
+          const activityRight = this.answerBaseX + answerHalfWidth;
+          this.layoutOffsetX = -(problemLeft + activityRight) / 2;
+        },
+
+        layoutX(value) {
+          return value + this.layoutOffsetX;
+        },
+
+
+        async renderBasicProblem() {
+          this.problemFocusX = this.layoutX(-3.15);
+          this.problemFocusRadius = 3.7;
+          const [left, right] = this.problem.operands;
+          const leftArea = this.addOperandArea(this.layoutX(-5.65), left, "problem-left", "operation");
+          this.operatorSign = this.context.world.addOperatorSign({ text: this.problem.operators[0], position: [this.layoutX(-3.15), .24, -1.55], scale: [1.2, 1.2] });
+          const rightArea = this.addOperandArea(this.layoutX(-.65), right, "problem-right", "operation");
+          this.equalsSign = this.context.world.addOperatorSign({ text: "=", position: [this.layoutX(1.85), .24, -1.55], scale: [1.2, 1.2] });
+          await Promise.all([leftArea, rightArea]);
+        },
+
+        async addBasket(handle, name) {
+          const basket = await this.context.world.addLibraryObject({
+            asset: "environment/basket-woven", name: `${name}-basket`,
+            targetSize: 2.75, position: [0, 0, 0]
+          });
+          basket.stopAnimation();
+          handle.object3D.userData.visualRoot.add(basket.object3D);
+          basket.setPosition(0, 0, 0);
+        },
+
+        async addGroupCarrots(handle, count, name) {
+          const columns = Math.min(3, count);
+          const rows = Math.ceil(count / columns);
+          const entries = await Promise.all(Array.from({ length: count }, async (_, index) => {
+            const position = [(index % columns - (columns - 1) / 2) * .68, .52, (Math.floor(index / columns) - (rows - 1) / 2) * .7];
+            const carrot = await this.context.world.addLibraryObject({ asset: "environment/carrot", name: `${name}-carrot-${index}`, position, scale: .94 });
+            carrot.stopAnimation();
+            handle.object3D.userData.visualRoot.add(carrot.object3D);
+            carrot.setPosition(...position);
+            return { handle: carrot, position };
+          }));
+          return entries;
+        },
+
+        async renderMultiplicationProblem() {
+          this.answerFloorHandles = [];
+          this.layoutOffsetX = 0;
+          this.problemFocusX = 0;
+          this.problemFocusRadius = 7.6;
+          this.answerX = 0;
+          this.answerZ = -2.15;
+          this.answerWidth = 15.2;
+          this.answerDepth = 3.6;
+          this.multiplySlotCount = this.mode === "student-quiz" ? 5 : this.problem.operands[1];
+          this.maxSlots = this.multiplySlotCount;
+          this.answerZoneHandles = [];
+          this.multiplySlotReactions = [];
+          const slotWidth = this.multiplySlotCount <= 3 ? 3.55 : 2.65;
+          const spacing = this.multiplySlotCount <= 3 ? 4.05 : 2.9;
+          for (let index = 0; index < this.multiplySlotCount; index += 1) {
+            const x = (index - (this.multiplySlotCount - 1) / 2) * spacing;
+            const zone = this.context.world.addZone({ name: `multiply-slot-${index + 1}`, size: [slotWidth, .18, 3.25], position: [x, .1, this.answerZ], color: "#d9dddc", opacity: .88 });
+            this.answerZoneHandles.push(zone);
+            const fence = this.addWoodenGardenFence({ name: `multiply-fence-${index}`, centerX: x, centerZ: this.answerZ, width: slotWidth, depth: 3.25 });
+            const floor = this.context.world.addGroup({ name: `multiply-slot-base-${index + 1}`, position: [x, .08, this.answerZ], parts: [{ shape: "box", size: [slotWidth - .22, .1, 3.03], color: "#e7e9e8", material: { roughness: .78, opacity: .64, depthWrite: false } }] });
+            this.answerFloorHandles.push(floor);
+            this.multiplySlotReactions.push({ zone, fence, floor, x, z: this.answerZ });
+          }
+          this.answerFocus = this.context.world.addTargetFocus({ position: [0, .3, this.answerZ], radius: 7.15, color: "#48a879", secondaryColor: "#b6e8cb" });
+          this.answerFocus.setVisible(false);
+          this.operatorSign = this.context.world.addOperatorSign({ text: "×", position: [0, .24, .72], scale: [1.15, 1.15] });
+          this.resultCounter = this.context.world.addWorldCounter({ name: "multiply-total", position: [0, .28, -5.25], value: 0, digits: 2 });
+        },
+
+        async renderDivisionProblem() {
+          this.layoutOffsetX = 0;
+          this.problemFocusX = 0;
+          this.problemFocusRadius = 7.6;
+          this.answerX = 0;
+          this.answerZ = -2.05;
+          this.answerWidth = 15.5;
+          this.answerDepth = 3.8;
+          this.answerZoneHandles = [];
+          const divisor = this.problem.operands[1];
+          const spacing = divisor <= 3 ? 4.35 : 3.55;
+          for (let index = 0; index < divisor; index += 1) {
+            const x = (index - (divisor - 1) / 2) * spacing;
+            const zone = this.context.world.addZone({ name: `division-bin-${index + 1}`, size: [3.75, .18, 3.35], position: [x, .1, this.answerZ], color: "#e1e4e3", opacity: .88 });
+            this.answerZoneHandles.push(zone);
+            this.addWoodenGardenFence({ name: `division-fence-${index}`, centerX: x, centerZ: this.answerZ, width: 3.75, depth: 3.35 });
+            const counter = this.context.world.addWorldCounter({ name: `division-count-${index}`, position: [x, .28, -5.05], value: 0, digits: 2 });
+            this.answerBins.push({ index, x, z: this.answerZ, width: 3.75, depth: 3.35, zone, counter });
+          }
+          this.answerFocus = this.context.world.addTargetFocus({ position: [0, .3, this.answerZ], radius: 7.2, color: "#48a879", secondaryColor: "#b6e8cb" });
+          this.answerFocus.setVisible(false);
+          this.operatorSign = this.context.world.addOperatorSign({ text: "÷", position: [0, .24, .72], scale: [1.15, 1.15] });
+        },
+
+        async renderParenthesesProblem() {
+          this.problemFocusX = this.layoutX(-1.75);
+          this.problemFocusRadius = 7.5;
+          const isBack = this.problem.type === "parenthesesBack";
+          const [insideLeft, insideRight] = this.problem.insideOperands;
+          const outside = this.problem.outsideOperand;
+          const fenceCenterX = this.layoutX(isBack ? .95 : -4.45);
+          const fenceWidth = 9.4;
+          const fenceDepth = 4.75;
+          this.context.world.addZone({ name: "parentheses-group-zone", size: [fenceWidth, .08, fenceDepth], position: [fenceCenterX, .07, -1.55], color: "#b8d98f", opacity: .48 });
+          this.context.world.addGroup({
+            name: "parentheses-garden-soil",
+            position: [fenceCenterX, .09, -1.55],
+            parts: [{ shape: "box", size: [fenceWidth - .38, .08, fenceDepth - .38], color: "#e5c997", material: { roughness: .92, opacity: .7, depthWrite: false } }]
+          });
+
+          const operandAreas = [];
+          if (isBack) {
+            operandAreas.push(this.addOperandArea(this.layoutX(-7.15), outside, "problem-outside", "parentheses"));
+            this.operatorSign = this.context.world.addOperatorSign({ text: "×", position: [this.layoutX(-4.45), .24, -1.55], scale: [1.2, 1.2] });
+            operandAreas.push(this.addOperandArea(this.layoutX(-1.75), insideLeft, "problem-inside-left", "parentheses"));
+            this.context.world.addOperatorSign({ text: "+", position: [this.layoutX(.95), .24, -1.55], scale: [1.2, 1.2] });
+            operandAreas.push(this.addOperandArea(this.layoutX(3.65), insideRight, "problem-inside-right", "parentheses"));
+          } else {
+            operandAreas.push(this.addOperandArea(this.layoutX(-7.15), insideLeft, "problem-inside-left", "parentheses"));
+            this.context.world.addOperatorSign({ text: "+", position: [this.layoutX(-4.45), .24, -1.55], scale: [1.2, 1.2] });
+            operandAreas.push(this.addOperandArea(this.layoutX(-1.75), insideRight, "problem-inside-right", "parentheses"));
+            this.operatorSign = this.context.world.addOperatorSign({ text: "×", position: [this.layoutX(.95), .24, -1.55], scale: [1.2, 1.2] });
+            operandAreas.push(this.addOperandArea(this.layoutX(3.65), outside, "problem-outside", "parentheses"));
+          }
+          this.equalsSign = this.context.world.addOperatorSign({ text: "=", position: [this.layoutX(6.35), .24, -1.55], scale: [1.2, 1.2] });
+          this.addWoodenGardenFence({
+            name: "parentheses-fence",
+            centerX: fenceCenterX,
+            centerZ: -1.55,
+            width: fenceWidth,
+            depth: fenceDepth
+          });
+          await Promise.all(operandAreas);
+        },
+
+        addWoodenGardenFence({ name, centerX, centerZ, width, depth }) {
+          const railColor = "#ad7442";
+          const postColor = "#7f4d2b";
+          const lightWood = "#c88d52";
+          const parts = [];
+          for (const z of [-depth / 2, depth / 2]) {
+            parts.push({ shape: "box", position: [0, .28, z], size: [width, .16, .18], color: railColor, material: { roughness: .88 } });
+            parts.push({ shape: "box", position: [0, .56, z], size: [width, .13, .16], color: lightWood, material: { roughness: .88 } });
+            for (const x of [-width / 2, 0, width / 2]) {
+              parts.push({ shape: "cylinder", position: [x, .43, z], size: [.28, .86, .28], color: postColor, material: { roughness: .94 } });
+              parts.push({ shape: "cone", position: [x, .92, z], size: [.34, .22, .34], color: lightWood, material: { roughness: .9 } });
+            }
+          }
+          for (const x of [-width / 2, width / 2]) {
+            parts.push({ shape: "box", position: [x, .28, 0], size: [.18, .16, depth], color: railColor, material: { roughness: .88 } });
+            parts.push({ shape: "box", position: [x, .56, 0], size: [.16, .13, depth], color: lightWood, material: { roughness: .88 } });
+          }
+          parts.push(
+            { shape: "sphere", position: [-width / 2 - .28, .18, -depth / 2 + .55], size: [.42, .2, .28], color: "#6fa85a", material: { roughness: .9 } },
+            { shape: "sphere", position: [width / 2 + .28, .18, depth / 2 - .55], size: [.42, .2, .28], color: "#6fa85a", material: { roughness: .9 } }
+          );
+          return this.context.world.addGroup({ name, position: [centerX, .03, centerZ], parts });
+        },
+
+        async addOperandArea(centerX, count, name, insightKind) {
+          const surfacePattern = "../../assets/image/texture/lesson-surface-dots.svg";
+          const platform = this.context.world.addGroup({
+            name,
+            position: [centerX, .12, -1.55],
+            parts: [
+              { shape: "box", size: [3.35, .22, 3.55], color: "#dcecff", material: { roughness: .56, clearcoat: .22 } },
+              { shape: "box", position: [0, .14, 0], size: [3.05, .08, 3.25], color: "#f8fcff", material: { texture: surfacePattern, roughness: .66 } }
+            ]
+          });
+          const columns = count > 9 ? 4 : 3;
+          const spacing = columns === 4 ? .68 : .82;
+          const rows = Math.ceil(count / columns);
+          const carrotPromises = [];
+          for (let index = 0; index < count; index += 1) {
+            const column = index % columns;
+            const row = Math.floor(index / columns);
+            const x = (column - (columns - 1) / 2) * spacing;
+            const z = (row - (rows - 1) / 2) * spacing;
+            carrotPromises.push(this.context.world.addLibraryObject({
+              asset: "environment/carrot",
+              name: `${name}-carrot-${index}`,
+              position: [centerX + x, .22, -1.55 + z],
+              rotation: [0, (index % 3 - 1) * 9, (index % 2 ? 1 : -1) * 3],
+              scale: count > 12 ? .58 : columns === 4 ? .78 : .94
+            }));
+          }
+          await Promise.all(carrotPromises);
+          return platform;
+        },
+
+        renderAnswerArea() {
+          const surfacePattern = "../../assets/image/texture/lesson-surface-dots.svg";
+          this.answerX = this.layoutX(this.answerBaseX);
+          this.answerZoneHandles = [this.context.world.addZone({ name: "answer-zone", size: [this.answerWidth, .2, this.answerDepth], position: [this.answerX, .13, this.answerZ], color: "#d8f5df", opacity: .82 })];
+          this.answerSurface = this.context.world.addGroup({
+            name: "answer-insight-surface",
+            position: [this.answerX, .08, this.answerZ],
+            parts: [{ shape: "box", size: [this.answerWidth - .3, .09, this.answerDepth - .3], color: "#edf9f1", material: { texture: surfacePattern, roughness: .72, opacity: .46, depthWrite: false } }]
+          });
+          this.answerFocus = this.context.world.addTargetFocus({ position: [this.answerX, .3, this.answerZ], radius: 3.05, color: "#48a879", secondaryColor: "#b6e8cb" });
+          this.answerFocus.setVisible(false);
+          this.createAnswerCounter();
+        },
+
+        createAnswerCounter() {
+          this.answerCounter = this.context.world.addWorldCounter({
+            name: "answer-count-gizmo",
+            position: [this.answerX, .2, this.answerZ + this.answerDepth / 2 + .82],
+            value: 0,
+            digits: 2
+          });
+        },
+
+        updateAnswerCounter(count) {
+          this.answerCounter?.setValue(count);
+        },
+
+        async renderSupply() {
+          if (this.problem.type === "multiplication") return this.renderMultiplicationSupply();
+          if (this.problem.type === "division") return this.renderDivisionSupply();
+          this.sourcePosition = [0, -.52, 4.25];
+          this.context.world.addZone({ name: "carrot-garden-zone", size: [3.65, .12, 2.75], position: [0, .08, 4.25], color: "#8cc66b", opacity: .76 });
+          this.context.world.addGroup({
+            name: "carrot-soil-bed",
+            position: [0, .12, 4.25],
+            parts: [
+              { shape: "box", size: [2.7, .28, 1.85], color: "#805333", material: { roughness: .94 } },
+              { shape: "box", position: [0, .2, -.98], size: [2.98, .3, .18], color: "#a66f3f", material: { roughness: .9 } },
+              { shape: "box", position: [0, .2, .98], size: [2.98, .3, .18], color: "#a66f3f", material: { roughness: .9 } },
+              { shape: "box", position: [-1.4, .2, 0], size: [.18, .3, 1.82], color: "#8e5a32", material: { roughness: .92 } },
+              { shape: "box", position: [1.4, .2, 0], size: [.18, .3, 1.82], color: "#8e5a32", material: { roughness: .92 } },
+              { shape: "sphere", position: [-.82, .28, .42], size: [.22, .14, .18], color: "#c19a72" },
+              { shape: "sphere", position: [.74, .28, -.48], size: [.18, .12, .15], color: "#b78a63" },
+              { shape: "sphere", position: [-1.72, .24, -.72], size: [.38, .2, .28], color: "#6fa85a", material: { roughness: .9 } },
+              { shape: "sphere", position: [1.72, .24, .7], size: [.38, .2, .28], color: "#6fa85a", material: { roughness: .9 } }
+            ]
+          });
+          this.context.world.addWorldGui({
+            text: "ลากแครอท"
+          });
+          await this.ensureSource();
+        },
+
+        async renderMultiplicationSupply() {
+          const groupSize = this.problem.operands[0];
+          this.sourcePosition = [0, .18, 4.35];
+          this.context.world.addZone({ name: "multiply-source-zone", size: [3.55, .14, 3.2], position: [0, .08, 4.35], color: "#d9dddc", opacity: .88 });
+          await this.spawnMultiplicationSource();
+          this.multiplyPool = await Promise.all(Array.from({ length: this.multiplySlotCount }, async (_, index) => {
+            const record = { slot: index, handle: null, carrots: [] };
+            record.handle = this.context.world.addGroup({
+              name: `multiply-answer-group-${index}`, position: [this.multiplySlotX(index), .18, this.answerZ],
+              parts: [], draggable: false, dragAxis: "xz", dragLiftHeight: .85, dragFromCenter: true,
+              hitArea: [2.65, 1.35, 2.35], hitAreaOffset: [0, .48, 0],
+              onDrop: position => this.moveMultiplyGroup(record, position)
+            });
+            await this.addBasket(record.handle, `multiply-answer-${index}`);
+            record.carrots = await this.addGroupCarrots(record.handle, groupSize, `multiply-answer-${index}`);
+            if (this.multiplySlotCount > 3) record.handle.setScale(.78);
+            record.handle.setVisible(false);
+            return record;
+          }));
+        },
+
+        async spawnMultiplicationSource() {
+          const groupSize = this.problem.operands[0];
+          let source;
+          source = this.context.world.addGroup({
+            name: `multiply-source-group-${this.multiplySourceSerial = (this.multiplySourceSerial || 0) + 1}`,
+            position: [...this.sourcePosition],
+            parts: [],
+            draggable: this.isInteractive,
+            clickable: false,
+            dragAxis: "xz",
+            dragLiftHeight: 1.08,
+            dragFromCenter: true,
+            hitArea: [2.75, 1.35, 2.45],
+            hitAreaOffset: [0, .48, 0],
+            guideTarget: null,
+            hoverMessage: `ลากตะกร้าพร้อมแครอท ${groupSize} หัวไปทั้งก้อน`,
+            onDrop: position => {
+              const placed = this.placeMultiplyGroupAt(position);
+              if (!placed) return false;
+               source.setDraggable(false);
+               source.setVisible(false);
+               const timer = setTimeout(() => {
+                 this.playMultiplicationSourceSpawn(source);
+               }, 260);
+              this.timers.push(timer);
+              return { accepted: true, commit: true };
             }
           });
-          this.labControls.hide();
+          this.multiplySource = source;
+          await this.addBasket(source, "multiply-source");
+          this.sourceCarrots = await this.addGroupCarrots(source, groupSize, "multiply-source");
+          this.playMultiplicationSourceSpawn(source);
         },
 
-        changeOperator() {
-          if (this.mode === "student-quiz") return;
-          this.labOperatorIndex = (this.labOperatorIndex + 1) % LAB_OPERATORS.length;
-          this.values.operator = LAB_OPERATORS[this.labOperatorIndex];
-          this.operatorSign?.remove();
-          this.operatorSign = this.context.world.addOperatorSign({ text: this.values.operator, position: [0, .24, -1], scale: [2.45, 2.45] });
-          this.refreshCallouts();
-          this.updateObjective();
-          const result = this.evaluateAnswer();
-          this.operatorSign.setState(result.correct);
-          this.operatorSign.pulse();
-          this.context.ui.console.feedback(`${result.leftCount} ${this.values.operator} ${result.rightCount} ${result.correct ? "เป็นจริง" : "ยังไม่เป็นจริง"}`, { tone: result.correct ? "success" : "warning" });
-          if (result.correct) this.context.audio.play("success");
+        playMultiplicationSourceSpawn(handle) {
+          if (!handle) return;
+          const [x, y, z] = this.sourcePosition;
+          handle.stopAnimation?.();
+          handle.setPosition(x, y, z);
+          handle.setVisible(true);
+          handle.setDraggable(false);
+          handle.animateTo(x, y + .48, z, { duration: 190, arcHeight: .22 });
+          const settle = setTimeout(() => {
+            handle.animateTo(x, y, z, { duration: 230, arcHeight: .06 });
+          }, 195);
+          const ready = setTimeout(() => {
+            handle.setPosition(x, y, z);
+            handle.setDraggable(this.isInteractive);
+            handle.playCommit?.();
+          }, 445);
+          this.timers.push(settle, ready);
+        },
+
+        multiplySlotX(index) {
+          const spacing = this.multiplySlotCount <= 3 ? 4.05 : 2.9;
+          return (index - (this.multiplySlotCount - 1) / 2) * spacing;
+        },
+
+        multiplySlotAt(position) {
+          let best = -1;
+          let bestDistance = Infinity;
+          for (let index = 0; index < this.multiplySlotCount; index += 1) {
+            const distance = Math.hypot(position.x - this.multiplySlotX(index), position.z - this.answerZ);
+            if (distance < 1.55 && distance < bestDistance) {
+              best = index;
+              bestDistance = distance;
+            }
+          }
+          return best;
+        },
+
+        placeMultiplyGroupAt(position) {
+          if (!this.isInteractive) return false;
+          const slot = this.multiplySlotAt(position);
+          if (slot < 0) return false;
+          if (this.multiplyGroups.some(group => group.slot === slot)) {
+            this.context.ui.console.feedback("ช่องนี้มีกลุ่มอยู่แล้ว ลองวางในช่องว่าง", { tone: "warning" });
+            return false;
+          }
+          const record = this.multiplyPool.find(entry => !this.multiplyGroups.includes(entry));
+          if (!record) return false;
+          record.slot = slot;
+          const handle = record.handle;
+          handle.setPosition(this.multiplySlotX(slot), .18, this.answerZ);
+          handle.setVisible(true);
+          handle.setDraggable(true);
+          this.multiplyGroups.push(record);
+          handle.playCommit?.();
+          this.playMultiplySlotReaction(slot, handle);
+          this.updateMultiplicationAnswer(true);
+          return true;
+        },
+
+        playMultiplySlotReaction(slot, basketHandle = null) {
+          const reaction = this.multiplySlotReactions?.[slot];
+          if (!reaction) return;
+          const { zone, fence, floor, x, z } = reaction;
+          zone?.playCommit?.();
+          fence?.playCommit?.();
+          floor?.playCommit?.();
+          floor?.stopAnimation?.();
+          fence?.stopAnimation?.();
+          floor?.animateTo(x, .2, z, { duration: 150, arcHeight: .1 });
+          fence?.animateTo(x, .13, z, { duration: 150, arcHeight: .08 });
+          basketHandle?.stopAnimation?.();
+          basketHandle?.animateTo(x, .48, z, { duration: 170, arcHeight: .2 });
+          const settle = setTimeout(() => {
+            floor?.animateTo(x, .08, z, { duration: 220, arcHeight: .03 });
+            fence?.animateTo(x, .03, z, { duration: 220, arcHeight: .03 });
+            basketHandle?.animateTo(x, .18, z, { duration: 230, arcHeight: .06 });
+          }, 165);
+          this.timers.push(settle);
+        },
+
+        moveMultiplyGroup(record, position) {
+          this.stopLabSuccess();
+          const slot = this.multiplySlotAt(position);
+          if (slot < 0) {
+            record.handle.setDraggable(false);
+            record.handle.setVisible(false);
+            this.multiplyGroups = this.multiplyGroups.filter(group => group !== record);
+            this.updateMultiplicationAnswer(true);
+            return { accepted: true, commit: false };
+          }
+          const occupied = this.multiplyGroups.some(group => group !== record && group.slot === slot);
+          if (occupied) {
+            record.handle.animateTo(this.multiplySlotX(record.slot), .18, this.answerZ, { duration: 280, arcHeight: .2 });
+            return { accepted: true, commit: false };
+          }
+          record.slot = slot;
+          record.handle.animateTo(this.multiplySlotX(slot), .18, this.answerZ, { duration: 280, arcHeight: .2 });
+          const reaction = setTimeout(() => this.playMultiplySlotReaction(slot, record.handle), 235);
+          this.timers.push(reaction);
+          this.updateMultiplicationAnswer(true);
+          return { accepted: true, commit: true };
+        },
+
+        async renderDivisionSupply() {
+          const dividend = this.problem.operands[0];
+          this.context.world.addZone({ name: "division-source-zone", size: [13.6, .14, dividend > 12 ? 3.1 : 2.35], position: [0, .08, 4.55], color: "#d9dddc", opacity: .88 });
+          for (let index = 0; index < dividend; index += 1) {
+            const sourcePosition = this.divisionSourcePosition(index, dividend);
+            const record = { index, sourcePosition, bin: null, handle: null };
+            const handle = await this.context.world.addLibraryObject({
+              asset: "environment/carrot",
+              name: `division-box-${index + 1}`,
+              position: sourcePosition,
+              scale: .94,
+              draggable: this.isInteractive,
+              dragAxis: "xz",
+              dragLiftHeight: .9,
+              dragFromCenter: true,
+              hitArea: [1.05, 1.05, 1.05],
+              guideTarget: null,
+              hoverMessage: "ลากแครอทไปแบ่งลงช่องใดช่องหนึ่ง",
+              onDrop: position => this.dropDivisionBox(record, position)
+            });
+            record.handle = handle;
+            this.divisionItems.push(record);
+          }
+        },
+
+        divisionSourcePosition(index, total) {
+          const columns = Math.min(12, total);
+          const row = Math.floor(index / columns);
+          const column = index % columns;
+          const rowCount = Math.min(columns, total - row * columns);
+          return [(column - (rowCount - 1) / 2) * 1.02, .5, 4.25 + row * 1.02];
+        },
+
+        divisionBinAt(position) {
+          const bin = this.answerBins.find(entry => Math.abs(position.x - entry.x) <= entry.width / 2 && Math.abs(position.z - entry.z) <= entry.depth / 2);
+          return bin ? bin.index : -1;
+        },
+
+        dropDivisionBox(record, position) {
+          if (!this.isInteractive) return false;
+          this.stopLabSuccess();
+          const binIndex = this.divisionBinAt(position);
+          record.bin = binIndex < 0 ? null : binIndex;
+          this.relayoutDivision(true);
+          this.updateDivisionAnswer(true);
+          return { accepted: true, commit: binIndex >= 0 };
+        },
+
+        divisionSlotPosition(binIndex, slotIndex) {
+          const bin = this.answerBins[binIndex];
+          const count = Math.max(1, this.divisionItems.filter(item => item.bin === binIndex).length);
+          const columns = Math.min(5, Math.ceil(Math.sqrt(count)));
+          const rows = Math.ceil(count / columns);
+          const row = Math.floor(slotIndex / columns);
+          const rowCount = Math.min(columns, count - row * columns);
+          const spacingX = Math.min(.95, (bin.width - .9) / Math.max(1, columns - 1));
+          const spacingZ = Math.min(.95, (bin.depth - .9) / Math.max(1, rows - 1));
+          return [bin.x + (slotIndex % columns - (rowCount - 1) / 2) * spacingX, .22, bin.z + (row - (rows - 1) / 2) * spacingZ];
+        },
+
+        relayoutDivision(animate = true) {
+          for (const bin of this.answerBins) {
+            const records = this.divisionItems.filter(item => item.bin === bin.index).sort((a, b) => a.index - b.index);
+            records.forEach((record, slot) => {
+              const target = this.divisionSlotPosition(bin.index, slot);
+              record.handle.setScale(records.length <= 9 ? .94 : records.length <= 16 ? .78 : .64);
+              if (animate) record.handle.animateTo(...target, { duration: 320, arcHeight: .28 });
+              else record.handle.setPosition(...target);
+            });
+          }
+          for (const record of this.divisionItems.filter(item => item.bin === null)) {
+            record.handle.setScale(.94);
+            if (animate) record.handle.animateTo(...record.sourcePosition, { duration: 320, arcHeight: .28 });
+            else record.handle.setPosition(...record.sourcePosition);
+          }
+        },
+
+        createInsightCallouts() {
+          if (this.problem.type === "multiplication" || this.problem.type === "division") return;
+          const problemKind = this.isParenthesesProblem() ? "parentheses" : "problem";
+          const canOpenInsight = this.mode !== "student-quiz";
+          const specialLayout = this.problem.type === "multiplication" || this.problem.type === "division";
+          const problemCalloutX = specialLayout ? -5.25 : this.problemFocusX;
+          const answerCalloutX = specialLayout ? 5.25 : this.answerX;
+          this.context.world.addCallout({
+            text: "โจทย์",
+            position: [problemCalloutX, 2.8, specialLayout ? -4.45 : -3.45],
+            compactPosition: [problemCalloutX * .68, 2.65, specialLayout ? -4.65 : -4.55],
+            anchor: [specialLayout ? -3.5 : this.problemFocusX, .3, specialLayout ? -3.7 : -1.55],
+            scale: [3.25, .92],
+            compactScale: [2.45, .92],
+            insight: canOpenInsight ? () => this.insightDefinition(problemKind) : null
+          });
+          this.context.world.addCallout({
+            text: this.problem.type === "multiplication" ? "พื้นที่วางกลุ่ม" : this.problem.type === "division" ? "แบ่งให้เท่ากันทุกช่อง" : "พื้นที่คำตอบ",
+            position: [answerCalloutX, 2.8, specialLayout ? -4.45 : -3.45],
+            compactPosition: [answerCalloutX * .68, 2.65, specialLayout ? -4.65 : -4.55],
+            anchor: [specialLayout ? 3.5 : this.answerX, .3, this.answerZ],
+            scale: [3.25, .92],
+            compactScale: [2.45, .92],
+            insight: canOpenInsight ? () => this.insightDefinition("answer") : null
+          });
+        },
+
+        createControls() {
+          const special = this.problem.type === "multiplication" || this.problem.type === "division";
+          this.answerControls = this.context.ui.control.show({
+            id: "answer-tools",
+            scope: "scene",
+            position: "bottom-right",
+            items: special
+              ? [{ id: "clear", label: "เริ่มใหม่", icon: "reset.svg" }]
+              : [{ id: "pickup", label: "หยิบแครอท", icon: "hand.svg" }, { id: "clear", label: "ล้างคำตอบ", icon: "reset.svg" }],
+            onAction: event => {
+              if (event.id === "pickup") this.pickupCarrot();
+              if (event.id === "clear") this.clearAnswer();
+            }
+          });
+        },
+
+        async spawnSourceCarrot() {
+          if (this.sourceItems.has(1)) return this.sourceItems.get(1);
+          if (this.sourcePromise) return this.sourcePromise;
+          const id = this.nextItemId++;
+          const item = { id, value: 1, sourcePosition: [...this.sourcePosition], released: false, placed: false, slot: null, handle: null };
+          this.sourcePromise = this.context.world.addLibraryObject({
+            asset: "environment/carrot",
+            name: `answer-carrot-${id}`,
+            position: item.sourcePosition,
+            scale: 1.14,
+            draggable: this.isInteractive,
+            dragAxis: "xz",
+            dragLiftHeight: 1.08,
+            hitArea: [3.0, 1.1, 2.15],
+            hitAreaOffset: [0, .78, 0],
+            dragFromCenter: true,
+            guideTarget: [this.answerX, .3, this.answerZ],
+            hoverMessage: "ดึงแครอทขึ้นจากดิน แล้วลากไปยังพื้นที่คำตอบ",
+            onDrag: position => this.handleDrag(item, position),
+            onDrop: (position, droppedHandle) => this.handleDrop(item, position, droppedHandle)
+          })
+            .then(handle => {
+              item.handle = handle;
+              this.items.push(item);
+              this.sourceItems.set(1, item);
+              return item;
+            })
+            .finally(() => { this.sourcePromise = null; });
+          return this.sourcePromise;
+        },
+
+        handleDrag(item, position) {
+          if (item.released || item.placed) return;
+          const distance = Math.hypot(position.x - item.sourcePosition[0], position.z - item.sourcePosition[2]);
+          if (distance < .95) return;
+          item.released = true;
+          item.handle.setHitArea(null);
+          item.handle.setDragFromCenter(false);
+          if (this.sourceItems.get(item.value) === item) this.sourceItems.delete(item.value);
+          this.ensureSource();
+        },
+
+        handleDrop(item, position, handle) {
+          this.stopLabSuccess();
+          const inside = Math.abs(position.x - this.answerX) <= this.answerWidth / 2 && Math.abs(position.z - this.answerZ) <= this.answerDepth / 2;
+          if (inside) {
+            if (!item.released) {
+              item.released = true;
+              item.handle.setHitArea(null);
+              item.handle.setDragFromCenter(false);
+              if (this.sourceItems.get(item.value) === item) this.sourceItems.delete(item.value);
+              this.ensureSource();
+            }
+            if (!item.placed) {
+              const slot = this.firstFreeSlot();
+              if (slot < 0) {
+                this.removeItem(item);
+                this.context.ui.console.feedback("พื้นที่คำตอบเต็มแล้ว นำแครอทออกก่อนเพิ่มใหม่", { tone: "warning" });
+                return { accepted: true, commit: false };
+              }
+              item.slot = slot;
+              item.placed = true;
+              this.placement.set(item.id, slot);
+            }
+            this.relayoutAnswer(true);
+            this.scheduleSource();
+            this.updateAnswer(true);
+            return { accepted: true, commit: true };
+          }
+
+          if (item.placed) {
+            this.placement.delete(item.id);
+            item.placed = false;
+            item.slot = null;
+            this.removeItem(item);
+            this.relayoutAnswer(true);
+            this.updateAnswer(true);
+            return { accepted: true, commit: false };
+          }
+
+          if (item.released) {
+            this.removeItem(item);
+            this.scheduleSource();
+            return { accepted: true, commit: false };
+          }
+          return { accepted: false };
+        },
+
+        firstFreeSlot() {
+          const count = this.items.filter(item => item.placed).length;
+          return count < this.maxSlots ? count : -1;
+        },
+
+        answerLayout(count) {
+          const total = Math.max(1, count);
+          const usableWidth = this.answerWidth - .85;
+          const usableDepth = this.answerDepth - .85;
+          const columns = Math.max(1, Math.min(8, Math.ceil(Math.sqrt(total * usableWidth / usableDepth))));
+          const rows = Math.ceil(total / columns);
+          const preferredSpacing = total <= 12 ? 1.02 : (total <= 24 ? .84 : .68);
+          const spacingX = columns > 1 ? Math.min(preferredSpacing, usableWidth / (columns - 1)) : 0;
+          const spacingZ = rows > 1 ? Math.min(preferredSpacing, usableDepth / (rows - 1)) : 0;
+          const scale = total <= 12 ? 1 : (total <= 24 ? .88 : .76);
+          return { columns, rows, spacingX, spacingZ, scale };
+        },
+
+        answerSlot(slot, totalCount = null) {
+          const count = totalCount ?? Math.max(1, this.items.filter(item => item.placed).length);
+          const layout = this.answerLayout(count);
+          const column = slot % layout.columns;
+          const row = Math.floor(slot / layout.columns);
+          return [
+            this.answerX + (column - (layout.columns - 1) / 2) * layout.spacingX,
+            .18,
+            this.answerZ + (row - (layout.rows - 1) / 2) * layout.spacingZ
+          ];
+        },
+
+        relayoutAnswer(animate = true) {
+          const placed = this.items.filter(item => item.placed && item.handle).sort((a, b) => a.id - b.id);
+          const layout = this.answerLayout(placed.length);
+          this.placement.clear();
+          placed.forEach((item, index) => {
+            item.slot = index;
+            this.placement.set(item.id, index);
+            item.handle.setScale(layout.scale);
+            const target = this.answerSlot(index, placed.length);
+            if (animate) item.handle.animateTo(...target, { duration: 360, arcHeight: .42 });
+            else item.handle.setPosition(...target);
+          });
+        },
+
+        removeItem(item) {
+          item.handle.setDraggable(false);
+          item.handle.setVisible(false);
+          if (this.sourceItems.get(item.value) === item) this.sourceItems.delete(item.value);
+          const timer = setTimeout(() => item.handle.remove(), 0);
+          this.timers.push(timer);
+        },
+
+        async ensureSource() {
+          if (this.problem.type === "multiplication" || this.problem.type === "division") return null;
+          const item = await this.spawnSourceCarrot();
+          item?.handle?.setDraggable(this.isInteractive);
+          return item;
+        },
+
+        scheduleSource() {
+          const timer = setTimeout(() => {
+            this.ensureSource();
+          }, 0);
+          this.timers.push(timer);
+        },
+
+        pickupCarrot() {
+          if (!this.isInteractive) {
+            this.context.ui.console.feedback("ไปถึงขั้นทดลองก่อน แล้วจึงหยิบแครอทได้", { tone: "info" });
+            return;
+          }
+          this.context.world.hideDragCue();
+          this.pendingPickups += 1;
+          if (!this.pickupQueue) this.pickupQueue = this.processPickupQueue().finally(() => { this.pickupQueue = null; });
+        },
+
+        async processPickupQueue() {
+          const epoch = this.pickupEpoch;
+          while (this.pendingPickups > 0 && epoch === this.pickupEpoch) {
+            this.pendingPickups -= 1;
+            const slot = this.firstFreeSlot();
+            if (slot < 0) {
+              this.pendingPickups = 0;
+              this.context.ui.console.feedback("พื้นที่คำตอบเต็มแล้ว นำแครอทออกก่อนเพิ่มใหม่", { tone: "warning" });
+              return;
+            }
+            const item = await this.ensureSource();
+            if (epoch !== this.pickupEpoch || !item || item.placed) return;
+            item.released = true;
+            item.placed = true;
+            item.handle.setHitArea(null);
+            item.handle.setDragFromCenter(false);
+            item.slot = slot;
+            this.sourceItems.delete(1);
+            this.placement.set(item.id, slot);
+            item.handle.setDraggable(true);
+            this.relayoutAnswer(true);
+            await this.ensureSource();
+            this.updateAnswer(true);
+          }
         },
 
         clearAnswer() {
-          if (this.mode === "student-quiz") return;
+          this.stopLabSuccess();
+          if (this.problem.type === "multiplication") {
+            for (const group of this.multiplyGroups) { group.handle.setVisible(false); group.handle.setDraggable(false); }
+            this.multiplyGroups = [];
+            this.multiplySource?.setPosition(...this.sourcePosition);
+            this.multiplySource?.setVisible(true);
+            this.multiplySource?.setDraggable(this.isInteractive);
+            this.wasCorrect = false;
+            this.successAnimating = false;
+            this.equalsSign?.setState(false);
+            this.updateMultiplicationAnswer(false);
+            return;
+          }
+          if (this.problem.type === "division") {
+            for (const item of this.divisionItems) item.bin = null;
+            this.relayoutDivision(true);
+            this.wasCorrect = false;
+            this.successAnimating = false;
+            this.equalsSign?.setState(false);
+            this.updateDivisionAnswer(false);
+            return;
+          }
+          this.pendingPickups = 0;
+          this.pickupEpoch += 1;
+          for (const item of this.items.filter(value => value.placed)) {
+            item.placed = false;
+            item.slot = null;
+            this.removeItem(item);
+          }
           this.placement.clear();
-          this.handles.forEach((handle, index) => {
-            handle.stopAnimation();
-            handle.animateTo(...this.startPositions[index], { delay: index * 45, duration: 520, arcHeight: .35 });
-          });
-          this.operatorSign?.setState(false);
-          this.context.ui.console.feedback("ล้างคำตอบแล้ว ลากแอปเปิลมาทดลองใหม่ได้เลย", { tone: "info" });
+          this.updateAnswerCounter(0);
+          this.wasCorrect = false;
+          this.equalsSign?.setState(false);
+          this.ensureSource();
+          this.updateAnswer(false);
+          if (this.mode !== "student-quiz") this.context.ui.console.feedback("ล้างคำตอบแล้ว เริ่มสร้างใหม่ได้เลย", { tone: "info" });
         },
 
-        refreshCallouts() {
-          this.leftCallout?.remove();
-          this.rightCallout?.remove();
-          const targetOperator = this.targetOperator(this.values.operator, this.values.givenSide);
-          const answerLabel = this.mode === "student-quiz" ? "พื้นที่คำตอบ" : `วางให้ ${targetOperator} ${this.values.givenCount}`;
-          this.leftCallout = this.context.world.addCallout({ text: this.values.givenSide === "left" ? "จำนวนที่กำหนด" : answerLabel, position: [this.leftX, 4.35, .35], anchor: [this.leftX, .28, -1], scale: [2.85, .82] });
-          this.rightCallout = this.context.world.addCallout({ text: this.values.givenSide === "right" ? "จำนวนที่กำหนด" : answerLabel, position: [this.rightX, 4.35, .35], anchor: [this.rightX, .28, -1], scale: [2.85, .82] });
-        },
-
-        updateObjective() {
-          const equation = `${this.values.givenSide === "left" ? this.values.givenCount : "?"} ${this.values.operator} ${this.values.givenSide === "right" ? this.values.givenCount : "?"}`;
-          this.context.ui.setObjective(`เป้าหมาย: ทำให้ ${equation} เป็นจริง`);
-        },
-
-        handleDrop(index, position, handle, targetX) {
-          const inside = Math.abs(position.x - targetX) < 3.3 && position.z > -4.1 && position.z < 2.2;
-          const wasPlaced = this.placement.has(index);
-
-          if (!inside && !wasPlaced) {
-            return false;
-          }
-
-          if (inside) {
-            if (!wasPlaced) {
-              const usedSlots = new Set(this.placement.values());
-              let slot = 0;
-              while (usedSlots.has(slot)) slot += 1;
-              this.placement.set(index, slot);
-            }
-            const slot = this.placement.get(index);
-            handle.setPosition(targetX + ((slot % 3) - 1) * 1.65, .18, -1.5 + Math.floor(slot / 3) * 1.75);
-          } else {
-            this.placement.delete(index);
-            handle.setPosition(...this.startPositions[index]);
-          }
-
-          const { leftCount, rightCount, correct } = this.evaluateAnswer();
-
+        updateMultiplicationAnswer(announce) {
+          const groupSize = this.problem.operands[0];
+          const groupCount = this.multiplyGroups.length;
+          const answerValue = groupSize * groupCount;
+          const correct = groupCount === this.problem.operands[1];
+          this.resultCounter?.setValue(answerValue);
           if (this.mode === "student-quiz") {
-            this.context.quiz.answer(correct, { leftCount, rightCount, operator: this.values.operator });
-          } else {
-            this.operatorSign?.setState(correct);
-            if (correct) {
-              this.context.audio.play("success");
-              this.context.ui.toast(`${leftCount} ${this.values.operator} ${rightCount} เป็นจริง ถูกต้อง!`, "success");
-            }
+            this.context.quiz.answer(correct, {
+              answerValue,
+              expectedAnswer: this.problem.result,
+              groupSize,
+              groupCount,
+              hasAnswer: groupCount > 0,
+              expectedGroupCount: this.problem.operands[1],
+              problemType: this.problem.type,
+              expression: this.problem.expression
+            });
+            return;
           }
-          return { accepted: true, commit: inside };
+          if (!correct) this.stopLabSuccess();
+          this.equalsSign?.setState(correct);
+          if (correct && !this.wasCorrect) {
+            this.context.audio.play("success");
+            this.context.ui.console.set({ objective: `${groupCount} กลุ่ม กลุ่มละ ${groupSize}`, title: `รวมเป็น ${answerValue} แครอท`, message: `ถูกต้อง! ${this.problem.expression} คือการยกกลุ่ม ${groupSize} แครอทมาวาง ${groupCount} ครั้ง`, tone: "success" });
+            this.context.ui.console.feedback(`ถูกต้อง! มี ${groupSize} แครอทอยู่ ${groupCount} กลุ่ม`, { tone: "success" });
+            this.playLabSuccess();
+          } else if (announce && !correct) {
+            this.context.ui.console.set({ objective: `ต้องการ ${this.problem.operands[1]} กลุ่ม`, title: `ตอนนี้มี ${groupCount} กลุ่ม`, message: "ยกตะกร้าแครอทจากด้านล่างมาวางเพิ่ม หรือลากกลุ่มออกเพื่อแก้คำตอบ", tone: "info" });
+          }
+          this.wasCorrect = correct;
         },
 
-        evaluateAnswer() {
-          const placedCount = this.placement.size;
-          const leftCount = this.values.givenSide === "left" ? this.values.givenCount : placedCount;
-          const rightCount = this.values.givenSide === "right" ? this.values.givenCount : placedCount;
-          return { leftCount, rightCount, correct: this.compare(leftCount, this.values.operator, rightCount) };
+        updateDivisionAnswer(announce) {
+          const counts = this.answerBins.map(bin => this.divisionItems.filter(item => item.bin === bin.index).length);
+          const placedCount = counts.reduce((total, count) => total + count, 0);
+          const targetPerBin = this.problem.result;
+          const correct = placedCount === this.problem.operands[0] && counts.every(count => count === targetPerBin);
+          this.answerBins.forEach((bin, index) => bin.counter?.setValue(counts[index]));
+          if (this.mode === "student-quiz") {
+            this.context.quiz.answer(correct, {
+              answerValue: correct ? targetPerBin : null,
+              expectedAnswer: targetPerBin,
+              binCounts: counts,
+              placedCount,
+              hasAnswer: placedCount > 0,
+              dividend: this.problem.operands[0],
+              divisor: this.problem.operands[1],
+              problemType: this.problem.type,
+              expression: this.problem.expression
+            });
+            return;
+          }
+          if (!correct) this.stopLabSuccess();
+          this.equalsSign?.setState(correct);
+          if (correct && !this.wasCorrect) {
+            this.context.audio.play("success");
+            this.context.ui.console.set({ objective: `แบ่งครบ ${this.problem.operands[1]} กลุ่ม`, title: `กลุ่มละ ${targetPerBin} แครอท`, message: `ถูกต้อง! ${this.problem.operands[0]} ÷ ${this.problem.operands[1]} แบ่งได้เท่ากันทุกกลุ่ม`, tone: "success" });
+            this.context.ui.console.feedback(`ถูกต้อง! ทุกช่องมี ${targetPerBin} แครอทเท่ากัน`, { tone: "success" });
+            this.playLabSuccess();
+          } else if (announce && !correct) {
+            const allPlaced = placedCount === this.problem.operands[0];
+            this.context.ui.console.set({ objective: "ทำให้ทุกช่องมีจำนวนเท่ากัน", title: allPlaced ? `ตอนนี้แต่ละช่องมี ${counts.join(", ")} แครอท` : `แบ่งแล้ว ${placedCount} จาก ${this.problem.operands[0]} แครอท`, message: allPlaced ? "แครอทครบแล้ว แต่ยังแบ่งไม่เท่ากัน ลองย้ายระหว่างช่อง" : "ลากแครอทที่เหลือจากด้านล่างมาใส่ช่องใดก็ได้", tone: "info" });
+          }
+          this.wasCorrect = correct;
         },
 
-        compare(left, operator, right) {
-          if (operator === "=") return left === right;
-          if (operator === "≠" || operator === "!=") return left !== right;
-          if (operator === "<") return left < right;
-          if (operator === ">") return left > right;
-          if (operator === "≤" || operator === "<=") return left <= right;
-          if (operator === "≥" || operator === ">=") return left >= right;
-          return false;
+        playLabSuccess() {
+          if (this.mode === "student-quiz" || this.successAnimating) return;
+          this.stopLabSuccess();
+          this.successAnimating = true;
+          const baseColor = this.problem.type === "division" ? "#e1e4e3" : this.problem.type === "multiplication" ? "#d9dddc" : "#d8f5df";
+          ["#55d889", baseColor, "#55d889", baseColor, "#55d889"].forEach((color, index) => {
+            this.successTimers.push(setTimeout(() => this.setAnswerSurfaceColor(color), index * 115));
+          });
+          const wave = this.successWaveEntries();
+          this.successWave = wave;
+          wave.forEach((entry, index) => {
+            this.successTimers.push(setTimeout(() => entry.handle.animateTo(entry.position[0], entry.position[1] + .62, entry.position[2], { duration: 210, arcHeight: .28 }), index * 70));
+            this.successTimers.push(setTimeout(() => entry.handle.animateTo(...entry.position, { duration: 230, arcHeight: .05 }), index * 70 + 230));
+          });
+          this.successTimers.push(setTimeout(() => { this.successAnimating = false; this.successWave = []; }, wave.length * 70 + 620));
         },
 
-        targetOperator(operator, givenSide) {
-          const normalized = operator === "!=" ? "≠" : operator === "<=" ? "≤" : operator === ">=" ? "≥" : operator;
-          if (givenSide === "right") return normalized;
-          return ({ "=": "=", "≠": "≠", "<": ">", ">": "<", "≤": "≥", "≥": "≤" })[normalized] || normalized;
+        stopLabSuccess() {
+          (this.successTimers || []).forEach(clearTimeout);
+          this.successTimers = [];
+          for (const entry of this.successWave || []) {
+            entry.handle.stopAnimation?.();
+            entry.handle.setPosition(...entry.position);
+          }
+          this.successWave = [];
+          this.successAnimating = false;
+          const baseColor = this.problem?.type === "division" ? "#e1e4e3" : this.problem?.type === "multiplication" ? "#d9dddc" : "#d8f5df";
+          this.setAnswerSurfaceColor(baseColor);
+        },
+
+        setAnswerSurfaceColor(color) {
+          this.answerZoneHandles?.forEach(zone => zone?.setColor?.(color));
+          this.answerSurface?.setColor?.(color === "#55d889" ? color : "#edf9f1");
+          if (this.problem?.type === "multiplication") {
+            this.answerFloorHandles?.forEach(floor => floor.setColor(color === "#55d889" ? color : "#e7e9e8"));
+          }
+        },
+
+        successWaveEntries() {
+          if (this.problem.type === "multiplication") {
+            return [...this.multiplyGroups].sort((a, b) => a.slot - b.slot).flatMap(group => group.carrots);
+          }
+          if (this.problem.type === "division") {
+            const entries = [];
+            for (const bin of this.answerBins) {
+              this.divisionItems.filter(item => item.bin === bin.index).sort((a, b) => a.index - b.index).forEach((item, slot) => entries.push({ handle: item.handle, position: this.divisionSlotPosition(bin.index, slot) }));
+            }
+            return entries;
+          }
+          const placed = this.items.filter(item => item.placed && item.handle).sort((a, b) => a.id - b.id);
+          return placed.map((item, index) => ({ handle: item.handle, position: this.answerSlot(index, placed.length) }));
+        },
+
+
+        updateAnswer(announce) {
+          const placedItems = this.items.filter(item => item.placed);
+          const answerValue = placedItems.reduce((total, item) => total + item.value, 0);
+          const carrotCount = placedItems.length;
+          this.updateAnswerCounter(answerValue);
+          const correct = answerValue === this.problem.result;
+          if (this.mode === "student-quiz") {
+            this.context.quiz.answer(correct, {
+              answerCount: answerValue,
+              answerValue,
+              carrotCount,
+              hasAnswer: carrotCount > 0,
+              carrotValues: placedItems.map(item => item.value),
+              expectedAnswer: this.problem.result,
+              leftCount: answerValue,
+              operator: "=",
+              rightCount: this.problem.result,
+              problemType: this.problem.type,
+              expression: this.problem.expression
+            });
+            return;
+          }
+          if (!correct) this.stopLabSuccess();
+          this.equalsSign?.setState(correct);
+          if (correct && !this.wasCorrect) {
+            this.context.audio.play("success");
+            this.context.ui.console.set({
+              objective: "นับแครอทให้ตรงกับผลลัพธ์",
+              title: `รวมได้ ${answerValue} หน่วย`,
+              message: `ถูกต้อง! ใช้แครอท ${carrotCount} หัวสร้าง ${this.problem.expression} = ${this.problem.result}`,
+              tone: "success"
+            });
+            this.context.ui.console.feedback(`ถูกต้อง! ${this.problem.expression} = ${this.problem.result}`, { tone: "success" });
+            this.playLabSuccess();
+          } else if (announce && !correct) {
+            this.context.ui.console.set({
+              objective: "หยิบแครอทเพิ่มหรือนำออกเพื่อเปลี่ยนคำตอบ",
+              title: `ตอนนี้รวมได้ ${answerValue} หน่วย`,
+              message: `มีแครอท ${carrotCount} หัว — หยิบเพิ่มหรือลากออกเพื่อเปลี่ยนจำนวน`,
+              tone: "info"
+            });
+          }
+          this.wasCorrect = correct;
+        },
+
+        insightDefinition(kind) {
+          const problem = this.problem;
+          let title = "ดูวิธีคิด";
+          let message = "ดูความหมายของพื้นที่นี้ทีละขั้น";
+          let html = "";
+
+          if (kind === "parentheses") {
+            const [insideLeft, insideRight] = problem.insideOperands;
+            const afterFence = problem.type === "parenthesesBack" ? `${problem.outsideOperand} × ${problem.insideResult}` : `${problem.insideResult} × ${problem.outsideOperand}`;
+            title = problem.type === "parenthesesBack" ? "วงเล็บอยู่ข้างหลังก็ต้องทำก่อน" : "ทำไมต้องคิดในรั้วก่อน?";
+            message = "รั้วไม้คือภาพแทนวงเล็บ ไม่ว่ารั้วจะอยู่หน้า หรืออยู่หลัง เราต้องทำสิ่งข้างในก่อนเสมอ";
+            html = `<div class="insight-equation"><strong>${problem.expression}</strong><span class="insight-arrow">→</span><strong>${afterFence}</strong><span class="insight-arrow">→</span><strong class="insight-result">${problem.result}</strong></div><ol class="insight-steps"><li>ข้ามสิ่งที่อยู่นอกรั้วไว้ก่อน</li><li>คิด ${insideLeft} + ${insideRight} ในรั้ว ได้ ${problem.insideResult}</li><li>จึงคูณกับ ${problem.outsideOperand} ได้คำตอบ ${problem.result}</li></ol><div class="insight-grid"><div class="insight-card"><strong>ถ้าไม่มีวงเล็บ</strong><p>${problem.withoutParenthesesExpression} = ${problem.withoutParenthesesResult}</p></div><div class="insight-card"><strong>เมื่อมีวงเล็บ</strong><p>${problem.expression} = ${problem.result}</p></div></div><p class="insight-note">${problem.type === "parenthesesBack" ? "เห็นไหมว่า วงเล็บด้านหลังทำให้เราต้องย้อนมาทำด้านในก่อน และคำตอบเปลี่ยนไป" : "โจทย์วงเล็บด้านหน้าช่วยฝึกกฎ ส่วนโจทย์วงเล็บด้านหลังช่วยให้เห็นชัดว่าวงเล็บเปลี่ยนลำดับจริง"}</p>`;
+          } else if (kind === "answer") {
+            title = "พื้นที่คำตอบใช้อย่างไร?";
+            if (problem.type === "multiplication") {
+              message = `หนึ่งตะกร้ามีแครอท ${problem.operands[0]} หัว ต้องยกทั้งตะกร้าไปวางเป็นกลุ่ม`;
+              html = `<div class="insight-equation"><strong>1 กลุ่ม</strong><span class="insight-arrow">=</span><strong>${problem.operands[0]} แครอท</strong></div><ol class="insight-steps"><li>ยกตะกร้าทั้งก้อน ห้ามแยกแครอท</li><li>วาง ${problem.operands[1]} กลุ่ม</li><li>จึงเห็น ${problem.operands[1]} กลุ่ม กลุ่มละ ${problem.operands[0]} รวม ${problem.result} แครอท</li></ol>`;
+            } else if (problem.type === "division") {
+              message = `นำแครอท ${problem.operands[0]} หัวไปแจกใน ${problem.operands[1]} ช่องให้เท่ากัน`;
+              html = `<div class="insight-equation"><strong>${problem.operands[0]} แครอท</strong><span class="insight-arrow">÷ ${problem.operands[1]} กลุ่ม</span><strong>${problem.result} แครอทต่อกลุ่ม</strong></div><ol class="insight-steps"><li>แจกทีละแครอทลงช่องใดก็ได้</li><li>ต้องใช้แครอทครบทุกหัว</li><li>ทุกช่องต้องมีจำนวนเท่ากัน</li></ol><p class="insight-note">ช่องรับแครอทเกินได้ จึงต้องตรวจด้วยตัวเองว่าแบ่งเท่ากันจริงหรือไม่</p>`;
+            } else {
+              message = "แครอทหนึ่งหัวแทนหนึ่งหน่วย นับให้เท่ากับคำตอบ";
+              html = `<div class="insight-equation"><strong>แครอท 1 หัว</strong><span class="insight-arrow">=</span><strong>1 หน่วย</strong></div><div class="insight-grid"><div class="insight-card"><strong>ดึงจากดิน</strong><p>ลากแครอทจากแปลงไปวางในพื้นที่คำตอบ</p></div><div class="insight-card"><strong>หยิบเร็ว</strong><p>กดปุ่มหยิบแครอทเพื่อเพิ่มทีละหนึ่งหัว</p></div><div class="insight-card"><strong>เปลี่ยนคำตอบ</strong><p>ลากแครอทออก หรือกดล้างคำตอบ</p></div></div>`;
+            }
+          } else {
+            const symbol = problem.operators[0];
+            const meanings = { "+": "รวมแครอทจากสองแปลง", "−": "นำจำนวนแครอทฝั่งที่สองออกจากฝั่งแรก", "×": "สร้างหลายกลุ่มที่มีจำนวนเท่ากัน", "÷": "แบ่งแครอทออกเป็นกลุ่มเท่า ๆ กัน" };
+            title = `เครื่องหมาย ${symbol} บอกอะไร?`;
+            message = meanings[symbol] || "อ่านเครื่องหมายจากซ้ายไปขวา";
+            html = `<div class="insight-equation"><strong>${problem.expression}</strong><span class="insight-arrow">→</span><strong class="insight-result">${problem.result}</strong></div><ol class="insight-steps"><li>นับแครอทแปลงแรก ${problem.operands[0]} หัว</li><li>อ่านเครื่องหมาย ${symbol}</li><li>ทำกับแครอทแปลงที่สอง ${problem.operands[1]} หัว จึงได้ ${problem.result}</li></ol>`;
+          }
+
+          return {
+            id: `lesson1-${kind}-insight`,
+            scope: "scene",
+            title,
+            message,
+            html,
+            primaryLabel: "กลับไปทำโจทย์"
+          };
         },
 
         onStep(index, step) {
-          const messages = ["เริ่มจากนับแอปเปิล", `อ่านเครื่องหมาย ${this.values.operator} จากซ้ายไปขวา`, "เส้นประสีเข้มชี้ไปยังพื้นที่คำตอบ", "ถึงเวลาลองลากแอปเปิลด้วยตัวเองแล้ว"];
-          const canPractice = step.type === "freestyle";
-          this.demoTimers.forEach(clearTimeout);
-          this.demoTimers = [];
+          this.clearTimers();
           this.context.world.hideDragCue();
-          this.handles.forEach((handle, boxIndex) => {
-            handle.stopAnimation();
-            handle.setDraggable(false);
-            if (index <= 1) handle.setPosition(...this.startPositions[boxIndex]);
-          });
-          this.guideline?.setVisible(index === 2);
-          this.targetFocus?.setVisible(index === 1 || index === 2);
-          if (canPractice) this.labControls?.show(); else this.labControls?.hide();
-          const later = (callback, delay) => this.demoTimers.push(setTimeout(callback, delay));
-          if (index === 1) {
-            this.handles.forEach((handle, boxIndex) => {
-              handle.animateTo(...this.startPositions[boxIndex], { delay: boxIndex * 55, duration: 520, arcHeight: .24 });
-            });
-          } else if (index === 2) {
-            this.handles.slice(0, Number(this.values.answerCount)).forEach((handle, boxIndex) => {
-              handle.animateTo(this.targetX + ((boxIndex % 3) - 1) * 1.65, .18, -1.5 + Math.floor(boxIndex / 3) * 1.75, { delay: boxIndex * 120, duration: 720 });
-            });
-          } else if (canPractice) {
-            this.placement.clear();
-            this.handles.forEach((handle, boxIndex) => handle.animateTo(...this.startPositions[boxIndex], { delay: boxIndex * 55, duration: 520, arcHeight: .35 }));
-            later(() => {
-              this.handles.forEach(handle => handle.setDraggable(true));
-              this.context.world.showDragCue(this.handles[0], [this.targetX, .18, -.8]);
-            }, 720);
+          const freestyle = step.type === "freestyle";
+          this.isInteractive = freestyle;
+          this.ensureSource();
+          if (freestyle) this.answerControls?.show();
+          else this.answerControls?.hide();
+          this.answerControls?.setDisabled("pickup", !freestyle);
+          this.multiplySource?.setDraggable(freestyle);
+          if (this.multiplySource) {
+            this.multiplySource.stopAnimation();
+            this.multiplySource.setPosition(...this.sourcePosition);
+            this.multiplySource.setVisible(true);
           }
-          this.context.ui.toast(messages[index] || step.title, "success");
+          if (this.problem.type === "division") this.relayoutDivision(false);
+          for (const item of this.divisionItems) item.handle.setDraggable(freestyle);
+          for (const group of this.multiplyGroups) group.handle.setDraggable(freestyle);
+          for (const item of this.sourceItems.values()) {
+            item.handle.stopAnimation();
+            if (freestyle && !item.released && !item.placed) item.handle.setPosition(...item.sourcePosition);
+            item.handle.setDraggable(freestyle);
+          }
+          this.problemFocus.setVisible(index === 0 || index === 1);
+          this.answerFocus.setVisible(index >= 2);
+
+          if (index === 0) {
+            this.operatorSign?.pulse();
+            this.equalsSign?.pulse();
+          } else if (index === 1 && this.isParenthesesProblem()) {
+            this.context.ui.hint.show({ id: "insight-hint", scope: "step", title: "ลองกดรั้วไม้", message: "รั้วไม้จะเรืองแสงเมื่อเมาส์อยู่เหนือพื้นที่ กดเพื่อดูว่าทำไมต้องคิดข้างในก่อน แล้วลองสลับเป็นวงเล็บด้านหลังใน LAB", type: "instruction" });
+          } else if (index === 2) {
+            if (this.problem.type === "multiplication") {
+              const target = [this.multiplySlotX(0), .18, this.answerZ];
+              this.multiplySource?.animateTo(...target, { duration: 680, arcHeight: .75 });
+              this.timers.push(setTimeout(() => this.multiplySource?.animateTo(...this.sourcePosition, { duration: 620, arcHeight: .55 }), 760));
+            } else if (this.problem.type === "division") {
+              const item = this.divisionItems[0];
+              const target = this.divisionSlotPosition(0, 0);
+              item?.handle.animateTo(...target, { duration: 680, arcHeight: .75 });
+              if (item) this.timers.push(setTimeout(() => item.handle.animateTo(...item.sourcePosition, { duration: 620, arcHeight: .55 }), 760));
+            } else {
+              const item = this.sourceItems.get(1);
+              const target = this.answerSlot(0);
+              item?.handle.animateTo(...target, { duration: 680, arcHeight: .75 });
+              if (item) this.timers.push(setTimeout(() => item.handle.animateTo(...item.sourcePosition, { duration: 620, arcHeight: .55 }), 760));
+            }
+          } else if (freestyle) {
+            if (this.problem.type !== "multiplication" && this.problem.type !== "division") {
+              const item = this.sourceItems.get(1);
+              if (item) this.context.world.showDragCue(item.handle, this.answerSlot(0));
+            }
+          }
+
+          const messages = [
+            `โจทย์นี้คือ ${this.problem.expression}`,
+            "กดป้ายข้อมูลเหนือพื้นที่โจทย์เพื่อเปิดดูคำอธิบาย",
+            this.problem.type === "multiplication" ? "ตะกร้าด้านล่างคือหนึ่งกลุ่ม ลองยกทั้งตะกร้าไปยังช่องด้านบน" : this.problem.type === "division" ? "แครอทด้านล่างคือจำนวนทั้งหมด ลองแจกทีละหัวลงช่องด้านบน" : "แครอทหนึ่งหัวแทนหนึ่งหน่วย ลองดึงจากดินไปยังพื้นที่คำตอบ",
+            this.problem.type === "multiplication" ? "ลากกลุ่มให้ครบตามตัวคูณ แล้วดูผลรวมบนฉาก" : this.problem.type === "division" ? "ใช้แครอททุกหัวและทำให้ทุกช่องมีจำนวนเท่ากัน" : "หยิบหรือลากแครอทให้มีจำนวนเท่ากับคำตอบ ไม่มีการจับเวลา"
+          ];
+          this.context.ui.console.set({ objective: step.desc, title: step.title, message: messages[index] || step.desc, tone: "info" });
+        },
+
+        clearTimers() {
+          this.stopLabSuccess();
+          this.timers.forEach(clearTimeout);
+          this.timers = [];
         },
 
         dispose() {
-          this.demoTimers.forEach(clearTimeout);
-          this.context.world.hideDragCue();
-          this.handles = [];
-          this.labControls?.remove();
-          this.labControls = null;
+          this.clearTimers();
+          this.context?.world.hideDragCue();
+          this.context?.ui.insight.close();
+          this.items = [];
           this.placement?.clear();
-          this.startPositions = [];
+          this.sourceItems?.clear();
+          this.context = null;
         }
       });
     })();

@@ -38,7 +38,9 @@ Lesson Package เป็น HTML UTF-8 ไฟล์เดียวเพื่�
 - ออกแบบฉากจากเนื้อหาของบทเรียน ไม่บังคับใช้โครงซ้าย/ขวาหรือกล่องจาก Lesson 0
 - ใช้เฉพาะ Standard Asset ID จาก `sdk/asset-library.catalog.json` ห้าม custom model relative path, `world.addModel()` และ `type: "model"` โดยตรง แต่ Standard Asset ID อาจชี้ไปยังโมเดลที่ระบบกลางดูแลได้
 - รูปทรง procedural ที่ประกาศใน Public API ใช้ได้ทั้งหมดและไม่ถือเป็น custom asset ก่อนแจ้งว่าขาด Asset ต้องลองสร้างด้วย `addPrimitive`/`addGroup` ก่อน โดยเฉพาะ `sector` สำหรับชิ้นเค้กหรือวงกลมเศษส่วน
-- GUI ใช้ Service กลาง `question`, `console`, `topMessage`, `choice`, `gizmo`, `feedback`, `dialog`, `control`, `hint`, `busy` ตามหน้าที่ ห้ามสร้าง UI เหล่านี้ซ้ำด้วย DOM/CSS, Canvas, Sprite, primitive หรือ group ของบทเรียน
+- GUI ใช้ Service กลาง `question`, `console`, `topMessage`, `choice`, `gizmo`, `worldGuiSystem`, `feedback`, `dialog`, `control`, `hint`, `busy` ตามหน้าที่ ห้ามสร้าง UI เหล่านี้ซ้ำด้วย DOM/CSS, Canvas, Sprite, primitive หรือ group ของบทเรียน
+- Control ของบทเรียนต้องยอมรับ phase policy ของ runtime: ซ่อนทั้งหมดระหว่างขั้นสอน ยกเว้นปุ่มข้ามการสอนของระบบ และแสดงได้เมื่อเข้า Lab ขั้นสุดท้าย/การทดลองหรือ Quiz เท่านั้น `handle.show()` ไม่สามารถข้ามกฎนี้
+- Debug Area และ Transform Editor เป็น System-owned tooling บทเรียนห้ามเปิดหรือจำลองขึ้นเอง; หากต้องแสดงข้อมูลเล็กที่ยึดกับโมเดลหรือพิกัดในบทเรียน ให้ใช้ `context.ui.worldGuiSystem`
 - ก่อนสร้าง UI ทุกชิ้นต้องเลือกชื่อ, ownership และ API ตาม `sdk/UI_CATALOG.md` และตัวอย่างใน `sdk/GUI_SERVICE_REFERENCE.md` ก่อนเสมอ ถ้าไม่มี capability จริงให้รายงานสิ่งที่ขาด ห้ามสมมติ API หรือทำ UI one-off ทดแทน
 - `world.addCallout()` สงวนไว้สำหรับ GUI ล็อกเข้าหาจอที่ชี้พื้นที่ด้วย leader line/ring ในฉาก ไม่ใช่ Gizmo และบทเรียนห้ามสร้าง DOM/Screen-space overlay/Sprite ทดแทนเอง
 - เครื่องหมายเปรียบเทียบและคำนวณ `= ≠ < > ≤ ≥ + - × ÷` ใช้ `world.addOperatorSign()` เพื่อรักษา polygon และฐานมาตรฐาน
@@ -66,6 +68,8 @@ PuzzleLesson.define({
 - lifecycle อาจเป็น `async` ได้ แต่ error ต้องถูก throw ออกไปให้ runtime รายงาน
 
 Runtime เป็นเจ้าของการ clear world ก่อน reset ดังนั้น lesson ไม่ต้องลบ object ทีละชิ้น แต่ต้องล้าง Map, array, timer และ handle ของรอบก่อน
+
+ค่าเริ่มต้น `scenePersistence` คือ `"reset"` และ Runtime จะล้าง World ก่อน `reset()` ตามปกติ หากฉากหลักเหมือนเดิมทุกข้อ บทเรียนเลือก `meta.scenePersistence: "lesson"` ได้ แล้ว Runtime จะคง World หลัง reset ครั้งแรก บทเรียนต้องสร้างฉากคงที่ครั้งเดียว รีใช้หรือ pool object ที่เหมาะสม ล้างเฉพาะ object แบบ dynamic ทุก `reset()` และล้างทั้งหมดใน `dispose()` ห้ามใช้โหมดนี้เพียงเพื่อหลบ cleanup
 
 `reset` สามารถเป็น `async` ได้เมื่อตรรกะบทเรียนจำเป็น แต่ TEACHER_EXTERNAL ห้ามโหลด custom model; Standard Library prefab และ primitive สร้างได้ทันที
 

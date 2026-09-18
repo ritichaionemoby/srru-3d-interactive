@@ -262,9 +262,33 @@ context.ui.insight.show({
 
 attribute, event handler, style, script, iframe, link และ tag อื่นจะไม่ถูกนำไปแสดง บทเรียนจึงเปลี่ยนโครงสร้างเนื้อหาได้ แต่ไม่สามารถแทรก UI หรือโค้ดที่ข้ามระบบกลาง
 
+## World GUI System
+
+ใช้ป้ายขนาดเล็กที่ยึดกับโมเดลหรือพิกัด World โดยยังอ่านตรงในหน้าจอ เหมาะกับชื่อ ค่าสั้น หรือคำอธิบายที่ต้องติดตามวัตถุ:
+
+```js
+const label = context.ui.worldGuiSystem.attach(box, {
+  id: "box-label",
+  scope: "step",
+  text: "กล่องตัวอย่าง",
+  tone: "info",
+  size: "small",
+  anchor: "top",
+  offset: [0, 0.2, 0]
+});
+
+label.setText("กล่องที่เลือก");
+label.hide();
+label.show();
+```
+
+ใช้ `at([x, y, z], options)` สำหรับพิกัดคงที่, `attach(target, options)` สำหรับ Lesson Handle/model, `get(id)` เพื่ออ่าน handle และ `clear(scope)` เพื่อล้างตามอายุ UI Handle รองรับ `update()`, `setText()`, `setTarget()`, `show()`, `hide()` และ `remove()`
+
+Debug Area ที่แสดงพิกัด X/Z และ Transform Editor ใช้ระบบเดียวกันแต่เป็น System-owned tooling สำหรับทีม Dev บทเรียนห้ามเรียก `worldGuiSystem.debug` หรือจำลองเครื่องมือแก้ transform เอง
+
 ## Control
 
-Control ที่ทำให้กิจกรรมเปลี่ยน state ต้องไม่แสดงระหว่างขั้นสอน `sequence` ให้เรียก `handle.hide()` ไว้ก่อน แล้ว `handle.show()` เมื่อเข้าสู่ `freestyle` หรือขั้นที่อนุญาตให้ผู้เรียน interactive; ใน `student-quiz` แสดงได้ทันทีเมื่อข้อพร้อมเล่น
+Control ของบทเรียนถูก runtime จัดการตาม phase กลางทุกบท ระหว่างขั้นสอนระบบซ่อน Control ทั้งหมดและแสดงเฉพาะปุ่มข้ามการสอนของระบบ เมื่อเข้า Lab ขั้นสุดท้าย/การทดลองหรือ `student-quiz` จึงอนุญาตให้ Control ของบทเรียนแสดง หากย้อนกลับไปขั้นสอนระบบจะซ่อนอีกครั้ง และ `handle.show()` ไม่สามารถข้ามกฎนี้ได้
 
 Control ใช้กับคำสั่ง utility ไม่ใช่คำตอบ หากเป็นโจทย์ให้ใช้ Choice
 

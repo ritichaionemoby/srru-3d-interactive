@@ -55,7 +55,7 @@ export function consumeRuntimeLessonRestore() {
   } catch { sessionStorage.removeItem(LESSON_RESTORE_KEY); return null; }
 }
 
-export function setupRuntimeSettingMenu({ setting, baseline, getMode, onApply, onRefresh, onRestore, onRetest, onGuiLabAction }) {
+export function setupRuntimeSettingMenu({ setting, baseline, getMode, onApply, onRefresh, onRestore, onRetest, onGuiLabAction, onToggleDebugArea, debugEnabled = true }) {
   let draft = clone(setting), jsonDirty = false;
   const panel = document.createElement("section");
   panel.className = "runtime-setting-panel";
@@ -89,7 +89,7 @@ export function setupRuntimeSettingMenu({ setting, baseline, getMode, onApply, o
       <div class="runtime-gui-lab" data-setting-view="service" hidden>
         <header><strong>GUI Service Lab</strong><p>ทดสอบ UI กลางกับบทเรียนปัจจุบัน ค่า Preview จะไม่ถูกบันทึก</p></header>
         <div class="runtime-gui-lab-form">
-          <label><span>Service</span><select data-gui-lab-service><option value="question">Question Panel</option><option value="console">Main Console</option><option value="top-message">Top Message</option><option value="choice">Choice Panel</option><option value="gizmo">Gizmo (Object ที่เลือก/ชิ้นแรก)</option><option value="world-counter">World Counter (3D Digits)</option><option value="world-gui">World GUI (ข้อความบนพื้น)</option><option value="feedback">Feedback</option><option value="dialog">Dialog</option><option value="control-top">Control Menu · Top Right</option><option value="control-middle">Control Menu · Middle Right</option><option value="control-bottom">Control Menu · Bottom Right</option><option value="hint">Mascot Hint</option><option value="busy">Busy Overlay</option></select></label>
+          <label><span>Service</span><select data-gui-lab-service><option value="question">Question Panel</option><option value="console">Main Console</option><option value="top-message">Top Message</option><option value="choice">Choice Panel</option><option value="gizmo">Gizmo (Object ที่เลือก/ชิ้นแรก)</option><option value="world-gui-system">World GUI System (ป้ายเล็กตามโมเดล)</option><option value="world-counter">World Counter (3D Digits)</option><option value="world-gui">World GUI (ข้อความบนพื้น)</option><option value="feedback">Feedback</option><option value="dialog">Dialog</option><option value="control-top">Control Menu · Top Right</option><option value="control-middle">Control Menu · Middle Right</option><option value="control-bottom">Control Menu · Bottom Right</option><option value="hint">Mascot Hint</option><option value="busy">Busy Overlay</option></select></label>
           <label><span>Tone</span><select data-gui-lab-tone><option value="primary">Primary</option><option value="info">Info</option><option value="success">Success</option><option value="warning">Warning</option><option value="error">Error</option></select></label>
           <label class="is-wide"><span>ข้อความทดสอบ</span><input type="text" data-gui-lab-text value="ตัวอย่าง GUI Service จาก Runtime Setting"></label>
         </div>
@@ -181,5 +181,30 @@ export function setupRuntimeSettingMenu({ setting, baseline, getMode, onApply, o
   panel.querySelector("[data-restore-default]").addEventListener("click", async () => { setStatus("กำลังคืนค่าจาก main-world-setting.js…", "success"); sessionStorage.removeItem(SETTING_OVERRIDE_KEY); await onRestore?.(); });
   panel.querySelector("[data-refresh-lesson]").addEventListener("click", async () => { setStatus("กำลังโหลดบทเรียนและ asset ใหม่…", "success"); try { await onRefresh?.(); closePanel(); } catch (error) { setStatus(error.message, "error"); } });
   window.addEventListener("keydown", event => { if (event.key === "F6") { event.preventDefault(); if (panel.hidden) openPanel(); else closePanel(); } else if (event.key === "Escape" && !panel.hidden) closePanel(); });
+  // Keep developer shortcuts outside runtime UI skins and the lesson tool drawer.
+  const debugTools = document.createElement("nav");
+  debugTools.className = "runtime-debug-tools";
+  debugTools.hidden = debugEnabled !== true;
+  debugTools.setAttribute("aria-label", "เครื่องมือ Debug");
+  const gearIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.08-.98l2.11-1.65a.5.5 0 0 0 .12-.64l-2-3.46a.5.5 0 0 0-.61-.22l-2.49 1a7.3 7.3 0 0 0-1.69-.98l-.38-2.65A.49.49 0 0 0 14 2h-4a.49.49 0 0 0-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1a.49.49 0 0 0-.61.22l-2 3.46a.49.49 0 0 0 .12.64l2.11 1.65c-.05.32-.08.66-.08.98s.03.66.08.98l-2.11 1.65a.5.5 0 0 0-.12.64l2 3.46c.12.22.38.31.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.04.24.24.42.49.42h4c.25 0 .45-.18.49-.42l.38-2.65c.61-.25 1.17-.58 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.12-1.65ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/></svg>`;
+  debugTools.innerHTML = `<button type="button" data-debug-action="refresh" aria-label="Refresh และเปิดบทเรียนเดิม" title="Refresh · F4">↻</button><button type="button" data-debug-action="settings" aria-label="เปิด Runtime Setting" title="Runtime Setting · F6">${gearIcon}</button><button type="button" data-debug-action="debug-area" aria-label="เปิด Debug Area แสดงพิกัดและ Transform" aria-pressed="false" title="เปิด Debug Area · พิกัด X/Z และ Transform โมเดล">XYZ</button><button type="button" data-debug-action="teacher-lab" aria-label="เปิดเป็น Teacher Lab" title="Teacher Lab">Lab</button><button type="button" data-debug-action="student-quiz" aria-label="เปิดเป็น Student Quiz" title="Student Quiz">Quiz</button>`;
+  document.body.append(debugTools);
+  debugTools.addEventListener("click", async event => {
+    const action = event.target.closest("[data-debug-action]")?.dataset.debugAction;
+    if (!action) return;
+    try {
+      if (action === "settings") { if (panel.hidden) openPanel(); else closePanel(); }
+      else if (action === "debug-area") {
+        const button = event.target.closest("[data-debug-action]");
+        const enabled = Boolean(onToggleDebugArea?.());
+        button.classList.toggle("is-active", enabled);
+        button.setAttribute("aria-pressed", String(enabled));
+        button.setAttribute("aria-label", `${enabled ? "ปิด" : "เปิด"} Debug Area แสดงพิกัดและ Transform`);
+        button.title = `${enabled ? "ปิด" : "เปิด"} Debug Area · พื้นเกาะ X/Z · ความสูง Y`;
+      }
+      else if (action === "refresh") await onRefresh?.();
+      else await onRetest?.({ mode: action });
+    } catch (error) { console.warn("[Runtime Debug]", error); }
+  });
   return Object.freeze({ open: openPanel, close: closePanel, toggle() { if (panel.hidden) openPanel(); else closePanel(); } });
 }

@@ -95,16 +95,18 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 - **Existing GUI Service First เป็นกฎบังคับ:** ทุกครั้งที่ต้องแสดง UI ให้จำแนกหน้าที่และค้นใน `sdk/UI_CATALOG.md` / `GUI_SERVICE_REFERENCE.md` ก่อน แล้วใช้ Service ที่มีอยู่ ห้ามเริ่มจากการสร้าง UI เฉพาะบทเรียน
 - ถ้าไม่มี capability ที่ต้องการจริง ให้ตรวจ runtime ก่อน จากนั้นเพิ่มหรือขยาย `gui-service.js` และ Setting/API กลาง พร้อม mobile behavior, lifecycle cleanup, เอกสาร และ regression test ห้ามแก้ด้วย HTML/CSS หรือ panel one-off ที่ใช้ได้เพียง lesson เดียว
 - ก่อนออกแบบ UI ต้องอ่าน `sdk/UI_CATALOG.md` และ `sdk/GUI_SERVICE_REFERENCE.md` เพื่อใช้ชื่อมาตรฐาน, API และ ownership ให้ถูกต้อง
-- โจทย์หลักที่ต้องอ่านคงที่ใช้ `context.ui.setQuestion(text)` ระบบจะแสดงเป็น screen-space UI ด้านบนและไม่หมุนตามกล้อง บทเรียนส่งเฉพาะข้อความ
+- โจทย์หลักที่ต้องอ่านคงที่ใช้ `context.ui.setQuestion(text)` ระบบจะแสดงเป็น screen-space UI ด้านบนและไม่หมุนตามกล้อง กรอบรักษาความกว้าง/ความสูง ไม่ทับ Header/Panel และลดขนาดอักษรให้พอดีไม่เกิน 2 บรรทัด บทเรียนส่งเฉพาะข้อความ
 - เป้าหมายย่อใน Main Console ด้านล่างใช้ `context.ui.setObjective(text)`
 - ข้อความ feedback ใช้ `context.ui.toast(text, type)` เพื่ออัปเดตสถานะใน Main Console ข้อความจะค้างจนกว่าจะมีสถานะใหม่หรือเปลี่ยน Step
-- GUI ใหม่ให้ใช้ Service กลาง `context.ui.question`, `console`, `topMessage`, `choice`, `gizmo`, `feedback`, `dialog`, `insight`, `control`, `hint`, `busy` ห้ามสร้าง UI ซ้ำด้วย HTML/CSS หาก Public API รองรับแล้ว โดย `control.position` รองรับ `top-right`, `middle-right`, `bottom-right`
+- GUI ใหม่ให้ใช้ Service กลาง `context.ui.question`, `console`, `topMessage`, `choice`, `gizmo`, `worldGuiSystem`, `feedback`, `dialog`, `insight`, `control`, `hint`, `busy` ห้ามสร้าง UI ซ้ำด้วย HTML/CSS หาก Public API รองรับแล้ว โดย `control.position` รองรับ `top-right`, `middle-right`, `bottom-right`
 - `context.ui.choice.show()` ใช้สร้างตัวเลือกเหนือ Console และแจ้ง objective action ให้อัตโนมัติ ส่วน `context.ui.gizmo.attach()`/`at()` ใช้ข้อความ ตัวเลข icon หรือภาพ Screen-space ที่ติดตาม object/พิกัด World
+- `context.ui.worldGuiSystem.attach()`/`at()` ใช้ป้ายข้อมูลขนาดเล็กที่ยึดกับโมเดลหรือพิกัด เหมาะกับคำอธิบายสั้นบนฉาก; Debug Area และ Transform Editor เป็นเครื่องมือ System-owned สำหรับทีม Dev ไม่ใช่สิ่งที่ lesson ต้องเปิดเอง
 - `world.addCallout()` ใช้สำหรับป้ายพร้อมเส้นชี้ "พื้นที่" ในฉาก และใส่ `insight` ได้เพื่อให้ป้ายเป็นจุดกดเปิดคำอธิบายมาตรฐาน ห้ามซ่อน click action ไว้บนพื้นผิวที่มองไม่ออกว่ากดได้; Callout กับ Gizmo ยังมีหน้าที่ต่างกัน
 - ใช้ `world.addWorldCounter()` เมื่อต้องแสดงตัวเลขนับบนพื้นแบบ display-only และใช้ `world.addWorldGui()` เมื่อต้องวางข้อความอธิบายลงบนพื้น World GUI กดเปิด Insight ได้เมื่อกำหนด `insight` หรือ `onClick`; ใช้ interaction กลางนี้แทนการสร้างปุ่มซ้ำเอง
 - ใช้ GUI scope ให้เหมาะสม (`scene`, `step`, `question`, `lesson`, `manual`) เพื่อให้ runtime ล้าง UI ตาม lifecycle ได้เอง ดู signature และตัวอย่างล่าสุดใน `sdk/GUI_SERVICE_REFERENCE.md`
 - ห้ามสร้างป้ายโจทย์หลักด้วย `addText3D`, callout, group หรือ DOM ของบทเรียน เพราะจะซ้ำกับ UI กลางและอาจกลับด้านเมื่อหมุนกล้อง
 - runtime ล้าง Question UI ก่อน reset/close อัตโนมัติ บทเรียนเรียก `context.ui.clearQuestion()` เฉพาะเมื่อต้องการซ่อนระหว่างกิจกรรม
+- หากทุกข้อใช้ฉากหลักเดียวกันและการสร้างซ้ำกระทบ performance ให้กำหนด `meta.scenePersistence: "lesson"` แล้วสร้างฉากคงที่ครั้งเดียว รีใช้/pool object และอัปเดตเฉพาะส่วน dynamic ใน `reset()` โดยยังต้องล้างทุกอย่างใน `dispose()` ค่าเริ่มต้นยังเป็นการล้าง World ทุก reset
 
 เลือก Service ตามหน้าที่ดังนี้:
 
@@ -116,13 +118,13 @@ source code ใน workspace เวอร์ชันปัจจุบันม
 - `feedback` — สถานะสั้นแบบไม่บล็อก; Quiz ห้ามใช้เฉลยถูก/ผิดระหว่างทำ
 - `dialog` — ข้อความสำคัญหรือการยืนยันที่ต้องบล็อก interaction ชั่วคราว
 - `control` — ปุ่ม utility ของกิจกรรม รองรับ `top-right`, `middle-right`, `bottom-right`
-- Control ที่ใช้ลงมือทำต้องซ่อนระหว่างขั้นสอนแบบ `sequence` และแสดงเฉพาะขั้น `freestyle`/ขั้นที่เปิด interactive หรือ `student-quiz`
+- Control ของบทเรียนถูก runtime ซ่อนระหว่างขั้นสอนทุกบทโดยอัตโนมัติ ช่วงนี้แสดงได้เฉพาะปุ่มข้ามการสอนของระบบ; Control จะกลับมาเมื่อเข้า Lab ขั้นสุดท้าย/การทดลองหรือ `student-quiz` และจะถูกซ่อนอีกครั้งเมื่อย้อนกลับไปขั้นสอน บทเรียนห้ามพยายามหลบกฎนี้ด้วย `handle.show()`
 - `hint` — คำแนะนำผ่าน Mascot กลาง ห้ามสร้าง speech bubble หรือตัวละครซ้ำ
 - `busy` — ปิด interaction ระหว่างรอ async task และต้องปิดใน `finally`
 
 วัตถุขนาดเล็กที่แตะยากสามารถกำหนด `hitArea`/`hitAreaOffset` และ `dragFromCenter` โดย hit area จะไม่ขยายโมเดลจริง เมื่อนำวัตถุออกจากฐานแล้วให้เรียก `handle.setHitArea(null)` และ `handle.setDragFromCenter(false)` หากต้องกลับไปใช้พื้นที่จับตามโมเดล
 
-Topbar, Mode Badge, Quiz Badge, System Popup, Camera Controls, World Hint, Loading Screen, Mascot Character และ Celebration VFX เป็น System-owned UI บทเรียนห้ามสร้างหรือควบคุมซ้ำ หากทีม Dev ต้องเปลี่ยนรูปลักษณ์ให้แก้ Setting ตาม path ใน UI Catalog
+Topbar, Mode Badge, Quiz Badge, System Popup, Camera Controls, World Hint, Loading Screen, Mascot Character, Debug Area/Transform Editor และ Celebration VFX เป็น System-owned UI บทเรียนห้ามสร้างหรือควบคุมซ้ำ หากทีม Dev ต้องเปลี่ยนรูปลักษณ์ให้แก้ Setting ตาม path ใน UI Catalog รูปลักษณ์ 3D runtime ปัจจุบันเป็น Storybook UI สีน้ำตาล/ครีม โดยฉากฐานยังใช้ felt environment
 
 ## โครงสร้าง Meta
 

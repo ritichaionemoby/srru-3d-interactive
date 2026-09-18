@@ -10,11 +10,12 @@
 
 | ชื่อมาตรฐาน | API ของบทเรียน | Setting | ใช้สำหรับ |
 |---|---|---|---|
-| Question Panel | `context.ui.question` | `ui.questionPanel` | โจทย์หลักที่ต้องแสดงค้างด้านบน |
+| Question Panel | `context.ui.question` | `ui.questionPanel` | โจทย์หลักด้านบน ใช้กรอบคงที่ไม่ทับ Header/Panel และย่ออักษรให้พอดีไม่เกิน 2 บรรทัด |
 | Main Console | `context.ui.console` | `ui.console` | Objective, ขั้นตอน และสถานะหลักด้านล่าง |
 | Top Message | `context.ui.topMessage` | `ui.topMessage` | ประกาศสั้นใต้ Topbar ไม่ใช่โจทย์ |
 | Choice Panel | `context.ui.choice` | `ui.choice` | ตัวเลือกคำตอบหรือ action เหนือ Console |
 | Gizmo | `context.ui.gizmo` | `ui.gizmo` | GUI 2D ที่ติดตาม object หรือพิกัด World |
+| World GUI System | `context.ui.worldGuiSystem` | `ui.worldGuiSystem` | ป้ายข้อมูลขนาดเล็กที่ยึดกับโมเดลหรือพิกัดในฉาก |
 | Feedback | `context.ui.feedback` | `ui.feedback` | สถานะสั้นแบบไม่บล็อกและปิดได้ |
 | Dialog | `context.ui.dialog` | `ui.dialog` | Popup ที่ต้องอ่าน ตัดสินใจ หรือยืนยัน |
 | Insight Dialog | `context.ui.insight` / เปิดผ่าน `world.addCallout({ insight })` | `ui.dialog` | เนื้อหาคำอธิบายเชิงลึก โดยพื้นที่ในฉากควรเปิดผ่าน Actionable World Callout |
@@ -42,11 +43,16 @@
 | Loading / Entry Screen | `entry` | หน้าโหลดและหน้าเริ่มบทเรียน |
 | Mascot Character | `mascot` | รูป ตำแหน่ง ขนาด คำพูด บับเบิ้ล และ particle ของตัวละคร |
 | Celebration VFX | `vfx.celebrationEffect` | Ribbon, confetti และพลุเมื่อจบบทเรียน |
-| Runtime Setting | ไม่มี theme setting | เครื่องมือ Dev ที่เปิดด้วย `F6` เพื่อแก้ค่าระหว่างรันและทดสอบ GUI Service |
+| Debug Area / Transform Editor | `ui.worldGuiSystem` | เครื่องมือ Dev แสดงพิกัด X/Z และ Position/Rotation/Scale; กดป้ายโมเดลเพื่อปรับและคัดลอกค่า |
+| Runtime Setting | `ui.theme` และ Setting ราย Service | เครื่องมือ Dev ที่เปิดด้วย `F6` เพื่อแก้ค่าระหว่างรันและทดสอบ GUI Service |
 
 `World Callout` ไม่ใช่ `Gizmo`: Callout ชี้ “พื้นที่” ด้วยเส้นในฉาก ส่วน Gizmo เป็น GUI 2D ที่วิ่งตาม object/ตำแหน่งและหันเข้าหาจอเสมอ
 
 `World Counter` เป็น display-only และรับเฉพาะจำนวน ส่วน `World GUI` รับข้อความหลายบรรทัดและค่าเริ่มต้นเป็น display-only แต่เปลี่ยนเป็นจุดกดได้ด้วย `insight` หรือ `onClick` ทั้งคู่คงตำแหน่ง/มิติอยู่ในโลกจริง
+
+`World GUI System` ต่างจาก `World GUI`: ตัวแรกเป็นป้าย DOM ขนาดเล็กที่ฉายจากตำแหน่ง 3D จึงอ่านตรงและติดตามโมเดลได้ ส่วนตัวหลังเป็นวัตถุ 3D บนพื้นของฉาก Debug Area ใช้ engine เดียวกับ World GUI System แต่เป็น System-owned และ lesson ไม่ควรเปิดเอง
+
+Control Menu อยู่ภายใต้ phase policy กลางของ runtime ทุกบท: ระหว่างขั้นสอนแสดงเฉพาะปุ่มข้ามการสอนของระบบ เมื่อเข้า Lab ขั้นสุดท้าย/การทดลองหรือ Quiz จึงแสดง Control ของบทเรียน และการย้อนกลับไปขั้นสอนจะซ่อน Control อัตโนมัติ
 
 ## ชื่อเดิมและชื่อที่ยกเลิก
 
@@ -72,8 +78,9 @@
 | Lab / Quiz Switch | ปุ่มด้านขวาของ Header ในหน้า `F6` | สลับทดสอบ `teacher-lab` หรือ `student-quiz` โดยใช้บทเรียนเดิม |
 | Refresh | ปุ่มด้านขวาของ Header ในหน้า `F6` | ทำงานแบบ Quick Retest (`F4`) และกลับเข้าบทเรียน/โหมดเดิม |
 | GUI Service Lab | หมวดทดสอบในหน้า `F6` | Preview, Update และ Clear Service กลาง เพื่อเช็กหน้าตา, animation และ responsive layout โดยไม่ต้องเขียน UI ทดสอบใน lesson |
+| Debug Area | ปุ่ม Debug Area ในหน้า `F6` | เปิดพิกัด X/Z และป้าย transform ของโมเดล; กดป้ายเพื่อแก้ Position/Rotation/Scale แบบสดและคัดลอกค่ากลับไปใช้ |
 
-ฉาก Main World ปัจจุบันใช้ `background: "green"` เพียงแบบเดียว สี Grid ต้องมาจาก Setting กลาง `ground.gridColor`, `ground.gridOpacity` และ `ground.ringColor`; lesson และ background preset ห้ามกำหนดสี Grid ทับเอง
+ฉาก Main World ปัจจุบันใช้ `background: "green"` เพียงแบบเดียว สี Grid ต้องมาจาก Setting กลาง `ground.gridColor`, `ground.gridOpacity` และ `ground.ringColor`; lesson และ background preset ห้ามกำหนดสี Grid ทับเอง สำหรับบทเรียน 3D runtime ใช้ Storybook UI สีน้ำตาล/ครีมบน felt environment โดย theme เป็น System-owned และ lesson ห้ามกำหนดเอง
 
 
 

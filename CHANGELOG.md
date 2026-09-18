@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-09-18 — 0.1.2 Persistent Lesson Scene
+
+- เพิ่ม `meta.scenePersistence: "lesson"` แบบ opt-in เพื่อคงฉากหลักและรีใช้ object ระหว่างโจทย์ ลดการกระตุกจากการสร้าง World ใหม่ทั้งฉาก
+- เพิ่ม `CalloutHandle.setText()` สำหรับอัปเดตข้อความบน Callout เดิมโดยไม่สร้าง object ใหม่
+- ปรับ `ep3/lesson3` ให้สร้าง environment, รถ, รั้ว, zone และตะกร้า pool เพียงครั้งเดียว เปลี่ยนเฉพาะผลไม้กับ NPC ตามโจทย์
+- ทำผลไม้ที่คัดออกให้ต่างชัดด้วยสีเกือบดำ ลดแสง texture ลดขนาด และวางเอียง
+- sync runtime source, lesson snapshot, Public API, types, capabilities, contract, schema และ source manifest
+
+## 2026-09-18 — 0.1.1 Runtime UI และ World GUI System
+
+- sync source snapshot หลังรวม Storybook UI สีน้ำตาล/ครีม โดยคง felt environment เป็นฉากพื้นฐาน และล็อก Question Panel ไม่ให้ทับ Header/Panel
+- เพิ่ม `context.ui.worldGuiSystem` สำหรับป้ายขนาดเล็กที่ยึดกับพิกัดหรือโมเดล พร้อม Debug Area และ Transform Editor สำหรับทีม Dev
+- ย้ายกฎ Control เป็น phase policy กลาง: ขั้นสอนแสดงเฉพาะปุ่มข้ามการสอน ส่วน Control ของบทเรียนแสดงใน Lab ขั้นสุดท้าย/การทดลองหรือ Quiz และซ่อนเมื่อย้อนกลับ
+- อัปเดต Public API, UI Catalog, types, capabilities, contract, testing และ source manifest ให้ตรงกับ runtime
+- ซ่อม snapshot ตัวอย่าง `ep1/lesson1–3` ที่ drift จาก source หลักและยืนยัน SHA-256 ใหม่ทั้ง manifest
+
 ## 2026-09-17 — Asset Catalog 1.2.4
 
 - เพิ่ม Standard Asset โมเดล 136 รายการจากทีม Art ครอบคลุมสัตว์ ตัวละคร ห้องเรียน ฉาก อาหาร ผลไม้ คณิตศาสตร์ ธรรมชาติ รางวัล วิทยาศาสตร์ และของเล่น

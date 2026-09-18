@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-17",
+  "generatedAt": "2026-09-18",
   "purpose": "AI reference only; not a runnable deployment",
   "source": "Owner project working tree; copied files may contain uncommitted edits",
   "excluded": [
@@ -23,17 +23,22 @@
     {
       "path": "Project/interactive/chapters/ep1/lesson1.html",
       "sourcePath": "Project/interactive/chapters/ep1/lesson1.html",
-      "sha256": "caad8641afe424c313f88fd24aca3940b71996cd186b60531309013774bedc0b"
+      "sha256": "fa7b1869b096058dda668d8fe39869959cebe87d0fbf44dd56e6a86241c31f3a"
     },
     {
       "path": "Project/interactive/chapters/ep1/lesson2.html",
       "sourcePath": "Project/interactive/chapters/ep1/lesson2.html",
-      "sha256": "d5e85a7da92c295842dac1bd29f71d0da35b7571b95093a18ff6df5e692945c2"
+      "sha256": "a2adcfbb6fd70cd71885b6442891097ba8e0b5c2c9617f16ef1f7a761afe2f7d"
     },
     {
       "path": "Project/interactive/chapters/ep1/lesson3.html",
       "sourcePath": "Project/interactive/chapters/ep1/lesson3.html",
-      "sha256": "d077a50409fef6f8f01b1215759bc0715fa47b5a3cb991a5b79e438da117f038"
+      "sha256": "64c29495a5a17edca4f9caaefd05c225ee9e860a142d57390554f699331baa93"
+    },
+    {
+      "path": "Project/interactive/chapters/ep3/lesson3.html",
+      "sourcePath": "Project/interactive/chapters/ep3/lesson3.html",
+      "sha256": "67022cef4331af67351195affa3a0e0f8da74309c95bb05b902f8e89a0e1b22a"
     },
     {
       "path": "Project/interactive/chapters/ep10/lesson1.html",
@@ -78,32 +83,37 @@
     {
       "path": "Project/interactive/gui-service.js",
       "sourcePath": "Project/interactive/gui-service.js",
-      "sha256": "480fdf2d006e068e11b0c294f0f08d02347cc7421a1fe69d9852f92698548c06"
+      "sha256": "108870217dd9bc73a2bb5f2390fb92e4d34f691dee03f5f5b752a54c9499916e"
     },
     {
       "path": "Project/interactive/main-world-setting.js",
       "sourcePath": "Project/interactive/main-world-setting.js",
-      "sha256": "50f29a1d0ea779c1ce23a889444002df5b4ac5b2b76eaecf9d4170d0aaed3b8e"
+      "sha256": "3e588032bcb43c554855057f5d3791d100f5983ff49894367c2d99fc07d8b641"
     },
     {
       "path": "Project/interactive/main-world.html",
       "sourcePath": "Project/interactive/main-world.html",
-      "sha256": "970535cbf6d1465fe75130172d7d40456c9fa2c22d9f7d5fadfb58d7e3972419"
+      "sha256": "0161f48ee79617c2eb5e016253b44f0683cfc73650f842a87d6f04deecc202d1"
     },
     {
       "path": "Project/interactive/main-world.js",
       "sourcePath": "Project/interactive/main-world.js",
-      "sha256": "cc2d2f1618a469955f1fdd30bd5a11813b6986568f61e498f48a006966143e61"
+      "sha256": "5ba8e9918981a237f4a52f57887a5213746f9f04c5c041859bb31ac14fac2aae"
     },
     {
       "path": "Project/interactive/runtime-setting-menu.js",
       "sourcePath": "Project/interactive/runtime-setting-menu.js",
-      "sha256": "955ae73223bf11b64201b9bc7e9564f4663230bf40728cfcfb0fee5845ff522f"
+      "sha256": "7ccdcc357c8f2ba7ef9f3793727b6a3374d4252143d20e77865f9e017c76c1bd"
     },
     {
       "path": "Project/interactive/world.css",
       "sourcePath": "Project/interactive/world.css",
-      "sha256": "71ddc8bcce560b22f5ec73da6658fc9d42125e72b7511da10deb62ccd6c31608"
+      "sha256": "7878d817571ed3f4d8d89db99bfaf991d9f228a93f14b793b2dfab207de032ec"
+    },
+    {
+      "path": "Project/interactive/world-gui-system.js",
+      "sourcePath": "Project/interactive/world-gui-system.js",
+      "sha256": "58c328a6e6c7842db71b94c4af956692f3b74e4426463acd71ef91a7c247571b"
     }
   ]
 }

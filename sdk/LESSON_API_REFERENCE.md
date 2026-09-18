@@ -174,12 +174,25 @@ Dispatcher กลางรองรับ `type: "primitive" | "group" | "text3d
 
 หาก `onDrop(position, handle)` เรียก `handle.setPosition(...)` หรือ `handle.animateTo(...)` เพื่อ snap วัตถุเข้า grid Runtime จะรักษาตำแหน่ง/แอนิเมชันนั้นไว้และไม่ใส่ drop bounce ทับอีกครั้ง หาก callback ไม่จัดตำแหน่งเอง Runtime จึงใช้ drop bounce มาตรฐาน
 
+## Scene lifecycle และการคงฉาก
+
+ค่าเริ่มต้นคือ `meta.scenePersistence: "reset"` ซึ่ง Runtime จะล้าง World ก่อนเรียก `reset()` ทุกครั้ง หากทุกข้อใช้ฉากหลักเดียวกันและเปลี่ยนเพียงข้อมูลบางส่วน สามารถเลือก:
+
+```js
+meta: {
+  worldType: "3d-world-space",
+  scenePersistence: "lesson"
+}
+```
+
+เมื่อใช้ `"lesson"` Runtime จะสร้าง World ใหม่เฉพาะ reset แรก หลังจากนั้นบทเรียนต้องสร้างฉากคงที่ครั้งเดียว รีใช้หรือ pool object และล้างเฉพาะส่วน dynamic ใน `reset()` พร้อมล้าง handle, timer และ object ทั้งหมดใน `dispose()`
+
 ## Context
 
 `mount(context)` ได้ object แบบ read-only:
 
 - `context.world` — สร้างและควบคุม object ใน world space
-- `context.ui` — GUI Service กลาง ได้แก่ Question, Console, Top Message, Choice, Gizmo, Feedback, Dialog, Insight Dialog, Control, Hint และ Busy รวม compatibility objective/toast/progress
+- `context.ui` — GUI Service กลาง ได้แก่ Question, Console, Top Message, Choice, Gizmo, World GUI System, Feedback, Dialog, Insight Dialog, Control, Hint และ Busy รวม compatibility objective/toast/progress
 - `context.audio.play(name)` — เล่น SFX ที่ระบบเตรียมไว้
 - `context.mode` — `teacher-lab`, `student-lab` หรือ `student-quiz`
 - `context.language` — ภาษาจากเว็บหลัก
@@ -249,6 +262,8 @@ world.addCallout({
   })
 });
 ```
+
+Handle ที่คืนมารองรับ `setText(text)` เพื่ออัปเดตข้อความโดยไม่สร้าง Callout ใหม่ เหมาะกับบทเรียนที่คงฉากไว้ระหว่างข้อ
 
 หากไม่มี `insight` หรือ `onClick` ป้ายยังเป็น Callout แสดงผลอย่างเดียวเหมือนเวอร์ชันเดิม Actionable Callout มี icon ข้อมูลและ hover animation อัตโนมัติ โดยค่าเริ่มต้นการเปิดคำอธิบายไม่นับเป็น Quiz objective action
 
@@ -412,6 +427,7 @@ Handle ที่ `add...` คืนมามี:
 - `context.ui.topMessage` — ประกาศสั้นด้านบนที่ไม่ใช่โจทย์
 - `context.ui.choice` — ตัวเลือกที่กดได้เหนือ Console
 - `context.ui.gizmo` — GUI 2D ที่ติดตาม object หรือพิกัด World
+- `context.ui.worldGuiSystem` — ป้ายข้อมูลขนาดเล็กที่ยึดกับ object หรือพิกัด World
 - `context.ui.feedback` — ผลลัพธ์สั้นแบบไม่บล็อก
 - `context.ui.dialog` — Popup แบบบล็อกสำหรับข้อความสำคัญ/การยืนยัน
 - `context.ui.insight` — Popup อธิบายพื้นที่หรือวัตถุที่ผู้เรียนกด รองรับ safe structured HTML
@@ -420,6 +436,8 @@ Handle ที่ `add...` คืนมามี:
 - `context.ui.busy` — Overlay ระหว่างรอ async task
 
 `context.ui.gizmo` ไม่ใช่ `world.addCallout()`: Gizmo ใช้กับ object/value/status แบบ Screen-space ส่วน Callout ใช้ป้ายและเส้นชี้พื้นที่ในฉาก
+
+`context.ui.worldGuiSystem` ใช้เมื่อข้อมูลสั้นต้องเกาะกับตำแหน่งหรือโมเดลโดยไม่สร้างวัตถุ 3D เพิ่ม รองรับ `attach(target, options)`, `at(position, options)`, `get(id)` และ `clear(scope)` ส่วน `debug` เป็นเครื่องมือ System-owned สำหรับทีม Dev บทเรียนห้ามเปิดเอง
 
 ```js
 context.ui.question.show({ text: "4 + 2 = ?" });
@@ -440,11 +458,19 @@ context.ui.gizmo.attach(box, {
   text: "ลากกล่องนี้",
   worldOffset: [0, 1.2, 0]
 });
+
+context.ui.worldGuiSystem.attach(box, {
+  id: "box-value",
+  scope: "step",
+  text: "กล่องตัวอย่าง",
+  tone: "info",
+  anchor: "top"
+});
 ```
 
 Gizmo รองรับ `size: "large"` และ `segments: [{ text, color, role }]` สำหรับป้ายหลายสี โดยใช้ `role: "exponent"` เมื่อต้องแสดงเลขชี้กำลัง
 
-Choice เรียก objective action ให้อัตโนมัติ ระบบล้าง UI ตาม `scope` (`lesson`, `scene`, `step`, `question`, `manual`) และจัด mobile layout ให้ จึงห้ามสร้าง GUI ที่ระบบกลางรองรับด้วย HTML/CSS เอง ดู signature และตัวอย่างทั้งหมดใน `GUI_SERVICE_REFERENCE.md`
+Choice เรียก objective action ให้อัตโนมัติ ระบบล้าง UI ตาม `scope` (`lesson`, `scene`, `step`, `question`, `manual`) และจัด mobile layout ให้ จึงห้ามสร้าง GUI ที่ระบบกลางรองรับด้วย HTML/CSS เอง Control ของบทเรียนถูก phase policy กลางซ่อนระหว่างขั้นสอนแม้เรียก `show()` และจะแสดงได้ใน Lab ขั้นสุดท้าย/การทดลองหรือ Quiz ดู signature และตัวอย่างทั้งหมดใน `GUI_SERVICE_REFERENCE.md`
 
 ### Compatibility API
 

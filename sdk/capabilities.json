@@ -13,6 +13,11 @@
     }
   },
   "lessonOwns": ["scene-composition", "interaction-state", "answer-condition", "lab-step-behavior", "quiz-data"],
+  "scenePersistence": {
+    "default": "reset",
+    "optIn": "meta.scenePersistence=lesson",
+    "lessonResponsibilities": ["reuse-static-objects", "clear-dynamic-objects-on-reset", "dispose-all-on-close"]
+  },
   "objects": ["primitive", "group", "text3d", "library", "zone", "callout", "world-counter", "world-gui", "guideline", "line-render", "target-focus"],
   "primitiveShapes": [
     "box", "rounded-box", "sharp-box", "sphere", "hemisphere",
@@ -28,6 +33,7 @@
     "topMessage": "context.ui.topMessage",
     "choice": "context.ui.choice",
     "gizmo": "context.ui.gizmo",
+    "worldGuiSystem": "context.ui.worldGuiSystem",
     "feedback": "context.ui.feedback",
     "dialog": "context.ui.dialog",
     "insight": "context.ui.insight",
@@ -45,6 +51,8 @@
     "worldCallout": "mainWorldSetting.ui.worldCallout",
     "worldCounter": "mainWorldSetting.ui.worldCounter",
     "worldGui": "mainWorldSetting.ui.worldGui",
+    "worldGuiSystem": "mainWorldSetting.ui.worldGuiSystem",
+    "debugAreaTransformEditor": "system-owned via Runtime Setting F6",
     "loadingEntry": "mainWorldSetting.entry",
     "mascotCharacter": "mainWorldSetting.mascot",
     "celebrationVfx": "mainWorldSetting.vfx.celebrationEffect"
@@ -55,12 +63,15 @@
   },
   "guiScopes": ["lesson", "scene", "step", "question", "manual"],
   "guiAuthoringPolicy": "existing-central-service-first-no-lesson-owned-duplicate-ui",
+  "controlPhasePolicy": "teaching=system-skip-only; lab-final-or-experiment=lesson-controls; quiz=lesson-controls; back-to-teaching=hides-lesson-controls",
+  "runtimeUiTheme": "storybook-brown-cream-on-felt-environment",
   "devTools": {
     "quickRetest": "F4",
     "runtimeSetting": "F6",
     "runtimeModeSwitch": ["teacher-lab", "student-quiz"],
     "runtimeRefresh": "same-as-F4",
-    "guiServiceLab": ["preview", "update", "clear"]
+    "guiServiceLab": ["preview", "update", "clear"],
+    "debugArea": ["grid-x-z", "model-position", "model-rotation-degrees", "model-scale", "live-transform-editor", "copy-transform"]
   },
   "backgrounds": ["green"],
   "assetCatalogVersion": "1.2.4",

@@ -26,11 +26,14 @@ Exit 0 หมายถึงผ่าน static checks; exit 1 มี JSON error
 |---|---|
 | Teacher Lab | ทุกช่องปรับค่าเปลี่ยนฉากจริง |
 | Student Lab | sequence/freestyle เปิด interaction ตามกติกา |
+| Control phase policy | ระหว่างขั้นสอนเห็นเฉพาะปุ่มข้ามการสอน; Lab ขั้นสุดท้าย/การทดลองและ Quiz จึงเห็น Control ของบทเรียน; กดย้อนกลับแล้ว Control ต้องซ่อนอีกครั้ง |
 | Student Quiz | ตอบถูก/ผิดแล้วไปต่อได้ ไม่เฉลยระหว่างทำ ส่ง→ดูผล→ปิดได้ |
 | Drag/drop ถ้ามี | วางผิดกลับตำแหน่ง ไม่ทับ slot ลากออกเพื่อแก้ได้ |
 | Reset / เปิดใหม่ | ไม่เหลือ state, timer หรือ UI จากรอบก่อน |
+| Persistent scene (ถ้าใช้) | `meta.scenePersistence: "lesson"` ไม่สร้างฉากคงที่ซ้ำ, object แบบ dynamic เปลี่ยนครบทุกข้อ และ `dispose()` ล้างทั้งหมด |
 | Desktop / mobile แนวตั้ง | เห็นข้อความ/เป้าหมายครบ แตะลากได้ และปุ่ม Back ของ UI มุมซ้ายบนปิด lesson overlay ได้ทั้งระหว่าง Loading และหลังเข้าบทเรียน |
 | Console / Network | ไม่มี exception หรือไฟล์จำเป็นโหลดล้มเหลวในระบบจริง |
+| Debug Area (ทีม Dev) | พิกัด X/Z อ่านได้โดยไม่บังฉาก ป้ายโมเดลแสดง Position/Rotation/Scale และกดปรับค่า/คัดลอกค่าได้ |
 
 ## รายงานส่งมอบ
 

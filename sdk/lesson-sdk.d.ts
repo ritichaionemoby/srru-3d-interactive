@@ -37,6 +37,10 @@ export interface LessonHandle {
   remove(): void;
 }
 
+export interface CalloutHandle extends LessonHandle {
+  setText(text: string | number): CalloutHandle;
+}
+
 export interface LessonMaterialOptions {
   color?: string | number;
   opacity?: number;
@@ -174,8 +178,8 @@ export interface LessonWorld {
     onDrop?: (position: DropPosition, handle: LessonHandle) => DropResult;
   }): LessonHandle;
   addZone(options?: { name?: string; size?: Vec3; position?: Vec3; color?: string | number; opacity?: number }): LessonHandle;
-  addCallout(options?: { text?: string; position?: Vec3; compactPosition?: Vec3; anchor?: Vec3; color?: string | number; lineColor?: string | number; scale?: Vec2; compactScale?: Vec2; insight?: InsightOptions | string | ((event: { handle: LessonHandle; object: unknown; hitPoint: DropPosition }) => InsightOptions | string | void); onClick?: LessonObjectOptions["onClick"]; objectiveAction?: boolean }): LessonHandle;
-  addLabel(options?: { text?: string; position?: Vec3; compactPosition?: Vec3; anchor?: Vec3; color?: string | number; lineColor?: string | number; scale?: Vec2; compactScale?: Vec2; insight?: InsightOptions | string | (() => InsightOptions | string | void); onClick?: LessonObjectOptions["onClick"] }): LessonHandle;
+  addCallout(options?: { text?: string; position?: Vec3; compactPosition?: Vec3; anchor?: Vec3; color?: string | number; lineColor?: string | number; scale?: Vec2; compactScale?: Vec2; insight?: InsightOptions | string | ((event: { handle: CalloutHandle; object: unknown; hitPoint: DropPosition }) => InsightOptions | string | void); onClick?: LessonObjectOptions["onClick"]; objectiveAction?: boolean }): CalloutHandle;
+  addLabel(options?: { text?: string; position?: Vec3; compactPosition?: Vec3; anchor?: Vec3; color?: string | number; lineColor?: string | number; scale?: Vec2; compactScale?: Vec2; insight?: InsightOptions | string | (() => InsightOptions | string | void); onClick?: LessonObjectOptions["onClick"] }): CalloutHandle;
   addWorldCounter(options?: {
     name?: string; position?: Vec3; compactPosition?: Vec3; rotation?: Vec3; scale?: number | Vec3; compactScale?: number | Vec3;
     value?: number; digits?: number; leadingZero?: boolean; digitSpacing?: number;
@@ -253,6 +257,7 @@ export interface QuizQuestion {
 
 export interface LessonMeta {
   worldType: "3d-world-space";
+  scenePersistence?: "reset" | "lesson";
   lessonId: string;
   title: string;
   category: string;
@@ -296,6 +301,33 @@ export interface ChoiceHandle extends GuiHandle {
 
 export interface GizmoHandle extends GuiHandle {
   setTarget(target: LessonHandle | unknown): GizmoHandle;
+}
+
+export interface WorldGuiSystemOptions {
+  id?: string;
+  scope?: GuiScope;
+  text?: string | number;
+  tone?: GuiTone;
+  variant?: "label" | "coordinate" | "transform";
+  size?: "small" | "medium" | "large";
+  anchor?: "top" | "center" | "origin";
+  offset?: Vec3;
+  screenOffsetY?: number;
+  visible?: boolean;
+  className?: string;
+  onClick?: (event: { id: string; handle: WorldGuiSystemHandle; target: unknown; element: unknown }) => void;
+}
+
+export interface WorldGuiSystemHandle {
+  readonly id: string;
+  readonly scope: GuiScope;
+  readonly element: unknown;
+  update(options?: Partial<WorldGuiSystemOptions>): WorldGuiSystemHandle;
+  setText(text: string | number): WorldGuiSystemHandle;
+  setTarget(target: LessonHandle | Vec3 | unknown): WorldGuiSystemHandle;
+  show(): WorldGuiSystemHandle;
+  hide(): WorldGuiSystemHandle;
+  remove(): void;
 }
 
 export interface ControlHandle extends GuiHandle {
@@ -411,6 +443,13 @@ export interface LessonUi {
     at(position: Vec3, options?: GizmoOptions): GizmoHandle;
     get(id: string): GizmoHandle | null;
     clear(scope?: GuiScope): void;
+  };
+  readonly worldGuiSystem: {
+    at(position: Vec3, options?: WorldGuiSystemOptions): WorldGuiSystemHandle;
+    attach(target: LessonHandle | unknown, options?: WorldGuiSystemOptions): WorldGuiSystemHandle;
+    get(id: string): WorldGuiSystemHandle | null;
+    clear(...scopes: GuiScope[]): void;
+    readonly counts: { readonly labels: number; readonly debugLabels: number };
   };
   readonly feedback: {
     show(options: string | { id?: string; scope?: GuiScope; title?: string; message?: string; text?: string; icon?: string; tone?: GuiTone; duration?: number; dismissible?: boolean }): GuiHandle;

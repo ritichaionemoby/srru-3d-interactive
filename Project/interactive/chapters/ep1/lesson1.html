@@ -9,33 +9,35 @@
 <body>
   <script data-lesson-app>
     (() => {
-      const PROBLEM_TYPES = new Set(["addition", "subtraction", "multiplication", "division", "parentheses", "parenthesesBack", "exponent"]);
+      const PROBLEM_TYPES = new Set(["addition", "subtraction"]);
+      const BASIC_LAYOUT = Object.freeze({
+        leftX: -5.85, centerX: -3.15, rightX: -.45, equalsX: 2.35,
+        areaWidth: 4.2, areaDepth: 4.35, carrotScale: 1.18,
+        carrotSpacingX: 1.05, carrotSpacingZ: 1.08,
+        summarySpacingX: 1.25, summarySpacingZ: 1.35
+      });
       const quiz = [
-        { question: "2 + 3 มีค่าเท่าไร", data: [{ key: "problemType", value: "addition" }, { key: "firstNumber", value: 2 }, { key: "secondNumber", value: 3 }] },
-        { question: "5 − 2 มีค่าเท่าไร", data: [{ key: "problemType", value: "subtraction" }, { key: "firstNumber", value: 5 }, { key: "secondNumber", value: 2 }] },
-        { question: "2 × 3 มีค่าเท่าไร", data: [{ key: "problemType", value: "multiplication" }, { key: "firstNumber", value: 2 }, { key: "secondNumber", value: 3 }] },
-        { question: "6 ÷ 2 มีค่าเท่าไร", data: [{ key: "problemType", value: "division" }, { key: "firstNumber", value: 3 }, { key: "secondNumber", value: 2 }] },
-        { question: "(2 + 3) × 2 มีค่าเท่าไร", data: [{ key: "problemType", value: "parentheses" }, { key: "firstNumber", value: 2 }, { key: "secondNumber", value: 3 }, { key: "thirdNumber", value: 2 }] },
-        { question: "2 × (3 + 2) มีค่าเท่าไร", data: [{ key: "problemType", value: "parenthesesBack" }, { key: "firstNumber", value: 2 }, { key: "secondNumber", value: 3 }, { key: "thirdNumber", value: 2 }] },
-        { question: "2² มีค่าเท่าไร", data: [{ key: "problemType", value: "exponent" }, { key: "powerBase", value: 2 }, { key: "exponent", value: 2 }] },
-        { question: "4 + 2 มีค่าเท่าไร", data: [{ key: "problemType", value: "addition" }, { key: "firstNumber", value: 4 }, { key: "secondNumber", value: 2 }] },
-        { question: "3 × 3 มีค่าเท่าไร", data: [{ key: "problemType", value: "multiplication" }, { key: "firstNumber", value: 3 }, { key: "secondNumber", value: 3 }] },
-        { question: "8 ÷ 2 มีค่าเท่าไร", data: [{ key: "problemType", value: "division" }, { key: "firstNumber", value: 4 }, { key: "secondNumber", value: 2 }] },
-        { question: "2³ มีค่าเท่าไร", data: [{ key: "problemType", value: "exponent" }, { key: "powerBase", value: 2 }, { key: "exponent", value: 3 }] }
-      ];
+        ["addition",2,3],["subtraction",6,2],["addition",4,2],["subtraction",5,3],["addition",3,3],
+        ["subtraction",6,4],["addition",5,1],["subtraction",4,2],["addition",2,4],["subtraction",5,1],
+        ["addition",3,2],["subtraction",6,3],["addition",4,1],["subtraction",5,2],["addition",2,2],
+        ["subtraction",4,1],["addition",5,3],["subtraction",6,1],["addition",3,4],["subtraction",5,4]
+      ].map(([problemType, firstNumber, secondNumber]) => ({
+        question: `${firstNumber} ${problemType === "addition" ? "+" : "−"} ${secondNumber} มีค่าเท่าไร`,
+        data: [{ key: "problemType", value: problemType }, { key: "firstNumber", value: firstNumber }, { key: "secondNumber", value: secondNumber }]
+      }));
 
       PuzzleLesson.define({
-        id: "ep1-lesson1-operation-order",
-        version: "1.0.0",
+        id: "ep1-lesson1-add-subtract",
+        version: "2.1.1",
 
         meta: {
           worldType: "3d-world-space",
-          lessonId: "ep1-lesson1-operation-order",
-          title: "สัญลักษณ์การดำเนินการ วงเล็บ และลำดับการดำเนินการ",
+          lessonId: "ep1-lesson1-add-subtract",
+          title: "การบวกและการลบ",
           category: "คณิตศาสตร์",
           subcategory: "สัญลักษณ์พื้นฐานทางคณิตศาสตร์",
-          description: "เรียนรู้เครื่องหมาย วงเล็บ และเลขยกกำลังด้วยพื้นที่โจทย์ แครอทคำตอบ และคำอธิบายที่เปิดได้จากพื้นที่บนฉาก",
-          keyResult: "ผู้เรียนอ่านโจทย์ ติดตามลำดับการคำนวณ และนับแครอทสร้างคำตอบที่ถูกต้องได้",
+          description: "เรียนรู้การบวกและการลบด้วยฉากและการลากแครอทจากบทเรียนต้นฉบับ",
+          keyResult: "ผู้เรียนตีความเครื่องหมายบวกและลบ แล้วสร้างคำตอบจากจำนวนสิ่งของได้",
           background: "green",
           camera: {
             fov: 43,
@@ -48,43 +50,22 @@
             maxPitch: 76,
             target: [0, 0.35, -0.25]
           },
-          welcomeMessage: [
-            "นับแครอทในพื้นที่โจทย์จากซ้ายไปขวา",
-            "นำเมาส์ไปเหนือพื้นที่แล้วกดเพื่อดูวิธีคิด",
-            "แครอทหนึ่งหัวแทนหนึ่งหน่วย ดึงจากแปลงหรือกดปุ่มหยิบแครอท"
-          ],
-          tooltip: "อ่านโจทย์จากซ้ายไปขวา แล้วนับแครอทให้เท่ากับคำตอบ",
-          defaultValue: {
-            problemType: "parentheses",
-            firstNumber: 2,
-            secondNumber: 3,
-            thirdNumber: 2,
-            powerBase: 2,
-            exponent: 2
-          },
+          welcomeMessage: ["บวกคือการนำจำนวนมารวมกัน", "ลบคือการนำจำนวนหนึ่งออกจากอีกจำนวน", "ลากแครอทเพื่อสร้างคำตอบเหมือนบทเรียนต้นฉบับ"],
+          tooltip: "อ่านเครื่องหมาย แล้วลากแครอทให้ตรงกับคำตอบ",
+          defaultValue: { problemType: "addition", firstNumber: 2, secondNumber: 3 },
           editSchema: [
-            {
-              key: "problemType", name: "เลือกแบบโจทย์", type: "dropdown", help: "เริ่มจากแบบวงเล็บซึ่งเป็นตัวอย่างหลักของบทนี้", option: [
-                { value: "parentheses", label: "วงเล็บด้านหน้า  (ก + ข) × ค" },
-                { value: "parenthesesBack", label: "วงเล็บด้านหลัง  ก × (ข + ค)" },
-                { value: "addition", label: "การบวก  ก + ข" },
-                { value: "subtraction", label: "การลบ  ก − ข" },
-                { value: "multiplication", label: "การคูณ  ก × ข" },
-                { value: "division", label: "การหาร  ก ÷ ข" },
-                { value: "exponent", label: "เลขยกกำลัง  ฐานⁿ" }
-              ]
-            },
-            { key: "firstNumber", name: "จำนวน ก", type: "slider", option: [2, 6], step: 1, showWhen: { key: "problemType", values: ["addition", "subtraction", "multiplication", "division", "parentheses", "parenthesesBack"] } },
-            { key: "secondNumber", name: "จำนวน ข", type: "slider", option: [1, 4], step: 1, showWhen: { key: "problemType", values: ["addition", "subtraction", "multiplication", "division", "parentheses", "parenthesesBack"] } },
-            { key: "thirdNumber", name: "จำนวน ค", type: "slider", option: [1, 4], step: 1, help: "วงเล็บหน้าใช้เป็นจำนวนนอกวงเล็บ ส่วนวงเล็บหลังใช้เป็นจำนวนตัวที่สองในวงเล็บ", showWhen: { key: "problemType", values: ["parentheses", "parenthesesBack"] } },
-            { key: "powerBase", name: "ฐาน", type: "slider", option: [2, 3], step: 1, showWhen: { key: "problemType", values: ["exponent"] } },
-            { key: "exponent", name: "เลขชี้กำลัง", type: "slider", option: [2, 3], step: 1, help: "บอกจำนวนครั้งที่นำฐานมาคูณกัน", showWhen: { key: "problemType", values: ["exponent"] } }
+            { key: "problemType", name: "เลือกแบบโจทย์", type: "dropdown", option: [
+              { value: "addition", label: "การบวก ก + ข" },
+              { value: "subtraction", label: "การลบ ก − ข" }
+            ] },
+            { key: "firstNumber", name: "จำนวน ก", type: "slider", option: [2, 6], step: 1 },
+            { key: "secondNumber", name: "จำนวน ข", type: "slider", option: [1, 4], step: 1 }
           ],
           howto: [
-            { index: 0, title: "สำรวจพื้นที่โจทย์", type: "sequence", desc: "นับแครอทที่ปักอยู่ในแต่ละแปลง และอ่านเครื่องหมายจากซ้ายไปขวา" },
-            { index: 1, title: "เปิดดูวิธีคิด", type: "sequence", desc: "กดรั้วไม้เพื่อดูว่าต้องทำข้างในก่อน แล้วลองสลับเป็นวงเล็บด้านหลังใน LAB" },
-            { index: 2, title: "รู้จักแครอทหนึ่งหน่วย", type: "sequence", desc: "แครอทหนึ่งหัวแทนหนึ่งหน่วย ดึงจากแปลงไปยังพื้นที่คำตอบ" },
-            { index: 3, title: "ลองสร้างคำตอบ", type: "freestyle", desc: "หยิบหรือลากแครอทให้มีจำนวนเท่ากับผลลัพธ์" }
+            { index: 0, title: "สำรวจโจทย์", type: "sequence", desc: "ดูจำนวนสองฝั่งและอ่านเครื่องหมายบวกหรือลบ" },
+            { index: 1, title: "เปิดดูวิธีคิด", type: "sequence", desc: "กดป้ายข้อมูลบนฉากเพื่อดูความหมายของเครื่องหมาย" },
+            { index: 2, title: "ดูวิธีลาก", type: "sequence", desc: "แครอทหนึ่งหัวแทนหนึ่งหน่วย" },
+            { index: 3, title: "ลองสร้างคำตอบ", type: "freestyle", desc: "ลากแครอทให้มีจำนวนเท่ากับผลลัพธ์" }
           ],
           quiz
         },
@@ -93,6 +74,10 @@
           this.context = context;
           this.timers = [];
           this.items = [];
+          this.multiplyGroups = [];
+          this.multiplySourceSerial = 0;
+          this.divisionItems = [];
+          this.answerBins = [];
           this.placement = new Map();
           this.nextItemId = 0;
         },
@@ -113,9 +98,33 @@
           this.pickupEpoch = 0;
           this.isInteractive = mode === "student-quiz";
           this.wasCorrect = false;
+          this.successAnimating = false;
+          this.multiplyGroups = [];
+          this.divisionItems = [];
+          this.answerBins = [];
+          this.resultCounter = null;
+          this.answerFloorHandles = [];
+          this.multiplySource = null;
+          this.equalsSign = null;
+          this.answerZoneHandles = [];
+          this.successTimers = [];
+          this.successWave = [];
+          this.answerSurface = null;
+          this.multiplyPool = [];
+          this.problemCarrots = [];
+          this.problemSurfaces = [];
+          this.summaryFragments = [];
+          this.summaryOutlineHandles = [];
+          this.summaryStarted = false;
+          this.insightCallouts = [];
+          this.supplyZone = null;
+          this.supplyBed = null;
+          this.supplyGui = null;
+          this.equalsPlayPosition = null;
 
           if (this.isParenthesesProblem()) await this.renderParenthesesProblem();
-          else if (this.problem.type === "exponent") await this.renderExponentProblem();
+          else if (this.problem.type === "multiplication") await this.renderMultiplicationProblem();
+          else if (this.problem.type === "division") await this.renderDivisionProblem();
           else await this.renderBasicProblem();
 
           this.problemFocus = this.context.world.addTargetFocus({
@@ -126,7 +135,7 @@
           });
           this.problemFocus.setVisible(false);
 
-          this.renderAnswerArea();
+          if (this.problem.type !== "multiplication" && this.problem.type !== "division") this.renderAnswerArea();
           await this.renderSupply();
           this.createInsightCallouts();
           this.createControls();
@@ -137,7 +146,7 @@
 
           this.context.ui.question.show({ label: "โจทย์", text: `${this.problem.expression} = ?`, tone: "primary" });
           this.context.ui.console.set({
-            objective: "หยิบแครอทหนึ่งหน่วยมาสร้างคำตอบ",
+            objective: this.activityObjective(),
             title: this.mode === "student-quiz" ? "สร้างคำตอบของคุณ" : "กดป้ายข้อมูลเพื่อดูวิธีคิด",
             message: this.mode === "student-quiz" ? "นับแครอททุกหัว และแก้คำตอบได้ก่อนกดไปข้อต่อไป" : "ป้ายที่มีสัญลักษณ์ i สามารถกดเปิดคำอธิบายเพิ่มเติมได้",
             tone: "info"
@@ -151,8 +160,6 @@
           const first = clampInt(values.firstNumber, 2, 6);
           const second = clampInt(values.secondNumber, 1, 4);
           const third = clampInt(values.thirdNumber, 1, 4);
-          const powerBase = clampInt(values.powerBase, 2, 3);
-          const exponent = clampInt(values.exponent, 2, 3);
 
           if (type === "subtraction") {
             let left = Math.max(first, second);
@@ -173,15 +180,13 @@
             const insideResult = second + third;
             return { type, operands: [first, second, third], operators: ["×", "+"], insideOperands: [second, third], outsideOperand: first, insideResult, result: first * insideResult, expression: `${first} × (${second} + ${third})`, withoutParenthesesExpression: `${first} × ${second} + ${third}`, withoutParenthesesResult: first * second + third };
           }
-          if (type === "exponent") {
-            const result = powerBase ** exponent;
-            return { type, operands: [powerBase], operators: [], base: powerBase, exponent, result, expression: `${powerBase}${this.superscript(exponent)}` };
-          }
           return { type: "addition", operands: [first, second], operators: ["+"], result: first + second, expression: `${first} + ${second}` };
         },
 
-        superscript(value) {
-          return value === 3 ? "³" : "²";
+        activityObjective() {
+          if (this.problem.type === "multiplication") return "ยกกลุ่มแครอทไปวางให้ครบจำนวนกลุ่ม";
+          if (this.problem.type === "division") return "แบ่งแครอททั้งหมดลงทุกช่องให้เท่ากัน";
+          return "หยิบแครอทหนึ่งหน่วยมาสร้างคำตอบ";
         },
 
         isParenthesesProblem() {
@@ -193,17 +198,17 @@
           this.answerDepth = 5.25;
           this.answerZ = -1.35;
           this.maxSlots = 48;
-          const operandHalfWidth = 3.35 / 2;
+          const operandHalfWidth = BASIC_LAYOUT.areaWidth / 2;
           const answerHalfWidth = this.answerWidth / 2;
           let problemLeft;
           if (this.isParenthesesProblem()) {
             problemLeft = -7.15 - operandHalfWidth;
             this.answerBaseX = 10.85;
-          } else if (this.problem.type === "exponent") {
-            problemLeft = -4.1 - operandHalfWidth;
-            this.answerBaseX = 4.45;
+          } else if (this.problem.type === "multiplication" || this.problem.type === "division") {
+            problemLeft = -8;
+            this.answerBaseX = 0;
           } else {
-            problemLeft = -5.65 - operandHalfWidth;
+            problemLeft = BASIC_LAYOUT.leftX - operandHalfWidth;
             this.answerBaseX = 6.35;
           }
           const activityRight = this.answerBaseX + answerHalfWidth;
@@ -214,33 +219,92 @@
           return value + this.layoutOffsetX;
         },
 
-        flatExponentParts(value) {
-          const color = "#244f86";
-          const horizontal = z => ({ shape: "box", position: [0, .25, z], size: [.48, .09, .10], color, material: { roughness: .34, clearcoat: .4 } });
-          const vertical = (x, z) => ({ shape: "box", position: [x, .25, z], size: [.10, .09, .29], color, material: { roughness: .34, clearcoat: .4 } });
-          const segments = {
-            top: horizontal(-.29),
-            middle: horizontal(0),
-            bottom: horizontal(.29),
-            upperRight: vertical(.22, -.145),
-            lowerRight: vertical(.22, .145),
-            lowerLeft: vertical(-.22, .145)
-          };
-          const names = value === 3
-            ? ["top", "upperRight", "middle", "lowerRight", "bottom"]
-            : ["top", "upperRight", "middle", "lowerLeft", "bottom"];
-          return names.map(name => segments[name]);
-        },
 
         async renderBasicProblem() {
-          this.problemFocusX = this.layoutX(-3.15);
-          this.problemFocusRadius = 3.7;
+          this.problemFocusX = this.layoutX(BASIC_LAYOUT.centerX);
+          this.problemFocusRadius = 4.45;
           const [left, right] = this.problem.operands;
-          const leftArea = this.addOperandArea(this.layoutX(-5.65), left, "problem-left", "operation");
-          this.operatorSign = this.context.world.addOperatorSign({ text: this.problem.operators[0], position: [this.layoutX(-3.15), .24, -1.55], scale: [1.2, 1.2] });
-          const rightArea = this.addOperandArea(this.layoutX(-.65), right, "problem-right", "operation");
-          this.equalsSign = this.context.world.addOperatorSign({ text: "=", position: [this.layoutX(1.85), .24, -1.55], scale: [1.2, 1.2] });
+          const leftArea = this.addOperandArea(this.layoutX(BASIC_LAYOUT.leftX), left, "problem-left", "operation");
+          this.operatorSign = this.context.world.addOperatorSign({ text: this.problem.operators[0], position: [this.layoutX(BASIC_LAYOUT.centerX), .24, -1.55], scale: [1.28, 1.28] });
+          const rightArea = this.addOperandArea(this.layoutX(BASIC_LAYOUT.rightX), right, "problem-right", "operation");
+          this.equalsPlayPosition = [this.layoutX(BASIC_LAYOUT.equalsX), .24, -1.55];
+          this.equalsSign = this.context.world.addOperatorSign({ text: "=", position: this.equalsPlayPosition, scale: [1.28, 1.28] });
           await Promise.all([leftArea, rightArea]);
+        },
+
+        async addBasket(handle, name) {
+          const basket = await this.context.world.addLibraryObject({
+            asset: "environment/basket-woven", name: `${name}-basket`,
+            targetSize: 2.75, position: [0, 0, 0]
+          });
+          basket.stopAnimation();
+          handle.object3D.userData.visualRoot.add(basket.object3D);
+          basket.setPosition(0, 0, 0);
+        },
+
+        async addGroupCarrots(handle, count, name) {
+          const columns = Math.min(3, count);
+          const rows = Math.ceil(count / columns);
+          const entries = await Promise.all(Array.from({ length: count }, async (_, index) => {
+            const position = [(index % columns - (columns - 1) / 2) * .68, .52, (Math.floor(index / columns) - (rows - 1) / 2) * .7];
+            const carrot = await this.context.world.addLibraryObject({ asset: "environment/carrot", name: `${name}-carrot-${index}`, position, scale: .94 });
+            carrot.stopAnimation();
+            handle.object3D.userData.visualRoot.add(carrot.object3D);
+            carrot.setPosition(...position);
+            return { handle: carrot, position };
+          }));
+          return entries;
+        },
+
+        async renderMultiplicationProblem() {
+          this.answerFloorHandles = [];
+          this.layoutOffsetX = 0;
+          this.problemFocusX = 0;
+          this.problemFocusRadius = 7.6;
+          this.answerX = 0;
+          this.answerZ = -2.15;
+          this.answerWidth = 15.2;
+          this.answerDepth = 3.6;
+          this.multiplySlotCount = this.mode === "student-quiz" ? 5 : this.problem.operands[1];
+          this.maxSlots = this.multiplySlotCount;
+          this.answerZoneHandles = [];
+          const slotWidth = this.multiplySlotCount <= 3 ? 3.55 : 2.65;
+          const spacing = this.multiplySlotCount <= 3 ? 4.05 : 2.9;
+          for (let index = 0; index < this.multiplySlotCount; index += 1) {
+            const x = (index - (this.multiplySlotCount - 1) / 2) * spacing;
+            const zone = this.context.world.addZone({ name: `multiply-slot-${index + 1}`, size: [slotWidth, .18, 3.25], position: [x, .1, this.answerZ], color: "#d9dddc", opacity: .88 });
+            this.answerZoneHandles.push(zone);
+            this.addWoodenGardenFence({ name: `multiply-fence-${index}`, centerX: x, centerZ: this.answerZ, width: slotWidth, depth: 3.25 });
+            this.answerFloorHandles.push(this.context.world.addGroup({ name: `multiply-slot-base-${index + 1}`, position: [x, .08, this.answerZ], parts: [{ shape: "box", size: [slotWidth - .22, .1, 3.03], color: "#e7e9e8", material: { roughness: .78, opacity: .64, depthWrite: false } }] }));
+          }
+          this.answerFocus = this.context.world.addTargetFocus({ position: [0, .3, this.answerZ], radius: 7.15, color: "#48a879", secondaryColor: "#b6e8cb" });
+          this.answerFocus.setVisible(false);
+          this.operatorSign = this.context.world.addOperatorSign({ text: "×", position: [0, .24, .72], scale: [1.15, 1.15] });
+          this.resultCounter = this.context.world.addWorldCounter({ name: "multiply-total", position: [0, .28, -5.25], value: 0, digits: 2 });
+        },
+
+        async renderDivisionProblem() {
+          this.layoutOffsetX = 0;
+          this.problemFocusX = 0;
+          this.problemFocusRadius = 7.6;
+          this.answerX = 0;
+          this.answerZ = -2.05;
+          this.answerWidth = 15.5;
+          this.answerDepth = 3.8;
+          this.answerZoneHandles = [];
+          const divisor = this.problem.operands[1];
+          const spacing = divisor <= 3 ? 4.35 : 3.55;
+          for (let index = 0; index < divisor; index += 1) {
+            const x = (index - (divisor - 1) / 2) * spacing;
+            const zone = this.context.world.addZone({ name: `division-bin-${index + 1}`, size: [3.75, .18, 3.35], position: [x, .1, this.answerZ], color: "#e1e4e3", opacity: .88 });
+            this.answerZoneHandles.push(zone);
+            this.addWoodenGardenFence({ name: `division-fence-${index}`, centerX: x, centerZ: this.answerZ, width: 3.75, depth: 3.35 });
+            const counter = this.context.world.addWorldCounter({ name: `division-count-${index}`, position: [x, .28, -5.05], value: 0, digits: 2 });
+            this.answerBins.push({ index, x, z: this.answerZ, width: 3.75, depth: 3.35, zone, counter });
+          }
+          this.answerFocus = this.context.world.addTargetFocus({ position: [0, .3, this.answerZ], radius: 7.2, color: "#48a879", secondaryColor: "#b6e8cb" });
+          this.answerFocus.setVisible(false);
+          this.operatorSign = this.context.world.addOperatorSign({ text: "÷", position: [0, .24, .72], scale: [1.15, 1.15] });
         },
 
         async renderParenthesesProblem() {
@@ -308,62 +372,55 @@
           return this.context.world.addGroup({ name, position: [centerX, .03, centerZ], parts });
         },
 
-        async renderExponentProblem() {
-          this.problemFocusX = this.layoutX(-4.1);
-          this.problemFocusRadius = 2.15;
-          const baseX = this.layoutX(-4.1);
-          const baseArea = this.addOperandArea(baseX, this.problem.base, "power-base", "exponent");
-          const badgeX = baseX + 1.25;
-          const badgeZ = -2.8;
-          const badge = this.context.world.addGroup({
-            name: "exponent-badge",
-            position: [badgeX, .72, badgeZ],
-            parts: [
-              { shape: "cylinder", size: [1.2, .22, 1.2], color: "#e3ad45", material: { roughness: .38, clearcoat: .45 } },
-              { shape: "cylinder", position: [0, .16, 0], size: [.98, .13, .98], color: "#fffaf0", material: { roughness: .32, clearcoat: .5 } },
-              ...this.flatExponentParts(this.problem.exponent)
-            ]
-          });
-          this.equalsSign = this.context.world.addOperatorSign({ text: "=", position: [this.layoutX(-.05), .24, -1.55], scale: [1.2, 1.2] });
-          await baseArea;
-        },
-
         async addOperandArea(centerX, count, name, insightKind) {
           const surfacePattern = "../../assets/image/texture/lesson-surface-dots.svg";
+          const isBasicOperation = insightKind === "operation";
+          const areaWidth = isBasicOperation ? BASIC_LAYOUT.areaWidth : 3.35;
+          const areaDepth = isBasicOperation ? BASIC_LAYOUT.areaDepth : 3.55;
+          const carrotScale = isBasicOperation ? BASIC_LAYOUT.carrotScale : .94;
           const platform = this.context.world.addGroup({
             name,
             position: [centerX, .12, -1.55],
             parts: [
-              { shape: "box", size: [3.35, .22, 3.55], color: "#dcecff", material: { roughness: .56, clearcoat: .22 } },
-              { shape: "box", position: [0, .14, 0], size: [3.05, .08, 3.25], color: "#f8fcff", material: { texture: surfacePattern, roughness: .66 } }
+              { shape: "box", size: [areaWidth, .22, areaDepth], color: "#dcecff", material: { roughness: .56, clearcoat: .22 } },
+              { shape: "box", position: [0, .14, 0], size: [areaWidth - .3, .08, areaDepth - .3], color: "#f8fcff", material: { texture: surfacePattern, roughness: .66 } }
             ]
           });
+          this.problemSurfaces.push(platform);
           const columns = count > 9 ? 4 : 3;
-          const spacing = columns === 4 ? .68 : .82;
+          const spacingX = isBasicOperation ? BASIC_LAYOUT.carrotSpacingX : columns === 4 ? .68 : .82;
+          const spacingZ = isBasicOperation ? BASIC_LAYOUT.carrotSpacingZ : spacingX;
           const rows = Math.ceil(count / columns);
           const carrotPromises = [];
           for (let index = 0; index < count; index += 1) {
             const column = index % columns;
             const row = Math.floor(index / columns);
-            const x = (column - (columns - 1) / 2) * spacing;
-            const z = (row - (rows - 1) / 2) * spacing;
+            const x = (column - (columns - 1) / 2) * spacingX;
+            const z = (row - (rows - 1) / 2) * spacingZ;
             carrotPromises.push(this.context.world.addLibraryObject({
-              asset: "food/carrot",
+              asset: "environment/carrot",
               name: `${name}-carrot-${index}`,
               position: [centerX + x, .22, -1.55 + z],
               rotation: [0, (index % 3 - 1) * 9, (index % 2 ? 1 : -1) * 3],
-              scale: count > 12 ? .58 : columns === 4 ? .78 : .94
+              scale: isBasicOperation ? carrotScale : count > 12 ? .58 : columns === 4 ? .78 : .94
             }));
           }
-          await Promise.all(carrotPromises);
+          const carrots = await Promise.all(carrotPromises);
+          carrots.forEach((handle, index) => this.problemCarrots.push({
+            handle,
+            side: name.includes("right") ? "right" : "left",
+            index,
+            startScale: isBasicOperation ? carrotScale : count > 12 ? .58 : columns === 4 ? .78 : .94,
+            start: [handle.object3D.position.x, handle.object3D.position.y, handle.object3D.position.z]
+          }));
           return platform;
         },
 
         renderAnswerArea() {
           const surfacePattern = "../../assets/image/texture/lesson-surface-dots.svg";
           this.answerX = this.layoutX(this.answerBaseX);
-          this.context.world.addZone({ name: "answer-zone", size: [this.answerWidth, .2, this.answerDepth], position: [this.answerX, .13, this.answerZ], color: "#d8f5df", opacity: .82 });
-          const answerSurface = this.context.world.addGroup({
+          this.answerZoneHandles = [this.context.world.addZone({ name: "answer-zone", size: [this.answerWidth, .2, this.answerDepth], position: [this.answerX, .13, this.answerZ], color: "#d8f5df", opacity: .82 })];
+          this.answerSurface = this.context.world.addGroup({
             name: "answer-insight-surface",
             position: [this.answerX, .08, this.answerZ],
             parts: [{ shape: "box", size: [this.answerWidth - .3, .09, this.answerDepth - .3], color: "#edf9f1", material: { texture: surfacePattern, roughness: .72, opacity: .46, depthWrite: false } }]
@@ -387,9 +444,11 @@
         },
 
         async renderSupply() {
+          if (this.problem.type === "multiplication") return this.renderMultiplicationSupply();
+          if (this.problem.type === "division") return this.renderDivisionSupply();
           this.sourcePosition = [0, -.52, 4.25];
-          this.context.world.addZone({ name: "carrot-garden-zone", size: [3.65, .12, 2.75], position: [0, .08, 4.25], color: "#8cc66b", opacity: .76 });
-          this.context.world.addGroup({
+          this.supplyZone = this.context.world.addZone({ name: "carrot-garden-zone", size: [3.65, .12, 2.75], position: [0, .08, 4.25], color: "#8cc66b", opacity: .76 });
+          this.supplyBed = this.context.world.addGroup({
             name: "carrot-soil-bed",
             position: [0, .12, 4.25],
             parts: [
@@ -404,44 +463,241 @@
               { shape: "sphere", position: [1.72, .24, .7], size: [.38, .2, .28], color: "#6fa85a", material: { roughness: .9 } }
             ]
           });
-          this.context.world.addWorldGui({
+          this.supplyGui = this.context.world.addWorldGui({
             text: "ลากแครอท"
           });
           await this.ensureSource();
         },
 
+        async renderMultiplicationSupply() {
+          const groupSize = this.problem.operands[0];
+          this.sourcePosition = [0, .18, 4.35];
+          this.context.world.addZone({ name: "multiply-source-zone", size: [3.55, .14, 3.2], position: [0, .08, 4.35], color: "#d9dddc", opacity: .88 });
+          await this.spawnMultiplicationSource();
+          this.multiplyPool = await Promise.all(Array.from({ length: this.multiplySlotCount }, async (_, index) => {
+            const record = { slot: index, handle: null, carrots: [] };
+            record.handle = this.context.world.addGroup({
+              name: `multiply-answer-group-${index}`, position: [this.multiplySlotX(index), .18, this.answerZ],
+              parts: [], draggable: false, dragAxis: "xz", dragLiftHeight: .85, dragFromCenter: true,
+              hitArea: [2.65, 1.35, 2.35], hitAreaOffset: [0, .48, 0],
+              onDrop: position => this.moveMultiplyGroup(record, position)
+            });
+            await this.addBasket(record.handle, `multiply-answer-${index}`);
+            record.carrots = await this.addGroupCarrots(record.handle, groupSize, `multiply-answer-${index}`);
+            if (this.multiplySlotCount > 3) record.handle.setScale(.78);
+            record.handle.setVisible(false);
+            return record;
+          }));
+        },
+
+        async spawnMultiplicationSource() {
+          const groupSize = this.problem.operands[0];
+          let source;
+          source = this.context.world.addGroup({
+            name: `multiply-source-group-${this.multiplySourceSerial = (this.multiplySourceSerial || 0) + 1}`,
+            position: [...this.sourcePosition],
+            parts: [],
+            draggable: this.isInteractive,
+            clickable: false,
+            dragAxis: "xz",
+            dragLiftHeight: 1.08,
+            dragFromCenter: true,
+            hitArea: [2.75, 1.35, 2.45],
+            hitAreaOffset: [0, .48, 0],
+            guideTarget: null,
+            hoverMessage: `ลากตะกร้าพร้อมแครอท ${groupSize} หัวไปทั้งก้อน`,
+            onDrop: position => {
+              const placed = this.placeMultiplyGroupAt(position);
+              if (!placed) return false;
+              source.setDraggable(false);
+              source.setVisible(false);
+              const timer = setTimeout(() => {
+                source.setPosition(...this.sourcePosition);
+                source.setVisible(true);
+                source.setDraggable(this.isInteractive);
+              }, 260);
+              this.timers.push(timer);
+              return { accepted: true, commit: true };
+            }
+          });
+          this.multiplySource = source;
+          await this.addBasket(source, "multiply-source");
+          this.sourceCarrots = await this.addGroupCarrots(source, groupSize, "multiply-source");
+        },
+
+        multiplySlotX(index) {
+          const spacing = this.multiplySlotCount <= 3 ? 4.05 : 2.9;
+          return (index - (this.multiplySlotCount - 1) / 2) * spacing;
+        },
+
+        multiplySlotAt(position) {
+          let best = -1;
+          let bestDistance = Infinity;
+          for (let index = 0; index < this.multiplySlotCount; index += 1) {
+            const distance = Math.hypot(position.x - this.multiplySlotX(index), position.z - this.answerZ);
+            if (distance < 1.55 && distance < bestDistance) {
+              best = index;
+              bestDistance = distance;
+            }
+          }
+          return best;
+        },
+
+        placeMultiplyGroupAt(position) {
+          if (!this.isInteractive) return false;
+          const slot = this.multiplySlotAt(position);
+          if (slot < 0) return false;
+          if (this.multiplyGroups.some(group => group.slot === slot)) {
+            this.context.ui.console.feedback("ช่องนี้มีกลุ่มอยู่แล้ว ลองวางในช่องว่าง", { tone: "warning" });
+            return false;
+          }
+          const record = this.multiplyPool.find(entry => !this.multiplyGroups.includes(entry));
+          if (!record) return false;
+          record.slot = slot;
+          const handle = record.handle;
+          handle.setPosition(this.multiplySlotX(slot), .18, this.answerZ);
+          handle.setVisible(true);
+          handle.setDraggable(true);
+          this.multiplyGroups.push(record);
+          handle.playCommit?.();
+          this.updateMultiplicationAnswer(true);
+          return true;
+        },
+
+        moveMultiplyGroup(record, position) {
+          this.stopLabSuccess();
+          const slot = this.multiplySlotAt(position);
+          if (slot < 0) {
+            record.handle.setDraggable(false);
+            record.handle.setVisible(false);
+            this.multiplyGroups = this.multiplyGroups.filter(group => group !== record);
+            this.updateMultiplicationAnswer(true);
+            return { accepted: true, commit: false };
+          }
+          const occupied = this.multiplyGroups.some(group => group !== record && group.slot === slot);
+          if (occupied) {
+            record.handle.animateTo(this.multiplySlotX(record.slot), .18, this.answerZ, { duration: 280, arcHeight: .2 });
+            return { accepted: true, commit: false };
+          }
+          record.slot = slot;
+          record.handle.animateTo(this.multiplySlotX(slot), .18, this.answerZ, { duration: 280, arcHeight: .2 });
+          this.updateMultiplicationAnswer(true);
+          return { accepted: true, commit: true };
+        },
+
+        async renderDivisionSupply() {
+          const dividend = this.problem.operands[0];
+          this.context.world.addZone({ name: "division-source-zone", size: [13.6, .14, dividend > 12 ? 3.1 : 2.35], position: [0, .08, 4.55], color: "#d9dddc", opacity: .88 });
+          for (let index = 0; index < dividend; index += 1) {
+            const sourcePosition = this.divisionSourcePosition(index, dividend);
+            const record = { index, sourcePosition, bin: null, handle: null };
+            const handle = await this.context.world.addLibraryObject({
+              asset: "environment/carrot",
+              name: `division-box-${index + 1}`,
+              position: sourcePosition,
+              scale: .94,
+              draggable: this.isInteractive,
+              dragAxis: "xz",
+              dragLiftHeight: .9,
+              dragFromCenter: true,
+              hitArea: [1.05, 1.05, 1.05],
+              guideTarget: null,
+              hoverMessage: "ลากแครอทไปแบ่งลงช่องใดช่องหนึ่ง",
+              onDrop: position => this.dropDivisionBox(record, position)
+            });
+            record.handle = handle;
+            this.divisionItems.push(record);
+          }
+        },
+
+        divisionSourcePosition(index, total) {
+          const columns = Math.min(12, total);
+          const row = Math.floor(index / columns);
+          const column = index % columns;
+          const rowCount = Math.min(columns, total - row * columns);
+          return [(column - (rowCount - 1) / 2) * 1.02, .5, 4.25 + row * 1.02];
+        },
+
+        divisionBinAt(position) {
+          const bin = this.answerBins.find(entry => Math.abs(position.x - entry.x) <= entry.width / 2 && Math.abs(position.z - entry.z) <= entry.depth / 2);
+          return bin ? bin.index : -1;
+        },
+
+        dropDivisionBox(record, position) {
+          if (!this.isInteractive) return false;
+          this.stopLabSuccess();
+          const binIndex = this.divisionBinAt(position);
+          record.bin = binIndex < 0 ? null : binIndex;
+          this.relayoutDivision(true);
+          this.updateDivisionAnswer(true);
+          return { accepted: true, commit: binIndex >= 0 };
+        },
+
+        divisionSlotPosition(binIndex, slotIndex) {
+          const bin = this.answerBins[binIndex];
+          const count = Math.max(1, this.divisionItems.filter(item => item.bin === binIndex).length);
+          const columns = Math.min(5, Math.ceil(Math.sqrt(count)));
+          const rows = Math.ceil(count / columns);
+          const row = Math.floor(slotIndex / columns);
+          const rowCount = Math.min(columns, count - row * columns);
+          const spacingX = Math.min(.95, (bin.width - .9) / Math.max(1, columns - 1));
+          const spacingZ = Math.min(.95, (bin.depth - .9) / Math.max(1, rows - 1));
+          return [bin.x + (slotIndex % columns - (rowCount - 1) / 2) * spacingX, .22, bin.z + (row - (rows - 1) / 2) * spacingZ];
+        },
+
+        relayoutDivision(animate = true) {
+          for (const bin of this.answerBins) {
+            const records = this.divisionItems.filter(item => item.bin === bin.index).sort((a, b) => a.index - b.index);
+            records.forEach((record, slot) => {
+              const target = this.divisionSlotPosition(bin.index, slot);
+              record.handle.setScale(records.length <= 9 ? .94 : records.length <= 16 ? .78 : .64);
+              if (animate) record.handle.animateTo(...target, { duration: 320, arcHeight: .28 });
+              else record.handle.setPosition(...target);
+            });
+          }
+          for (const record of this.divisionItems.filter(item => item.bin === null)) {
+            record.handle.setScale(.94);
+            if (animate) record.handle.animateTo(...record.sourcePosition, { duration: 320, arcHeight: .28 });
+            else record.handle.setPosition(...record.sourcePosition);
+          }
+        },
+
         createInsightCallouts() {
-          const problemKind = this.problem.type === "exponent" ? "exponent" : this.isParenthesesProblem() ? "parentheses" : "problem";
+          if (this.problem.type === "multiplication" || this.problem.type === "division") return;
+          const problemKind = this.isParenthesesProblem() ? "parentheses" : "problem";
           const canOpenInsight = this.mode !== "student-quiz";
-          this.context.world.addCallout({
+          const specialLayout = this.problem.type === "multiplication" || this.problem.type === "division";
+          const problemCalloutX = specialLayout ? -5.25 : this.problemFocusX;
+          const answerCalloutX = specialLayout ? 5.25 : this.answerX;
+          this.insightCallouts.push(this.context.world.addCallout({
             text: "โจทย์",
-            position: [this.problemFocusX, 2.8, -3.45],
-            compactPosition: [this.problemFocusX * .68, 2.65, -4.55],
-            anchor: [this.problemFocusX, .3, -1.55],
+            position: [problemCalloutX, 2.8, specialLayout ? -4.45 : -3.45],
+            compactPosition: [problemCalloutX * .68, 2.65, specialLayout ? -4.65 : -4.55],
+            anchor: [specialLayout ? -3.5 : this.problemFocusX, .3, specialLayout ? -3.7 : -1.55],
             scale: [3.25, .92],
             compactScale: [2.45, .92],
             insight: canOpenInsight ? () => this.insightDefinition(problemKind) : null
-          });
-          this.context.world.addCallout({
-            text: "พื้นที่คำตอบ",
-            position: [this.answerX, 2.8, -3.45],
-            compactPosition: [this.answerX * .68, 2.65, -4.55],
-            anchor: [this.answerX, .3, this.answerZ],
+          }));
+          this.insightCallouts.push(this.context.world.addCallout({
+            text: this.problem.type === "multiplication" ? "พื้นที่วางกลุ่ม" : this.problem.type === "division" ? "แบ่งให้เท่ากันทุกช่อง" : "พื้นที่คำตอบ",
+            position: [answerCalloutX, 2.8, specialLayout ? -4.45 : -3.45],
+            compactPosition: [answerCalloutX * .68, 2.65, specialLayout ? -4.65 : -4.55],
+            anchor: [specialLayout ? 3.5 : this.answerX, .3, this.answerZ],
             scale: [3.25, .92],
             compactScale: [2.45, .92],
             insight: canOpenInsight ? () => this.insightDefinition("answer") : null
-          });
+          }));
         },
 
         createControls() {
+          const special = this.problem.type === "multiplication" || this.problem.type === "division";
           this.answerControls = this.context.ui.control.show({
             id: "answer-tools",
             scope: "scene",
             position: "bottom-right",
-            items: [
-              { id: "pickup", label: "หยิบแครอท", icon: "hand.svg" },
-              { id: "clear", label: "ล้างคำตอบ", icon: "reset.svg" }
-            ],
+            items: special
+              ? [{ id: "clear", label: "เริ่มใหม่", icon: "reset.svg" }]
+              : [{ id: "pickup", label: "หยิบแครอท", icon: "hand.svg" }, { id: "clear", label: "ล้างคำตอบ", icon: "reset.svg" }],
             onAction: event => {
               if (event.id === "pickup") this.pickupCarrot();
               if (event.id === "clear") this.clearAnswer();
@@ -455,7 +711,7 @@
           const id = this.nextItemId++;
           const item = { id, value: 1, sourcePosition: [...this.sourcePosition], released: false, placed: false, slot: null, handle: null };
           this.sourcePromise = this.context.world.addLibraryObject({
-            asset: "food/carrot",
+            asset: "environment/carrot",
             name: `answer-carrot-${id}`,
             position: item.sourcePosition,
             scale: 1.14,
@@ -492,6 +748,7 @@
         },
 
         handleDrop(item, position, handle) {
+          this.stopLabSuccess();
           const inside = Math.abs(position.x - this.answerX) <= this.answerWidth / 2 && Math.abs(position.z - this.answerZ) <= this.answerDepth / 2;
           if (inside) {
             if (!item.released) {
@@ -589,6 +846,7 @@
         },
 
         async ensureSource() {
+          if (this.problem.type === "multiplication" || this.problem.type === "division") return null;
           const item = await this.spawnSourceCarrot();
           item?.handle?.setDraggable(this.isInteractive);
           return item;
@@ -638,6 +896,33 @@
         },
 
         clearAnswer() {
+          if (this.summaryStarted) {
+            this.clearTimers();
+            this.restoreOperationWorkspace(true);
+          } else {
+            this.stopLabSuccess();
+          }
+          if (this.problem.type === "multiplication") {
+            for (const group of this.multiplyGroups) { group.handle.setVisible(false); group.handle.setDraggable(false); }
+            this.multiplyGroups = [];
+            this.multiplySource?.setPosition(...this.sourcePosition);
+            this.multiplySource?.setVisible(true);
+            this.multiplySource?.setDraggable(this.isInteractive);
+            this.wasCorrect = false;
+            this.successAnimating = false;
+            this.equalsSign?.setState(false);
+            this.updateMultiplicationAnswer(false);
+            return;
+          }
+          if (this.problem.type === "division") {
+            for (const item of this.divisionItems) item.bin = null;
+            this.relayoutDivision(true);
+            this.wasCorrect = false;
+            this.successAnimating = false;
+            this.equalsSign?.setState(false);
+            this.updateDivisionAnswer(false);
+            return;
+          }
           this.pendingPickups = 0;
           this.pickupEpoch += 1;
           for (const item of this.items.filter(value => value.placed)) {
@@ -654,6 +939,126 @@
           if (this.mode !== "student-quiz") this.context.ui.console.feedback("ล้างคำตอบแล้ว เริ่มสร้างใหม่ได้เลย", { tone: "info" });
         },
 
+        updateMultiplicationAnswer(announce) {
+          const groupSize = this.problem.operands[0];
+          const groupCount = this.multiplyGroups.length;
+          const answerValue = groupSize * groupCount;
+          const correct = groupCount === this.problem.operands[1];
+          this.resultCounter?.setValue(answerValue);
+          if (this.mode === "student-quiz") {
+            this.context.quiz.answer(correct, {
+              answerValue,
+              expectedAnswer: this.problem.result,
+              groupSize,
+              groupCount,
+              hasAnswer: groupCount > 0,
+              expectedGroupCount: this.problem.operands[1],
+              problemType: this.problem.type,
+              expression: this.problem.expression
+            });
+            return;
+          }
+          if (!correct) this.stopLabSuccess();
+          this.equalsSign?.setState(correct);
+          if (correct && !this.wasCorrect) {
+            this.context.audio.play("success");
+            this.context.ui.console.set({ objective: `${groupCount} กลุ่ม กลุ่มละ ${groupSize}`, title: `รวมเป็น ${answerValue} แครอท`, message: `ถูกต้อง! ${this.problem.expression} คือการยกกลุ่ม ${groupSize} แครอทมาวาง ${groupCount} ครั้ง`, tone: "success" });
+            this.context.ui.console.feedback(`ถูกต้อง! มี ${groupSize} แครอทอยู่ ${groupCount} กลุ่ม`, { tone: "success" });
+            this.playLabSuccess();
+          } else if (announce && !correct) {
+            this.context.ui.console.set({ objective: `ต้องการ ${this.problem.operands[1]} กลุ่ม`, title: `ตอนนี้มี ${groupCount} กลุ่ม`, message: "ยกตะกร้าแครอทจากด้านล่างมาวางเพิ่ม หรือลากกลุ่มออกเพื่อแก้คำตอบ", tone: "info" });
+          }
+          this.wasCorrect = correct;
+        },
+
+        updateDivisionAnswer(announce) {
+          const counts = this.answerBins.map(bin => this.divisionItems.filter(item => item.bin === bin.index).length);
+          const placedCount = counts.reduce((total, count) => total + count, 0);
+          const targetPerBin = this.problem.result;
+          const correct = placedCount === this.problem.operands[0] && counts.every(count => count === targetPerBin);
+          this.answerBins.forEach((bin, index) => bin.counter?.setValue(counts[index]));
+          if (this.mode === "student-quiz") {
+            this.context.quiz.answer(correct, {
+              answerValue: correct ? targetPerBin : null,
+              expectedAnswer: targetPerBin,
+              binCounts: counts,
+              placedCount,
+              hasAnswer: placedCount > 0,
+              dividend: this.problem.operands[0],
+              divisor: this.problem.operands[1],
+              problemType: this.problem.type,
+              expression: this.problem.expression
+            });
+            return;
+          }
+          if (!correct) this.stopLabSuccess();
+          this.equalsSign?.setState(correct);
+          if (correct && !this.wasCorrect) {
+            this.context.audio.play("success");
+            this.context.ui.console.set({ objective: `แบ่งครบ ${this.problem.operands[1]} กลุ่ม`, title: `กลุ่มละ ${targetPerBin} แครอท`, message: `ถูกต้อง! ${this.problem.operands[0]} ÷ ${this.problem.operands[1]} แบ่งได้เท่ากันทุกกลุ่ม`, tone: "success" });
+            this.context.ui.console.feedback(`ถูกต้อง! ทุกช่องมี ${targetPerBin} แครอทเท่ากัน`, { tone: "success" });
+            this.playLabSuccess();
+          } else if (announce && !correct) {
+            const allPlaced = placedCount === this.problem.operands[0];
+            this.context.ui.console.set({ objective: "ทำให้ทุกช่องมีจำนวนเท่ากัน", title: allPlaced ? `ตอนนี้แต่ละช่องมี ${counts.join(", ")} แครอท` : `แบ่งแล้ว ${placedCount} จาก ${this.problem.operands[0]} แครอท`, message: allPlaced ? "แครอทครบแล้ว แต่ยังแบ่งไม่เท่ากัน ลองย้ายระหว่างช่อง" : "ลากแครอทที่เหลือจากด้านล่างมาใส่ช่องใดก็ได้", tone: "info" });
+          }
+          this.wasCorrect = correct;
+        },
+
+        playLabSuccess() {
+          if (this.mode === "student-quiz" || this.successAnimating) return;
+          this.stopLabSuccess();
+          this.successAnimating = true;
+          const baseColor = this.problem.type === "division" ? "#e1e4e3" : this.problem.type === "multiplication" ? "#d9dddc" : "#d8f5df";
+          ["#55d889", baseColor, "#55d889", baseColor, "#55d889"].forEach((color, index) => {
+            this.successTimers.push(setTimeout(() => this.setAnswerSurfaceColor(color), index * 115));
+          });
+          const wave = this.successWaveEntries();
+          this.successWave = wave;
+          wave.forEach((entry, index) => {
+            this.successTimers.push(setTimeout(() => entry.handle.animateTo(entry.position[0], entry.position[1] + .62, entry.position[2], { duration: 210, arcHeight: .28 }), index * 70));
+            this.successTimers.push(setTimeout(() => entry.handle.animateTo(...entry.position, { duration: 230, arcHeight: .05 }), index * 70 + 230));
+          });
+          this.successTimers.push(setTimeout(() => { this.successAnimating = false; this.successWave = []; }, wave.length * 70 + 620));
+        },
+
+        stopLabSuccess() {
+          (this.successTimers || []).forEach(clearTimeout);
+          this.successTimers = [];
+          for (const entry of this.successWave || []) {
+            entry.handle.stopAnimation?.();
+            entry.handle.setPosition(...entry.position);
+          }
+          this.successWave = [];
+          this.successAnimating = false;
+          const baseColor = this.problem?.type === "division" ? "#e1e4e3" : this.problem?.type === "multiplication" ? "#d9dddc" : "#d8f5df";
+          this.setAnswerSurfaceColor(baseColor);
+        },
+
+        setAnswerSurfaceColor(color) {
+          this.answerZoneHandles?.forEach(zone => zone?.setColor?.(color));
+          this.answerSurface?.setColor?.(color === "#55d889" ? color : "#edf9f1");
+          if (this.problem?.type === "multiplication") {
+            this.answerFloorHandles?.forEach(floor => floor.setColor(color === "#55d889" ? color : "#e7e9e8"));
+          }
+        },
+
+        successWaveEntries() {
+          if (this.problem.type === "multiplication") {
+            return [...this.multiplyGroups].sort((a, b) => a.slot - b.slot).flatMap(group => group.carrots);
+          }
+          if (this.problem.type === "division") {
+            const entries = [];
+            for (const bin of this.answerBins) {
+              this.divisionItems.filter(item => item.bin === bin.index).sort((a, b) => a.index - b.index).forEach((item, slot) => entries.push({ handle: item.handle, position: this.divisionSlotPosition(bin.index, slot) }));
+            }
+            return entries;
+          }
+          const placed = this.items.filter(item => item.placed && item.handle).sort((a, b) => a.id - b.id);
+          return placed.map((item, index) => ({ handle: item.handle, position: this.answerSlot(index, placed.length) }));
+        },
+
+
         updateAnswer(announce) {
           const placedItems = this.items.filter(item => item.placed);
           const answerValue = placedItems.reduce((total, item) => total + item.value, 0);
@@ -665,6 +1070,7 @@
               answerCount: answerValue,
               answerValue,
               carrotCount,
+              hasAnswer: carrotCount > 0,
               carrotValues: placedItems.map(item => item.value),
               expectedAnswer: this.problem.result,
               leftCount: answerValue,
@@ -675,6 +1081,7 @@
             });
             return;
           }
+          if (!correct) this.stopLabSuccess();
           this.equalsSign?.setState(correct);
           if (correct && !this.wasCorrect) {
             this.context.audio.play("success");
@@ -685,6 +1092,8 @@
               tone: "success"
             });
             this.context.ui.console.feedback(`ถูกต้อง! ${this.problem.expression} = ${this.problem.result}`, { tone: "success" });
+            this.playLabSuccess();
+            this.playOperationSummary();
           } else if (announce && !correct) {
             this.context.ui.console.set({
               objective: "หยิบแครอทเพิ่มหรือนำออกเพื่อเปลี่ยนคำตอบ",
@@ -696,18 +1105,207 @@
           this.wasCorrect = correct;
         },
 
+        playOperationSummary() {
+          if (this.mode === "student-quiz" || this.summaryStarted || !["addition", "subtraction"].includes(this.problem.type)) return;
+          this.summaryStarted = true;
+          this.answerControls?.show();
+          this.answerControls?.setDisabled?.("pickup", true);
+          this.isInteractive = false;
+          this.items.forEach(item => item.handle?.setDraggable(false));
+          this.setOperationSupplyVisible(false);
+          const timer = setTimeout(() => {
+            this.hideOperationWorkspace();
+            if (this.problem.type === "subtraction") this.playSubtractionSummary();
+            else this.playAdditionSummary();
+          }, 680);
+          this.timers.push(timer);
+        },
+
+        hideOperationWorkspace() {
+          this.problemSurfaces.forEach(handle => handle?.setVisible?.(false));
+          this.operatorSign?.setVisible?.(false);
+          this.problemFocus?.setVisible?.(false);
+          this.answerFocus?.setVisible?.(false);
+          this.supplyZone?.setVisible?.(false);
+          this.supplyBed?.setVisible?.(false);
+          this.supplyGui?.setVisible?.(false);
+          this.insightCallouts[0]?.setVisible?.(false);
+          this.items.forEach(item => {
+            item.handle?.setDraggable?.(false);
+            if (!item.placed) item.handle?.setVisible?.(false);
+          });
+          this.equalsSign?.setVisible?.(true);
+          this.equalsSign?.setState?.(true);
+          const summaryEqualsPosition = [(this.layoutX(BASIC_LAYOUT.centerX) + this.answerX) / 2, .24, -1.55];
+          this.equalsSign?.stopAnimation?.();
+          if (this.equalsSign?.animateTo) this.equalsSign.animateTo(...summaryEqualsPosition, { duration: 440, arcHeight: .38 });
+          else this.equalsSign?.setPosition?.(...summaryEqualsPosition);
+          this.equalsSign?.pulse?.();
+        },
+
+        setOperationSupplyVisible(visible) {
+          this.supplyZone?.setVisible?.(visible);
+          this.supplyBed?.setVisible?.(visible);
+          this.supplyGui?.setVisible?.(visible);
+          for (const item of this.items) {
+            if (item.placed) continue;
+            const isCurrentSource = this.sourceItems?.get(item.value) === item;
+            item.handle?.setVisible?.(visible && isCurrentSource);
+            item.handle?.setDraggable?.(visible && isCurrentSource && this.isInteractive);
+          }
+        },
+
+        restoreOperationWorkspace(interactive = false) {
+          if (!this.summaryStarted) return;
+          this.summaryStarted = false;
+          this.summaryFragments.forEach(handle => {
+            handle?.stopAnimation?.();
+            handle?.remove?.();
+          });
+          this.summaryFragments = [];
+          this.clearSummaryOutline();
+          this.problemSurfaces.forEach(handle => handle?.setVisible?.(true));
+          this.answerZoneHandles?.forEach(handle => handle?.setVisible?.(true));
+          this.answerSurface?.setVisible?.(true);
+          this.operatorSign?.setVisible?.(true);
+          this.equalsSign?.setVisible?.(true);
+          this.equalsSign?.stopAnimation?.();
+          if (this.equalsPlayPosition) this.equalsSign?.setPosition?.(...this.equalsPlayPosition);
+          this.equalsSign?.setState?.(false);
+          this.answerCounter?.setVisible?.(true);
+          this.setOperationSupplyVisible(true);
+          this.insightCallouts.forEach(handle => handle?.setVisible?.(true));
+          this.problemCarrots.forEach(record => {
+            record.handle.stopAnimation?.();
+            record.handle.setVisible(true);
+            record.handle.setScale(record.startScale || .94);
+            record.handle.setPosition(...record.start);
+          });
+          this.items.forEach(item => {
+            item.handle?.stopAnimation?.();
+            const shouldShow = item.placed || this.sourceItems?.get(item.value) === item;
+            item.handle?.setVisible?.(shouldShow);
+            item.handle?.setDraggable?.(shouldShow && interactive);
+          });
+          this.isInteractive = interactive;
+          if (interactive) this.answerControls?.show();
+          this.answerControls?.setDisabled?.("pickup", !interactive);
+        },
+
+        summaryPosition(index, count) {
+          const columns = Math.min(6, Math.max(1, count));
+          const rows = Math.ceil(count / columns);
+          const row = Math.floor(index / columns);
+          const rowCount = Math.min(columns, count - row * columns);
+          const questionCenterX = this.layoutX(BASIC_LAYOUT.centerX);
+          return [
+            questionCenterX + (index % columns - (rowCount - 1) / 2) * BASIC_LAYOUT.summarySpacingX,
+            .28,
+            -1.55 + (row - (rows - 1) / 2) * BASIC_LAYOUT.summarySpacingZ
+          ];
+        },
+
+        showSummaryOutline(count) {
+          this.clearSummaryOutline();
+          const columns = Math.min(6, Math.max(1, count));
+          const rows = Math.ceil(Math.max(1, count) / columns);
+          const width = Math.max(3.2, (columns - 1) * BASIC_LAYOUT.summarySpacingX + 2.15);
+          const depth = Math.max(2.8, (rows - 1) * BASIC_LAYOUT.summarySpacingZ + 2.05);
+          const centerX = this.layoutX(BASIC_LAYOUT.centerX);
+          const centerZ = -1.55;
+          const left = centerX - width / 2;
+          const right = centerX + width / 2;
+          const back = centerZ - depth / 2;
+          const front = centerZ + depth / 2;
+          const line = (name, from, to) => this.context.world.addLineRender({
+            name, from, to, color: "#f0a43b", opacity: .96,
+            occludedOpacity: .28, dashed: true, arrow: false
+          });
+          this.summaryOutlineHandles = [
+            line("question-summary-outline-back", [left, .2, back], [right, .2, back]),
+            line("question-summary-outline-front", [left, .2, front], [right, .2, front]),
+            line("question-summary-outline-left", [left, .2, back], [left, .2, front]),
+            line("question-summary-outline-right", [right, .2, back], [right, .2, front])
+          ];
+        },
+
+        clearSummaryOutline() {
+          for (const handle of this.summaryOutlineHandles || []) handle?.remove?.();
+          this.summaryOutlineHandles = [];
+        },
+
+        playAdditionSummary() {
+          const carrots = [...this.problemCarrots].sort((a, b) => a.side.localeCompare(b.side) || a.index - b.index);
+          this.showSummaryOutline(carrots.length);
+          carrots.forEach((record, index) => {
+            record.handle.setVisible(true);
+            record.handle.setScale(1.28);
+            record.handle.animateTo(...this.summaryPosition(index, carrots.length), { duration: 620, delay: index * 55, arcHeight: .85 });
+          });
+          this.bounceAnswerSide(760);
+          this.context.ui.console.set({ objective: "เปรียบเทียบสองฝั่งของเครื่องหมายเท่ากับ", title: `${this.problem.expression} = ${this.problem.result}`, message: `ฝั่งโจทย์รวมได้ ${this.problem.result} หัว เท่ากับฝั่งคำตอบที่นักเรียนสร้าง`, tone: "success" });
+        },
+
+        playSubtractionSummary() {
+          const left = this.problemCarrots.filter(record => record.side === "left").sort((a, b) => a.index - b.index);
+          const right = this.problemCarrots.filter(record => record.side === "right").sort((a, b) => a.index - b.index);
+          const removed = right.length;
+          const collided = left.slice(left.length - removed);
+          const remaining = left.slice(0, Math.max(0, left.length - removed));
+          this.showSummaryOutline(remaining.length);
+          right.forEach((record, index) => {
+            const target = collided[index]?.handle.object3D.position;
+            if (!target) return;
+            record.handle.setVisible(true);
+            record.handle.animateTo(target.x, .28, target.z, { duration: 520, delay: index * 90, arcHeight: .7 });
+            const timer = setTimeout(() => {
+              record.handle.setVisible(false);
+              collided[index]?.handle.setVisible(false);
+              this.spawnSubtractionFragments(target.x, target.z, index);
+            }, 500 + index * 90);
+            this.timers.push(timer);
+          });
+          const settle = setTimeout(() => remaining.forEach((record, index) => {
+            record.handle.setVisible(true);
+            record.handle.setScale(1.28);
+            record.handle.animateTo(...this.summaryPosition(index, remaining.length), { duration: 620, delay: index * 60, arcHeight: .75 });
+          }), 720 + right.length * 90);
+          this.timers.push(settle);
+          this.bounceAnswerSide(900 + right.length * 90);
+          this.context.ui.console.set({ objective: "เปรียบเทียบสองฝั่งของเครื่องหมายเท่ากับ", title: `${this.problem.expression} = ${this.problem.result}`, message: `ฝั่งโจทย์ชนออก ${removed} คู่ เหลือ ${this.problem.result} หัว เท่ากับฝั่งคำตอบ`, tone: "success" });
+        },
+
+        bounceAnswerSide(delay = 0) {
+          const placed = this.items.filter(item => item.placed && item.handle).sort((a, b) => a.id - b.id);
+          placed.forEach((item, index) => {
+            const position = this.answerSlot(index, placed.length);
+            const timer = setTimeout(() => item.handle.animateTo(...position, { duration: 340, arcHeight: .62, delay: index * 35 }), delay);
+            this.timers.push(timer);
+          });
+        },
+
+        spawnSubtractionFragments(x, z, burstIndex) {
+          const colors = ["#ff9f43", "#f28c28", "#ffb35c"];
+          for (let index = 0; index < 6; index += 1) {
+            const angle = index / 6 * Math.PI * 2 + burstIndex * .35;
+            const fragment = this.context.world.addGroup({
+              name: `subtract-fragment-${burstIndex}-${index}`,
+              position: [x, .35, z],
+              parts: [{ shape: "box", size: [.22, .22, .22], color: colors[index % colors.length], material: { roughness: .7 } }]
+            });
+            this.summaryFragments.push(fragment);
+            fragment.animateTo(x + Math.cos(angle) * (1 + index % 2 * .35), .18 + (index % 3) * .16, z + Math.sin(angle) * (1 + index % 2 * .35), { duration: 420, arcHeight: .65 });
+            this.timers.push(setTimeout(() => fragment.setVisible(false), 760));
+          }
+        },
+
         insightDefinition(kind) {
           const problem = this.problem;
           let title = "ดูวิธีคิด";
           let message = "ดูความหมายของพื้นที่นี้ทีละขั้น";
           let html = "";
 
-          if (kind === "exponent") {
-            const factors = Array(problem.exponent).fill(problem.base).join(" × ");
-            title = "เลขในวงกลมบอกอะไร?";
-            message = `เลข ${problem.exponent} ในวงกลมบอกว่า ใช้เลขฐาน ${problem.base} คูณกัน ${problem.exponent} ครั้ง`;
-            html = `<div class="insight-equation"><strong>${problem.expression}</strong><span class="insight-arrow">→</span><strong>${factors}</strong><span class="insight-arrow">→</span><strong class="insight-result">${problem.result}</strong></div><ol class="insight-steps"><li>เริ่มจากแปลงที่มีแครอท ${problem.base} หัว</li><li>นำจำนวน ${problem.base} มาคูณกัน ${problem.exponent} ครั้ง</li><li>จึงได้คำตอบ ${problem.result}</li></ol><p class="insight-note">เลขชี้กำลังไม่ได้หมายถึงนำ ${problem.base} ไปคูณกับ ${problem.exponent}</p>`;
-          } else if (kind === "parentheses") {
+          if (kind === "parentheses") {
             const [insideLeft, insideRight] = problem.insideOperands;
             const afterFence = problem.type === "parenthesesBack" ? `${problem.outsideOperand} × ${problem.insideResult}` : `${problem.insideResult} × ${problem.outsideOperand}`;
             title = problem.type === "parenthesesBack" ? "วงเล็บอยู่ข้างหลังก็ต้องทำก่อน" : "ทำไมต้องคิดในรั้วก่อน?";
@@ -715,8 +1313,16 @@
             html = `<div class="insight-equation"><strong>${problem.expression}</strong><span class="insight-arrow">→</span><strong>${afterFence}</strong><span class="insight-arrow">→</span><strong class="insight-result">${problem.result}</strong></div><ol class="insight-steps"><li>ข้ามสิ่งที่อยู่นอกรั้วไว้ก่อน</li><li>คิด ${insideLeft} + ${insideRight} ในรั้ว ได้ ${problem.insideResult}</li><li>จึงคูณกับ ${problem.outsideOperand} ได้คำตอบ ${problem.result}</li></ol><div class="insight-grid"><div class="insight-card"><strong>ถ้าไม่มีวงเล็บ</strong><p>${problem.withoutParenthesesExpression} = ${problem.withoutParenthesesResult}</p></div><div class="insight-card"><strong>เมื่อมีวงเล็บ</strong><p>${problem.expression} = ${problem.result}</p></div></div><p class="insight-note">${problem.type === "parenthesesBack" ? "เห็นไหมว่า วงเล็บด้านหลังทำให้เราต้องย้อนมาทำด้านในก่อน และคำตอบเปลี่ยนไป" : "โจทย์วงเล็บด้านหน้าช่วยฝึกกฎ ส่วนโจทย์วงเล็บด้านหลังช่วยให้เห็นชัดว่าวงเล็บเปลี่ยนลำดับจริง"}</p>`;
           } else if (kind === "answer") {
             title = "พื้นที่คำตอบใช้อย่างไร?";
-            message = "แครอทหนึ่งหัวแทนหนึ่งหน่วย นับให้เท่ากับคำตอบ";
-            html = `<div class="insight-equation"><strong>แครอท 1 หัว</strong><span class="insight-arrow">=</span><strong>1 หน่วย</strong></div><div class="insight-grid"><div class="insight-card"><strong>ดึงจากดิน</strong><p>ลากแครอทจากแปลงไปวางในพื้นที่คำตอบ</p></div><div class="insight-card"><strong>หยิบเร็ว</strong><p>กดปุ่มหยิบแครอทเพื่อเพิ่มทีละหนึ่งหัว</p></div><div class="insight-card"><strong>เปลี่ยนคำตอบ</strong><p>ลากแครอทออก หรือกดล้างคำตอบ</p></div></div>`;
+            if (problem.type === "multiplication") {
+              message = `หนึ่งตะกร้ามีแครอท ${problem.operands[0]} หัว ต้องยกทั้งตะกร้าไปวางเป็นกลุ่ม`;
+              html = `<div class="insight-equation"><strong>1 กลุ่ม</strong><span class="insight-arrow">=</span><strong>${problem.operands[0]} แครอท</strong></div><ol class="insight-steps"><li>ยกตะกร้าทั้งก้อน ห้ามแยกแครอท</li><li>วาง ${problem.operands[1]} กลุ่ม</li><li>จึงเห็น ${problem.operands[1]} กลุ่ม กลุ่มละ ${problem.operands[0]} รวม ${problem.result} แครอท</li></ol>`;
+            } else if (problem.type === "division") {
+              message = `นำแครอท ${problem.operands[0]} หัวไปแจกใน ${problem.operands[1]} ช่องให้เท่ากัน`;
+              html = `<div class="insight-equation"><strong>${problem.operands[0]} แครอท</strong><span class="insight-arrow">÷ ${problem.operands[1]} กลุ่ม</span><strong>${problem.result} แครอทต่อกลุ่ม</strong></div><ol class="insight-steps"><li>แจกทีละแครอทลงช่องใดก็ได้</li><li>ต้องใช้แครอทครบทุกหัว</li><li>ทุกช่องต้องมีจำนวนเท่ากัน</li></ol><p class="insight-note">ช่องรับแครอทเกินได้ จึงต้องตรวจด้วยตัวเองว่าแบ่งเท่ากันจริงหรือไม่</p>`;
+            } else {
+              message = "แครอทหนึ่งหัวแทนหนึ่งหน่วย นับให้เท่ากับคำตอบ";
+              html = `<div class="insight-equation"><strong>แครอท 1 หัว</strong><span class="insight-arrow">=</span><strong>1 หน่วย</strong></div><div class="insight-grid"><div class="insight-card"><strong>ดึงจากดิน</strong><p>ลากแครอทจากแปลงไปวางในพื้นที่คำตอบ</p></div><div class="insight-card"><strong>หยิบเร็ว</strong><p>กดปุ่มหยิบแครอทเพื่อเพิ่มทีละหนึ่งหัว</p></div><div class="insight-card"><strong>เปลี่ยนคำตอบ</strong><p>ลากแครอทออก หรือกดล้างคำตอบ</p></div></div>`;
+            }
           } else {
             const symbol = problem.operators[0];
             const meanings = { "+": "รวมแครอทจากสองแปลง", "−": "นำจำนวนแครอทฝั่งที่สองออกจากฝั่งแรก", "×": "สร้างหลายกลุ่มที่มีจำนวนเท่ากัน", "÷": "แบ่งแครอทออกเป็นกลุ่มเท่า ๆ กัน" };
@@ -736,14 +1342,24 @@
         },
 
         onStep(index, step) {
-          this.clearTimers();
-          this.context.world.hideDragCue();
           const freestyle = step.type === "freestyle";
+          this.clearTimers();
+          this.restoreOperationWorkspace(freestyle);
+          this.context.world.hideDragCue();
           this.isInteractive = freestyle;
           this.ensureSource();
           if (freestyle) this.answerControls?.show();
           else this.answerControls?.hide();
           this.answerControls?.setDisabled("pickup", !freestyle);
+          this.multiplySource?.setDraggable(freestyle);
+          if (this.multiplySource) {
+            this.multiplySource.stopAnimation();
+            this.multiplySource.setPosition(...this.sourcePosition);
+            this.multiplySource.setVisible(true);
+          }
+          if (this.problem.type === "division") this.relayoutDivision(false);
+          for (const item of this.divisionItems) item.handle.setDraggable(freestyle);
+          for (const group of this.multiplyGroups) group.handle.setDraggable(freestyle);
           for (const item of this.sourceItems.values()) {
             item.handle.stopAnimation();
             if (freestyle && !item.released && !item.placed) item.handle.setPosition(...item.sourcePosition);
@@ -755,30 +1371,42 @@
           if (index === 0) {
             this.operatorSign?.pulse();
             this.equalsSign?.pulse();
-          } else if (index === 1 && this.problem.type === "exponent") {
-            this.context.ui.hint.show({ id: "insight-hint", scope: "step", title: "ลองกดดู", message: "นำเมาส์ไปที่พื้นที่ฐานหรือวงกลมเลขชี้กำลัง แล้วกดเพื่อดูที่มาของคำตอบ", type: "instruction" });
-          } else if (index === 1 && this.problem.type === "parentheses") {
+          } else if (index === 1 && this.isParenthesesProblem()) {
             this.context.ui.hint.show({ id: "insight-hint", scope: "step", title: "ลองกดรั้วไม้", message: "รั้วไม้จะเรืองแสงเมื่อเมาส์อยู่เหนือพื้นที่ กดเพื่อดูว่าทำไมต้องคิดข้างในก่อน แล้วลองสลับเป็นวงเล็บด้านหลังใน LAB", type: "instruction" });
           } else if (index === 2) {
-            const item = this.sourceItems.get(1);
-            const target = this.answerSlot(0);
-            item?.handle.animateTo(...target, { duration: 680, arcHeight: .75 });
-            if (item) this.timers.push(setTimeout(() => item.handle.animateTo(...item.sourcePosition, { duration: 620, arcHeight: .55 }), 760));
+            if (this.problem.type === "multiplication") {
+              const target = [this.multiplySlotX(0), .18, this.answerZ];
+              this.multiplySource?.animateTo(...target, { duration: 680, arcHeight: .75 });
+              this.timers.push(setTimeout(() => this.multiplySource?.animateTo(...this.sourcePosition, { duration: 620, arcHeight: .55 }), 760));
+            } else if (this.problem.type === "division") {
+              const item = this.divisionItems[0];
+              const target = this.divisionSlotPosition(0, 0);
+              item?.handle.animateTo(...target, { duration: 680, arcHeight: .75 });
+              if (item) this.timers.push(setTimeout(() => item.handle.animateTo(...item.sourcePosition, { duration: 620, arcHeight: .55 }), 760));
+            } else {
+              const item = this.sourceItems.get(1);
+              const target = this.answerSlot(0);
+              item?.handle.animateTo(...target, { duration: 680, arcHeight: .75 });
+              if (item) this.timers.push(setTimeout(() => item.handle.animateTo(...item.sourcePosition, { duration: 620, arcHeight: .55 }), 760));
+            }
           } else if (freestyle) {
-            const item = this.sourceItems.get(1);
-            if (item) this.context.world.showDragCue(item.handle, this.answerSlot(0));
+            if (this.problem.type !== "multiplication" && this.problem.type !== "division") {
+              const item = this.sourceItems.get(1);
+              if (item) this.context.world.showDragCue(item.handle, this.answerSlot(0));
+            }
           }
 
           const messages = [
             `โจทย์นี้คือ ${this.problem.expression}`,
             "กดป้ายข้อมูลเหนือพื้นที่โจทย์เพื่อเปิดดูคำอธิบาย",
-            "แครอทหนึ่งหัวแทนหนึ่งหน่วย ลองดึงจากดินไปยังพื้นที่คำตอบ",
-            "หยิบหรือลากแครอทให้มีจำนวนเท่ากับคำตอบ ไม่มีการจับเวลา"
+            this.problem.type === "multiplication" ? "ตะกร้าด้านล่างคือหนึ่งกลุ่ม ลองยกทั้งตะกร้าไปยังช่องด้านบน" : this.problem.type === "division" ? "แครอทด้านล่างคือจำนวนทั้งหมด ลองแจกทีละหัวลงช่องด้านบน" : "แครอทหนึ่งหัวแทนหนึ่งหน่วย ลองดึงจากดินไปยังพื้นที่คำตอบ",
+            this.problem.type === "multiplication" ? "ลากกลุ่มให้ครบตามตัวคูณ แล้วดูผลรวมบนฉาก" : this.problem.type === "division" ? "ใช้แครอททุกหัวและทำให้ทุกช่องมีจำนวนเท่ากัน" : "หยิบหรือลากแครอทให้มีจำนวนเท่ากับคำตอบ ไม่มีการจับเวลา"
           ];
           this.context.ui.console.set({ objective: step.desc, title: step.title, message: messages[index] || step.desc, tone: "info" });
         },
 
         clearTimers() {
+          this.stopLabSuccess();
           this.timers.forEach(clearTimeout);
           this.timers = [];
         },

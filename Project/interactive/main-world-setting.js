@@ -5,22 +5,48 @@ export const mainWorldSetting = {
   // true ตอน deploy: ใช้ assetVersion คงที่ และเปลี่ยนเลขนี้เมื่อมีการอัปเดต asset
   isCache: false,
   assetVersion: "0.0.1",
+  // แสดงแถบเครื่องมือทดสอบแบบไอคอนที่กึ่งกลางขอบซ้าย (Refresh / Debug Panel / Lab-Quiz)
+  debugHUD: true,
   // true = ใช้ meta.title/category/subcategory จากไฟล์ lesson เป็นชื่อแสดงผลหลักเสมอ
   // false = ใช้ lessonData จาก Platform ก่อน และ fallback ไป meta เมื่อไม่ได้ส่งมาหรือเป็นค่าว่าง
   overrideTitleName: true,
   renderer: {
-    maxPixelRatio: 1.5, exposure: 1.25, toneMapping: "neutral", enableShadows: true,
+    maxPixelRatio: 1.5, exposure: 1.05, toneMapping: "neutral",
     // ลดภาระ GPU อัตโนมัติบนหน้าจอแคบ/อุปกรณ์สเปกต่ำ โดยไม่เปลี่ยนหน้าตาของบทเรียน
     adaptiveQuality: true,
     mobilePixelRatio: 1.15,
-    desktopShadowMapSize: 1024,
-    mobileShadowMapSize: 512,
     // Desktop เรนเดอร์ตาม refresh rate ตลอดเวลาเพื่อให้ VFX/ฉากเคลื่อนไหวต่อเนื่อง
     // Mobile เท่านั้นที่ลดรอบหลังไม่มี interaction ตามเวลาที่กำหนด
     mobileIdleDelay: 12000,   // รอ 12 วินาทีก่อนเข้าโหมดประหยัดบนมือถือ
     mobileIdleFps: 45,        // ลดเพียงเล็กน้อย เพื่อไม่ให้ฉากดูค้างหรือกระตุก
-    distantAnimationFps: 24,  // ความถี่ขยับโมเดล/เมฆระยะไกล
-    shadowAutoUpdate: false   // คำนวณเงาใหม่เฉพาะตอนฉาก กล้อง หรือวัตถุเปลี่ยน
+    distantAnimationFps: 15   // ฉากหลังเคลื่อนช้า ไม่จำเป็นต้องอัปเดตเท่า FPS หลัก
+  },
+  // ระบบเงากลางเพียงระบบเดียว: Three.js realtime shadow map
+  shadow: {
+    enabled: true,             // เปิด/ปิดเงาทั้งระบบ
+    type: "pcfsoft",          // basic = เร็วและคม, pcf = ขอบกรอง, pcfsoft = ขอบนุ่มมาตรฐาน
+    autoUpdate: true,          // true = คำนวณเงาทุกเฟรม วัตถุที่ลาก/ขยับจึงมีเงาตามทันที
+    desktopMapSize: 2048,      // ความละเอียดเพียงพอสำหรับพื้นที่บทเรียน โดยไม่เพิ่มภาระ GPU เกินจำเป็น
+    mobileMapSize: 1024,       // mobile ลดครึ่งหนึ่งเพื่อรักษาความลื่นและความร้อนของเครื่อง
+    intensity: 0.52,           // ความเข้มเงา 0 = ไม่มีเงา, 1 = เข้มเต็มที่
+    radius: 2,                 // ความนุ่มบริเวณขอบเงา โดยไม่ขยาย kernel จนเกิดขอบทรงเหลี่ยม
+    bias: -0.00015,            // เลื่อนค่าความลึกเล็กน้อยเพื่อลดเส้นรบกวนบนผิว
+    normalBias: 0.018,         // ดันเงาตาม normal เพื่อลดเงาแตก โดยไม่ทำให้เงาลอยจากวัตถุ
+    lightPosition: [-6, 19, 7],// แสงสูงขึ้นทำให้เงาสั้น อ่านรูปทรงง่ายและไม่พาดทับพื้นที่อื่น
+    camera: {                  // ขอบเขตพื้นที่ซึ่งไฟจะคำนวณเงา
+      left: -12.5, right: 12.5, top: 10.5, bottom: -10.5,
+      near: 2, far: 32
+    },
+    lessonCast: true,          // วัตถุ 3D ของบทเรียนทอดเงา
+    lessonReceive: true,       // วัตถุ 3D ของบทเรียนรับเงา
+    islandCast: false,         // เกาะไม่ต้องทอดเงาใส่ฉากด้านล่าง
+    islandReceive: true,       // พื้นเกาะรับเงาจากวัตถุบทเรียน
+    decorationCast: false,     // ของแต่งขอบเกาะไม่ทอดเงา เพื่อลดงานที่ไม่จำเป็น
+    decorationReceive: false,  // ของแต่งขอบเกาะไม่รับเงา
+    distantCast: false,        // โมเดลฉากไกลไม่เข้าร่วม shadow pass
+    distantReceive: false,     // โมเดลฉากไกลไม่รับเงา
+    markerCast: false,         // marker ที่ลอยเหนือวัตถุไม่ทอดเงารบกวนชิ้นงาน
+    markerReceive: false       // marker ไม่รับเงา
   },
   camera: {
     fov: 44, startYaw: 38, startPitch: 38, startDistance: 18,
@@ -39,22 +65,20 @@ export const mainWorldSetting = {
     mobileMaxDistanceScale: 1.5   // ขยายเพดาน pinch zoom-out บนมือถือจาก maxDistance ปกติ
   },
   lighting: {
-    hemisphere: 1.5,       // แสงรวมระดับกลาง เปิดผิวเกาะโดยยังรักษาความอิ่มสี
+    hemisphere: 2.0,     // เพิ่มแสงรวมเล็กน้อยให้ฉากสว่างขึ้นโดยไม่ล้างสี texture
     skyColor: "#eefbff",    // สีแสงจากด้านบน
     groundColor: "#c8d8c7",// สีสะท้อนจากพื้น ใช้สีสว่างเพื่อเปิดรายละเอียดใต้เกาะ
-    ambient: 0.16,          // เติมเงาลึกให้อ่านรายละเอียดได้โดยไม่ทำให้ฉากแบน
+    ambient: 0.08,          // เติมเฉพาะส่วนมืดเล็กน้อยเพื่อให้เงายังอ่านง่าย
     ambientColor: "#dcecff",
-    key: 1.5,               // เพิ่มแสงหลักเพื่อให้ผิวและ normal อ่านรูปทรงชัดขึ้น
-    fill: 0.64,             // เปิดรายละเอียดด้านมืดให้สว่างขึ้นโดยไม่พึ่ง Exposure อย่างเดียว
+    key: 1.35,              // แสงหลักของฉากและต้นกำเนิดเงา realtime
+    fill: 0.42,             // เปิดรายละเอียดด้านมืดขึ้นเล็กน้อย โดยยังรักษามิติของเงา
     fillColor: "#c8c5ff",
-    mint: 0.3,              // แสงแต้มสีเขียวมิ้นต์เล็กน้อย
-    peach: 0.25,            // แสงแต้มสีส้มอ่อน
-    rim: 0.95,              // เพิ่มขอบสว่างด้านไกลให้แยกจาก fog ชัดขึ้น
+    mint: 0.14,             // แสงแต้มสีเขียวมิ้นต์เล็กน้อย
+    peach: 0.12,            // แสงแต้มสีส้มอ่อน
+    rim: 0.55,              // ขอบสว่างอ่อน ๆ แยกวัตถุออกจากฉากหลัง
     rimColor: "#fff0c7",
     rimDistance: 18,         // ระยะไฟด้านหลังจาก pivot กล้อง
-    rimHeight: 10,           // ความสูงของไฟ rim เหนือ pivot
-    shadowRadius: 4,
-    shadowNormalBias: 0.035
+    rimHeight: 10            // ความสูงของไฟ rim เหนือ pivot
   },
   ground: {
     radius: 14,              // รัศมีพื้นที่ grid วงกลม
@@ -62,14 +86,13 @@ export const mainWorldSetting = {
     gridColor: "#ffffff",   // สีเส้น grid
     gridOpacity: 0.15,
     ringColor: "#7891ab",   // สีขอบวงกลม
-    shadowOpacity: 0.12,     // เงารอง object บนพื้น
     island: {
       enabled: true,         // ปิดได้ทันทีหากต้องการกลับไปใช้ Grid ลอยแบบเดิม
       model: {
         enabled: true,       // true ใช้ไฟล์โมเดล; false ย้อนกลับไปใช้เกาะ Procedural เดิมทันที
-        path: "./assets/model/main-island3/island.fbx",
-        position: [0, 0.65, 0], // offset หลัง auto-fit [x, y, z]; ปรับ y เพื่อเลื่อนผิวเกาะเทียบกับ grid
-        rotation: [0, 0, 0], // มุมโมเดลหน่วยองศา [x, y, z]
+        path: "./assets/model/main-island3/island-v04.fbx",
+        position: [0, 0.1, 0], // offset หลัง auto-fit [x, y, z]; ปรับ y เพื่อเลื่อนผิวเกาะเทียบกับ grid
+        rotation: [0, 180, 0], // หมุนเกาะหลักกลับด้านรอบแกน Y เพื่อใช้มุมอีกฝั่งของโมเดล
         scale: [1.1, 1.1, 1.1], // ตัวคูณหลัง auto-fit; เช่น [1.15, 1, 1.15] ขยายแนวราบ 15%
         gridHeight: 0.18,    // ระดับ Y ของ grid เฉพาะโหมด Model; Procedural ใช้ระดับผิวมาตรฐานอัตโนมัติ
         decorationPlacement: {
@@ -83,20 +106,20 @@ export const mainWorldSetting = {
           targetDiameter: 27.4, // เส้นผ่านศูนย์กลางที่ต้องการ ใกล้เคียง grid radius 13.7
           surfaceY: 0        // ระดับผิวบนของโมเดลก่อนบวก position.y
         },
-        // ไฟล์ runtime 2K ลด GPU memory; ไฟล์ 4K ต้นฉบับยังเก็บชื่อเดิมไว้สำหรับสลับกลับ
-        baseColorTexturePath: "./assets/model/main-island3/rgb-runtime.jpg",
-        normalTexturePath: "./assets/model/main-island3/normal-runtime.jpg",
+        // เกาะ v04 ใช้ Base Color 2K ตอน Runtime และเก็บต้นฉบับ 4K ไว้คู่กัน
+        baseColorTexturePath: "./assets/model/main-island3/rgb-runtime-v04.jpg",
+        normalTexturePath: null,
         materialType: "standard", // main-island3 ไม่มี PBR: ไม่ใช้ Physical/Clearcoat จากโมเดลเก่า
-        textureColorRetentionNear: 1,   // ผิวใกล้กล้อง: ใช้สี texture เต็มเพื่อให้ใกล้ไฟล์ต้นฉบับที่สุด
+        textureColorRetentionNear: 0.22, // รักษาสี texture บางส่วน แต่เปิดให้แสงและเงาจริงอ่านรูปทรงได้ชัด
         textureColorRetentionFar: 0.05, // ผิวไกลกล้อง: รับสีแสงและ fog มากขึ้นเพื่อสร้างมิติ
         textureColorFadeNear: 12,       // ภายในระยะนี้ยังใช้สีฝั่งใกล้เต็มที่
         textureColorFadeFar: 30,        // ระยะที่ไล่สีไปถึงค่าฝั่งไกลครบ (ต้องมากกว่า FadeNear)
-        materialColor: "#ffffff", // สีคูณกับ base color
+        materialColor: "#e4e9d8", // ลดสีเขียวนีออนโดยยังรักษาความสว่างและลาย texture เดิม
         roughness: 0.88,     // ผิวด้านนุ่ม ใช้ค่าคงที่แทน roughness map
         useRoughnessMap: false,
         metalness: 0,        // เกาะไม่ใช่โลหะ ป้องกันผิวดำจาก environment reflection
         useMetalnessMap: false,
-        normalScale: 0.48,   // normal ใหม่แบบอ่อน: เพิ่มผิวหญ้า/ดินโดยไม่ทำให้เกาะแข็งหรือขรุขระเกินไป
+        normalScale: 0,      // เกาะ v04 ไม่มี Normal Map
         envMapIntensity: 0   // ไม่มี PBR/environment reflection ปนกับสี texture ของ main-island3
       },
       radius: 13.72,         // รัศมีหน้าหญ้าและสันดิน ใช้ขนาดเดียวกันเพื่อไม่ให้ดินยื่นออกด้านข้าง
@@ -139,6 +162,14 @@ export const mainWorldSetting = {
         enabled: true,        // หญ้าและดอกไม้ 3D เตี้ย ๆ รอบขอบเกาะ
         grassCount: 34,
         flowerCount: 12,
+        grassModels: [        // สุ่มใช้พุ่มหญ้าโมเดลจริงแทนหญ้า primitive เดิม
+          { path: "./assets/model/environment/island-grass-large-01.fbx", texture: "./assets/model/environment/island-grass-large-01.jpg", height: [0.34, 0.44] },
+          { path: "./assets/model/environment/island-grass-small-01.fbx", texture: "./assets/model/environment/island-grass-small-01.jpg", height: [0.26, 0.35] }
+        ],
+        flowerModels: [       // ถอดรายการนี้ออกเพื่อย้อนกลับไปใช้ดอกไม้ procedural เดิมได้ทันที
+          { path: "./assets/model/environment/island-flower-yellow-01.fbx", texture: "./assets/model/environment/island-flower-yellow-01.jpg", height: [0.34, 0.44], faceFront: true, facingOffset: 0 },
+          { path: "./assets/model/environment/island-flower-daisy-01.fbx", texture: "./assets/model/environment/island-flower-daisy-01.jpg", height: [0.32, 0.42], faceFront: true, facingOffset: 0 }
+        ],
         innerRadius: 9.2,     // เว้นพื้นที่กลางเกาะให้บทเรียนใช้งาน
         outerRadius: 12.6,
         offsetXZ: [0, 0],    // ให้ของตกแต่งอยู่กึ่งกลางเดียวกับโมเดลเกาะ
@@ -148,18 +179,8 @@ export const mainWorldSetting = {
         maxHeight: 0.48,
         grassColors: ["#55b96f", "#73cf7c", "#9cdd75"],
         flowerColors: ["#ff8fb4", "#ffd05f", "#9b8cf2", "#ffffff"],
-        swayAmount: 0.08,
-        swaySpeed: 0.0018,
-        shadow: {
-          enabled: true,       // เงาฟุ้งจำลองใต้ของแต่งเกาะ ใช้ GPU Instancing เพียงชุดเดียว
-          enabledOnMobile: false, // มือถือไม่สร้าง mesh/texture เงาชุดนี้ เพื่อลดทั้ง GPU และ memory
-          flowerOnly: true,    // true = แสดงเฉพาะใต้ดอกไม้; false = แสดงใต้กอหญ้าด้วย
-          color: "#294f37",   // สีเขียวเข้มแทนสีดำ ทำให้เห็นชัดแต่ยังกลมกลืนกับพื้นหญ้า
-          opacity: 0.4,        // ความเข้มที่อ่านได้ในฉากสว่าง; texture จะไล่ขอบให้ฟุ้งเอง
-          size: [0.96, 0.56],  // ขนาดวงรี [กว้าง, ยาว] หน่วย world
-          sizeVariation: 0.16, // ความแตกต่างของขนาดแต่ละต้น ป้องกันภาพซ้ำเป็นระเบียบเกินไป
-          heightOffset: 0.08   // ยกตาม normal ของผิว ป้องกันเงาจมใน texture/geometry ที่ขรุขระ
-        }
+        swayAmount: 0.1,
+        swaySpeed: 0.0018
       }
     }
   },
@@ -195,21 +216,23 @@ export const mainWorldSetting = {
   },
   distantDecor: {
     enabled: true,            // โหลดโมเดลตกแต่งจริงไว้ไกลรอบเกาะ เพื่อสร้าง Parallax
-    count: 16,                // จำนวนชิ้นที่วางจริง; ระบบวนใช้ไฟล์ทั้ง 8 แบบเมื่อ count มากกว่า 8
-    radius: [44, 56],         // อยู่ไกลจากกล้องทุกมุม ลดการชนขอบจอและรับ fog แบบฉากหลัง
+    count: 10,                // เกาะเล็ก 6 แบบ + สัญลักษณ์คณิตศาสตร์ 4 แบบ วางคนละทิศรอบเกาะหลัก
+    radius: [42, 54],         // ระยะเริ่มต้นสำหรับ Deco เดิม ให้ถอยออกไปเป็นฉากหลัง
     roughness: 0.72,
     fog: true,                // ให้โมเดลระยะไกลกลืนเข้ากับสี Fog ของฉาก
     opacity: 0.82,             // ลดความคมของ silhouette เพิ่มเติมก่อนผสมกับ Fog
     models: [
       // height/scale เป็นช่วงสุ่มเฉพาะโมเดลนั้น ส่วน rotate:false จะรักษาองศาจากไฟล์และไม่หมุนเอง
-      { path: "./assets/model/deco/deco1.glb", texture: "./assets/model/deco/deco1.png", height: [-15, 0], scale: [1.8, 3.4], rotate: false },
-      { path: "./assets/model/deco/deco2.glb", texture: "./assets/model/deco/deco2.png", height: [-15, 0], scale: [1.8, 3.4], rotate: false },
-      { path: "./assets/model/deco/deco3.glb", texture: "./assets/model/deco/deco3.png", height: [-15, 0], scale: [1.8, 3.4], rotate: false },
-      { path: "./assets/model/deco/deco4.glb", texture: "./assets/model/deco/deco4.png", height: [-15, 0], scale: [1.8, 3.4], rotate: false },
-      { path: "./assets/model/deco/deco5.glb", texture: "./assets/model/deco/deco5.png", height: [-15, 0], scale: [1.8, 3.4], rotate: false },
-      { path: "./assets/model/deco/deco6.glb", texture: "./assets/model/deco/deco6.png", height: [-15, 0], scale: [1.8, 3.4], rotate: false },
-      { path: "./assets/model/deco/deco7.glb", texture: "./assets/model/deco/deco7.png", height: [-15, 0], scale: [1.8, 3.4], rotate: false },
-      { path: "./assets/model/deco/deco8.glb", texture: "./assets/model/deco/deco8.png", height: [-15, 0], scale: [1.8, 3.4], rotate: false }
+      { path: "./assets/model/deco/mini-island-01.fbx", texture: "./assets/model/deco/mini-island-01.jpg", angle: 320, radius: [24, 30], height: [-5, 4], scale: [9, 12], opacity: 1, faceCenter: true, facingOffset: 0, rotate: true, spinAxis: "y", spinSpeed: 0.000055 },
+      { path: "./assets/model/deco/mini-island-02.fbx", texture: "./assets/model/deco/mini-island-02.jpg", angle: 265, radius: [24, 30], height: [-5, 4], scale: [9, 12], opacity: 1, faceCenter: true, facingOffset: 0, rotate: true, spinAxis: "y", spinSpeed: -0.00005 },
+      { path: "./assets/model/deco/mini-island-03.fbx", texture: "./assets/model/deco/mini-island-03.jpg", angle: 210, radius: [24, 30], height: [-5, 4], scale: [9, 12], opacity: 1, faceCenter: true, facingOffset: 0, rotate: true, spinAxis: "y", spinSpeed: 0.000047 },
+      { path: "./assets/model/deco/mini-island-04.fbx", texture: "./assets/model/deco/mini-island-04.jpg", angle: 350, radius: [28, 33], height: [-5, 4], scale: [9, 12], opacity: 1, faceCenter: true, facingOffset: 0, rotate: true, spinAxis: "y", spinSpeed: -0.000052 },
+      { type: "mathSymbol", symbol: "plus", color: "#ff8a65", angle: 160, radius: [29, 29], height: [-1, -1], scale: [2.4, 4], opacity: 1, fog: true, faceCenter: true, facingOffset: 0, rotate: true, spinAxis: "y", spinSpeed: 0.00011 },
+      { type: "mathSymbol", symbol: "minus", color: "#55b8f3", angle: 228, radius: [29, 29], height: [8, 8], scale: [2.4, 4], opacity: 1, fog: true, faceCenter: true, facingOffset: 0, rotate: true, spinAxis: "y", spinSpeed: -0.0001 },
+      { type: "mathSymbol", symbol: "multiply", color: "#a879ea", angle: 300, radius: [32, 32], height: [0, 0], scale: [2.4, 4], opacity: 1, fog: true, faceCenter: true, facingOffset: 0, rotate: true, spinAxis: "y", spinSpeed: 0.00012 },
+      { type: "mathSymbol", symbol: "divide", color: "#f4c84e", angle: 380, radius: [34, 34], height: [-5, -5], scale: [2.4, 4], opacity: 1, fog: true, faceCenter: true, facingOffset: 0, rotate: true, spinAxis: "y", spinSpeed: -0.000105 },
+      { path: "./assets/model/deco/mini-island-05.fbx", texture: "./assets/model/deco/mini-island-05.jpg", angle: 63, radius: [28, 34], height: [-5, 4], scale: [9, 12], opacity: 1, faceCenter: true, facingOffset: 0, rotate: true, spinAxis: "y", spinSpeed: 0.000051 },
+      { path: "./assets/model/deco/mini-island-06.fbx", texture: "./assets/model/deco/mini-island-06.jpg", angle: 137, radius: [28, 34], height: [-5, 4], scale: [9, 12], opacity: 1, faceCenter: true, facingOffset: 0, rotate: true, spinAxis: "y", spinSpeed: -0.000049 }
     ],
     floatAmount: 0.28,
     driftAmount: 0.34,
@@ -219,15 +242,19 @@ export const mainWorldSetting = {
   distantClouds: {
     enabled: true,             // เมฆเป็นระบบและ asset แยกจาก distantDecor โดยสิ้นเชิง
     // จัดโมเดลให้ด้านยาวอยู่แกน X และด้านหน้าหันทาง +Z ระบบจะหัน +Z เข้าหาเกาะให้อัตโนมัติ
-    model: { path: "./assets/model/cloud/cloud.glb", texture: "./assets/model/cloud/cloud.png" },
-    count: 11,
+    models: [
+      { path: "./assets/model/cloud/orbit-cloud-01.fbx", texture: "./assets/model/cloud/orbit-cloud-01-basecolor.jpg" },
+      { path: "./assets/model/cloud/orbit-cloud-02.fbx", texture: "./assets/model/cloud/orbit-cloud-02-basecolor.jpg" }
+    ],
+    count: 8,
     radius: [34, 48],          // สลับใกล้/ไกลรอบเกาะเพื่อสร้าง Parallax
-    height: [-15, 5],          // ชดเชยมุมกล้องก้ม ให้เมฆปรากฏตามแนวท้องฟ้าด้านหลังเกาะ
-    scale: [3.2, 7],           // ขนาดเป้าหมายหลัง normalize โมเดล
-    colors: ["#ffffff", "#dff5ff", "#f0e7ff"],
+    height: [-9, 8],           // สุ่มระดับให้มีทั้งเมฆต่ำและสูง แต่ลดภาพรวมลงจากค่าก่อนหน้าเล็กน้อย
+    scale: [3.8, 9.5],         // สุ่มขนาดให้ต่างกันชัดเจน ตั้งแต่ก้อนเล็กจนถึงก้อนใหญ่
+    colors: ["#ffffff"],         // รักษาสีจาก Base Color ของเมฆใหม่
     roughness: 0.86,
     fog: true,                // ใช้ opacity ทำให้เมฆนุ่มโดยไม่ถูก fog กลืนจนหาย
-    opacity: 0.76,
+    opacity: 1,                // โหลดวัสดุต้นฉบับแบบทึบ แล้วคำนวณความจางแยกตามระยะของแต่ละก้อน
+    largeNearOpacity: 0.84,    // ลดเฉพาะก้อนที่ทั้งใหญ่และอยู่ใกล้ ส่วนก้อนเล็ก/ก้อนไกลยังทึบ 100%
     floatAmount: 0.3,
     floatSpeed: 0.00068,
     radialDrift: 0.28,
@@ -235,17 +262,18 @@ export const mainWorldSetting = {
   },
   object: {
     textureRepeat: [2, 2], // ความถี่ลายจุดนุ่มที่ระบบสร้างให้กล่องบทเรียน
-    ambientOcclusion: { enabled: true, intensity: 0.72 },
     surface: {
       roughness: 0.48, clearcoat: 0.58, clearcoatRoughness: 0.2,
-      sheen: 0.5, sheenRoughness: 0.55, emissiveIntensity: 0.035
+      sheen: 0.5, sheenRoughness: 0.55, emissiveIntensity: 0.035,
+      importedTextureLight: 0.32 // เติมแสงให้ Base Color ของโมเดลนำเข้า เพื่อลดเงาอบใน texture โดยยังรับแสงและเงา realtime ตามปกติ
     },
     highlight: {
       enabled: true,
       hover: {
         tint: "#ffffff",       // Hover ฟอกวัตถุให้เกือบขาว เพื่อบอกชัดเจนว่าสามารถโต้ตอบได้
-        strength: 0.72,
-        emissiveStrength: 0.24,
+        strength: 0.504,
+        emissiveStrength: 0.168,
+        texturedEmissiveStrength: 0.238, // FBX/GLB ใช้แสงขาวล้วนเพิ่ม โดยลดความจ้ารวมลง 30% ให้เท่ากับ Procedural
         ringColor: "#ffffff",
         ringOpacity: 0.48
       },
@@ -374,7 +402,7 @@ export const mainWorldSetting = {
   entry: {
     loadingImagePath: "./assets/image/welcome-workshop.png", // ภาพพื้นหลังระหว่างโหลดบทเรียน
     quizWelcomeImagePath: "./assets/image/quiz-welcome.png", // ภาพปกหน้าต้อนรับก่อนเริ่ม Quiz
-    characterImagePath: "./assets/character/dinosaur-student/idle.png", // ภาพสำรองของไดโนในหน้าโหลด
+    characterImagePath: "./assets/character/dinosaur-student/greeting-open-mouth.png", // ภาพสำรองของไดโนในหน้าโหลด
     minDuration: 1700,      // ให้เวลาอ่าน welcomeMessage และกันหน้ากระพริบ
     exitDuration: 650
   },
@@ -385,9 +413,11 @@ export const mainWorldSetting = {
     renderer: "image",                     // renderer เผื่อเปลี่ยนเป็น lottie ภายหลัง
     assets: {
       idle: "./assets/character/dinosaur-student/idle.png",
+      speaking: "./assets/character/dinosaur-student/speaking-open-mouth.png",
+      greeting: "./assets/character/dinosaur-student/greeting-open-mouth.png",
       instruction: "./assets/character/dinosaur-student/point.png",
       hint: "./assets/character/dinosaur-student/thinking.png",
-      celebrate: "./assets/character/dinosaur-student/celebrate.png",
+      celebrate: "./assets/character/dinosaur-student/greeting-open-mouth.png",
       perch: "./assets/character/dinosaur-student/small-floating-island.png"
     },
     character: {
@@ -617,7 +647,7 @@ export const mainWorldSetting = {
       // worldGui แบบกดได้เป็นป้าย 2D เช่นกัน แต่แยกสีและขนาด icon เพื่อให้ปรับได้โดยไม่กระทบแบบปกติ
       actionable: {
         textColor: "#ffffff",
-        fontSize: 180,
+        fontSize: 220,
         backgroundColor: "#6485ff",
         backgroundOpacity: 0.85,
         hoverBackgroundColor: "#0049c6",
@@ -634,6 +664,11 @@ export const mainWorldSetting = {
         iconBorderWidth: 5,
         iconText: "i"
       }
+    },
+    // ป้าย DOM ขนาดเล็กที่ยึดกับพิกัดหรือโมเดลในฉาก ใช้ได้ทั้งบทเรียนจริงและ Debug Area
+    worldGuiSystem: {
+      maxVisible: 120,
+      debugUpdateInterval: 66
     },
     animation: { optionDuration: 420, typewriterSpeed: 16, serviceExitDuration: 180 }
   }

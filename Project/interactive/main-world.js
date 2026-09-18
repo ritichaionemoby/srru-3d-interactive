@@ -1,8 +1,10 @@
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+// Keep the runtime shell and its settings schema deployed as one compatible version.
 const { mainWorldSetting: setting } = await import(`./main-world-setting.js?v=${encodeURIComponent(window.eduCacheVersion)}`);
 const runtimeSettingTools = await import(`./runtime-setting-menu.js?v=${encodeURIComponent(window.eduCacheVersion)}`);
 const guiServiceTools = await import(`./gui-service.js?v=${encodeURIComponent(window.eduCacheVersion)}`);
+const worldGuiSystemTools = await import(`./world-gui-system.js?v=${encodeURIComponent(window.eduCacheVersion)}`);
 const runtimeSettingBaseline = runtimeSettingTools.applyStoredRuntimeSetting(setting);
 // ใช้ token เดียวตลอดอายุของ runtime เพื่อไม่ให้ asset เดียวกันถูกดาวน์โหลดซ้ำในหน้าเดียว
 // เมื่อ isCache=false การเปิด runtime รอบใหม่จะสร้าง timestamp ใหม่โดยอัตโนมัติ
@@ -12,22 +14,36 @@ let runtimeAssetVersion = forcedRuntimeAssetVersion || (setting.isCache === true
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
-  runtime: $("#runtime"), viewport: $("#world-viewport"), canvas: $("#world-canvas"), lessonUi: $("#lesson-ui"), gizmoLayer: $("#gui-gizmo-layer"), topMessageLayer: $("#gui-top-message-layer"), feedbackLayer: $("#gui-feedback-layer"), choiceDock: $("#gui-choice-dock"), controlDock: $("#gui-control-dock"), busyLayer: $("#gui-busy-layer"), dialogLayer: $("#gui-dialog-layer"), topbar: $("#topbar"),
+  runtime: $("#runtime"), viewport: $("#world-viewport"), canvas: $("#world-canvas"), debugHud: $("#debug-hud"), lessonUi: $("#lesson-ui"), gizmoLayer: $("#gui-gizmo-layer"), topMessageLayer: $("#gui-top-message-layer"), feedbackLayer: $("#gui-feedback-layer"), choiceDock: $("#gui-choice-dock"), controlDock: $("#gui-control-dock"), busyLayer: $("#gui-busy-layer"), dialogLayer: $("#gui-dialog-layer"), topbar: $("#topbar"),
   webRoot: $("#web-page-root"), title: $("#lesson-title"), taxonomy: $("#lesson-taxonomy"), mode: $("#mode-badge"),
   hint: $("#world-hint"), toast: $("#toast"), modal: $("#modal-layer"), objective: $("#objective-text"),
-  lessonQuestion: $("#lesson-question-ui"), lessonQuestionLabel: $("#lesson-question-label"), lessonQuestionText: $("#lesson-question-text"),
+  lessonQuestion: $("#lesson-question-ui"), lessonQuestionLabel: $("#lesson-question-label"), lessonQuestionText: $("#lesson-question-text"), topbarMain: $(".topbar-main"), topbarActions: $(".topbar-actions"),
   entry: $("#entry-screen"), entryTitle: $("#entry-title"), entryWelcome: $("#entry-welcome"), entryStatus: $("#entry-status"), entryProgress: $("#entry-progress-bar"), entryProgressValue: $("#entry-progress-value"), entryCharacter: $("#entry-character"),
   celebration: $("#celebration"), celebrationFireworks: $("#celebration-fireworks"), howto: $("#howto-panel"), stepCounter: $("#step-counter"), stepTitle: $("#step-title"),
   stepDescription: $("#step-description"), stepOption: $("#step-option"), quizPanel: $("#quiz-panel"),
-  mascot: $("#mascot-guide"), mascotNotice: $("#mascot-notice"), mascotParticles: $("#mascot-particles"), mascotCharacter: $("#mascot-character"), mascotPerchImage: $("#mascot-perch-image"), mascotIdleImage: $("#mascot-idle-image"), mascotFlyImage: $("#mascot-fly-image"), mascotFlyMidImage: $("#mascot-fly-mid-image"), mascotFlyDownImage: $("#mascot-fly-down-image"),
+  mascot: $("#mascot-guide"), mascotNotice: $("#mascot-notice"), mascotParticles: $("#mascot-particles"), mascotCharacter: $("#mascot-character"), mascotPerchImage: $("#mascot-perch-image"), mascotIdleImage: $("#mascot-idle-image"), mascotSpeakingImage: $("#mascot-speaking-image"), mascotFlyImage: $("#mascot-fly-image"), mascotFlyMidImage: $("#mascot-fly-mid-image"), mascotFlyDownImage: $("#mascot-fly-down-image"),
   consoleState: $("#console-state-icon"), consoleStateImage: $("#console-state-image"), sceneHandCue: $("#scene-hand-cue"),
   quizDots: $("#quiz-dots"), question: $("#question-text")
 };
 
 const runtime = {
   sessionId: 0, lesson: null, meta: null, lessonData: null, lessonUrl: null, context: null,
-  mode: "student-lab", language: "th", values: {}, stepIndex: 0, quiz: null, toastTimer: 0, typewriterTimers: new Set(), optionCloseTimer: 0, mascotFlightTimer: 0, mascotLandingTimer: 0, mascotSpeechTimer: 0, mascotHintTimer: 0, mascotBlinkTimer: 0, mascotBlinkReleaseTimer: 0, mascotPoseTimer: 0, pendingMascotOption: null, sceneEntered: false, bgm: null, bgmRequested: false, completed: false, modalReturnFocus: null, lastOpenPayload: null
+  mode: "student-lab", language: "th", values: {}, stepIndex: 0, quiz: null, toastTimer: 0, typewriterTimers: new Set(), optionCloseTimer: 0, mascotFlightTimer: 0, mascotLandingTimer: 0, mascotSpeechTimer: 0, mascotHintTimer: 0, mascotBlinkTimer: 0, mascotBlinkReleaseTimer: 0, mascotPoseTimer: 0, pendingMascotOption: null, sceneEntered: false, lessonSceneInitialized: false, bgm: null, bgmRequested: false, completed: false, modalReturnFocus: null, lastOpenPayload: null
 };
+
+function syncDebugHud() {
+  if (!elements.debugHud) return;
+  // The standalone runtime-debug-tools replaces this legacy HUD.
+  elements.debugHud.hidden = true;
+  const switchButton = elements.debugHud.querySelector('[data-debug-action="switch-mode"]');
+  if (!switchButton) return;
+  const nextIsQuiz = runtime.mode !== "student-quiz";
+  const label = nextIsQuiz ? "สลับไป Quiz" : "สลับไป Lab";
+  switchButton.title = label;
+  switchButton.setAttribute("aria-label", label);
+  const icon = switchButton.querySelector("[data-debug-mode-icon]");
+  if (icon) icon.src = iconUrl(nextIsQuiz ? "trophy.svg" : "book.svg");
+}
 
 const setUiVariable = (name, value, unit = "") => { if (value !== undefined && value !== null) document.documentElement.style.setProperty(name, typeof value === "number" ? `${value}${unit}` : String(value)); };
 setUiVariable("--popup-width", setting.ui.popup.width); setUiVariable("--popup-max-height", setting.ui.popup.maxHeight); setUiVariable("--popup-bg", setting.ui.popup.background); setUiVariable("--popup-backdrop", setting.ui.popup.backdrop); setUiVariable("--popup-border", setting.ui.popup.borderColor); setUiVariable("--popup-text", setting.ui.popup.textColor); setUiVariable("--popup-radius", setting.ui.popup.radius, "px"); setUiVariable("--popup-blur", setting.ui.popup.blur, "px");
@@ -95,12 +111,12 @@ const mascotCharacter = mascotSetting.character || mascotSetting.position || {};
 const mascotSpeech = mascotSetting.speech || {};
 const mascotNoticeBubble = mascotSetting.noticeBubble || mascotSetting.bubble || {};
 const mascotBehavior = mascotSetting.behavior || "stationary";
-elements.entryCharacter.src = runtimeAssetUrl(mascotAssets.idle || setting.entry.characterImagePath || "./assets/character/dinosaur-student/idle.png");
+elements.entryCharacter.src = runtimeAssetUrl(mascotAssets.greeting || setting.entry.characterImagePath || mascotAssets.idle || "./assets/character/dinosaur-student/idle.png");
 elements.mascot.dataset.character = activeMascotKey;
 elements.mascot.dataset.behavior = mascotBehavior;
 elements.mascot.dataset.pose = "idle";
 elements.mascot.classList.toggle("is-stationary", mascotBehavior === "stationary");
-if (mascotAssets.idle) { elements.mascotPerchImage.src = runtimeAssetUrl(mascotAssets.perch); elements.mascotIdleImage.src = runtimeAssetUrl(mascotAssets.idle); elements.mascotFlyImage.src = runtimeAssetUrl(mascotAssets.instruction || mascotAssets.flyUp || mascotAssets.fly || mascotAssets.idle); elements.mascotFlyMidImage.src = runtimeAssetUrl(mascotAssets.hint || mascotAssets.flyMid || mascotAssets.fly || mascotAssets.idle); elements.mascotFlyDownImage.src = runtimeAssetUrl(mascotAssets.celebrate || mascotAssets.flyDown || mascotAssets.fly || mascotAssets.idle); }
+if (mascotAssets.idle) { elements.mascotPerchImage.src = runtimeAssetUrl(mascotAssets.perch); elements.mascotIdleImage.src = runtimeAssetUrl(mascotAssets.idle); elements.mascotSpeakingImage.src = runtimeAssetUrl(mascotAssets.speaking || mascotAssets.instruction || mascotAssets.idle); elements.mascotFlyImage.src = runtimeAssetUrl(mascotAssets.instruction || mascotAssets.flyUp || mascotAssets.fly || mascotAssets.idle); elements.mascotFlyMidImage.src = runtimeAssetUrl(mascotAssets.hint || mascotAssets.flyMid || mascotAssets.fly || mascotAssets.idle); elements.mascotFlyDownImage.src = runtimeAssetUrl(mascotAssets.celebrate || mascotAssets.greeting || mascotAssets.flyDown || mascotAssets.fly || mascotAssets.idle); }
 // หน้า HTML จะยังเป็นสีขาวจน CSS และภาพที่มองเห็นใน Loading Card พร้อมวาด
 window.eduRuntimeFirstFrameReady = Promise.race([
   Promise.allSettled([preloadImageUrl(entryBackgroundUrl), ...[...elements.entry.querySelectorAll("img")].map(waitForImageElement)]),
@@ -136,6 +152,60 @@ function showToast(message, kind = "success") {
 function setLessonQuestion(message = "") {
   if (String(message || "").trim()) guiService.question.show(message); else guiService.question.hide();
 }
+let questionFitFrame = 0, questionFitWidth = 0;
+function usesFittedQuestionUi() {
+  return elements.runtime.classList.contains("runtime-ui-revised");
+}
+function syncQuestionPanelBounds() {
+  const panel = elements.lessonQuestion;
+  const compact = matchMedia("(max-width:760px),(orientation:portrait)").matches;
+  if (!elements.runtime.classList.contains("runtime-ui-revised") || compact) {
+    panel.style.removeProperty("--runtime-question-left");
+    panel.style.removeProperty("--runtime-question-width");
+    return;
+  }
+  const viewportRect = elements.viewport.getBoundingClientRect();
+  const mainRect = elements.topbarMain.getBoundingClientRect();
+  const actionsRect = elements.topbarActions.getBoundingClientRect();
+  const safeGap = 12;
+  const leftEdge = Math.max(0, mainRect.right - viewportRect.left) + safeGap;
+  const rightEdge = Math.max(0, viewportRect.right - actionsRect.left) + safeGap;
+  const availableWidth = Math.max(240, viewportRect.width - leftEdge - rightEdge);
+  const panelWidth = Math.min(880, availableWidth);
+  const panelLeft = leftEdge + availableWidth / 2;
+  panel.style.setProperty("--runtime-question-left", `${panelLeft}px`);
+  panel.style.setProperty("--runtime-question-width", `${panelWidth}px`);
+}
+function fitLessonQuestion() {
+  const text = elements.lessonQuestionText;
+  if (!usesFittedQuestionUi() || !text.getClientRects().length || !text.textContent.trim()) return;
+  text.style.removeProperty("font-size");
+  text.scrollLeft = 0;
+  text.classList.remove("is-marquee");
+  text.classList.toggle("is-long", Array.from(text.textContent.trim()).length > 58);
+  const style = getComputedStyle(text), base = parseFloat(style.fontSize);
+  const minimum = matchMedia("(max-width:760px),(orientation:portrait)").matches ? 13 : 14;
+  let size = base;
+  while ((text.scrollHeight > text.clientHeight + 1 || text.scrollWidth > text.clientWidth + 1) && size > minimum) {
+    size -= .5;
+    text.style.fontSize = `${size}px`;
+  }
+}
+function scheduleQuestionFit() {
+  cancelAnimationFrame(questionFitFrame);
+  questionFitFrame = requestAnimationFrame(() => { syncQuestionPanelBounds(); fitLessonQuestion(); });
+}
+new MutationObserver(scheduleQuestionFit).observe(elements.lessonQuestionText, { childList:true, characterData:true, subtree:true });
+const questionLayoutObserver = new ResizeObserver(entries => {
+  const width = entries.find(entry => entry.target === elements.lessonQuestion)?.contentRect.width;
+  if (width === undefined || width !== questionFitWidth) {
+    if (width !== undefined) questionFitWidth = width;
+    scheduleQuestionFit();
+  }
+});
+[elements.lessonQuestion, elements.topbarMain, elements.topbarActions, elements.viewport].forEach(element => questionLayoutObserver.observe(element));
+document.fonts.ready.then(scheduleQuestionFit);
+document.fonts.addEventListener("loadingdone", scheduleQuestionFit);
 
 function showModal(content, { closeLabel = "ปิด", primaryLabel = "", onPrimary = null, dismissible = true } = {}) {
   runtime.modalReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -146,6 +216,9 @@ function showModal(content, { closeLabel = "ปิด", primaryLabel = "", onPri
   requestAnimationFrame(() => elements.modal.querySelector("[data-modal-primary],[data-modal-close],button")?.focus({ preventScroll: true }));
 }
 function closeModal() { elements.modal.hidden = true; elements.modal.replaceChildren(); runtime.modalReturnFocus?.focus?.(); runtime.modalReturnFocus = null; }
+elements.modal.addEventListener("click", event => {
+  if (event.target === elements.modal && elements.modal.querySelector("[data-modal-close]")) closeModal();
+});
 window.addEventListener("keydown", event => { if (elements.modal.hidden) return; const focusable = [...elements.modal.querySelectorAll('button:not(:disabled),[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex]:not([tabindex="-1"])')]; if (event.key === "Escape" && elements.modal.querySelector("[data-modal-close]")) { event.preventDefault(); closeModal(); return; } if (event.key !== "Tab" || focusable.length < 2) return; const first = focusable[0], last = focusable.at(-1); if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); } else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); } });
 
 function beginEntry(title) {
@@ -176,6 +249,9 @@ async function finishEntry() {
 
 // ---------- Audio: preload once and reuse instead of creating a new Audio element on every click ----------
 const audio = {
+  muted: false,
+  activeClips: new Set(),
+  activeContexts: new Set(),
   clips: new Map(),
   async preload(preset) {
     this.stopBgm(); this.clips.clear();
@@ -189,25 +265,48 @@ const audio = {
     runtime.bgmPath = preset?.bgm || setting.audio.bgmPath || "";
   },
   synth(name) {
-    if (!setting.audio.useSynthFallback) return;
+    if (this.muted || !setting.audio.enabled || !setting.audio.useSynthFallback) return;
     const AudioContext = window.AudioContext || window.webkitAudioContext; if (!AudioContext) return;
-    const context = new AudioContext(); const oscillator = context.createOscillator(); const gain = context.createGain(); const now = context.currentTime;
+    const context = new AudioContext(); this.activeContexts.add(context); const oscillator = context.createOscillator(); const gain = context.createGain(); const now = context.currentTime;
     const map = { onClick: [420, 620], onDrag: [310, 350], onDrop: [300, 180], onUiBtnClick: [520, 620], success: [620, 880], fail: [220, 150], nextQuest: [480, 720], startLesson: [360, 660], completeLesson: [520, 960] };
     const [from, to] = map[name] || map.onUiBtnClick; oscillator.type = name === "fail" ? "sawtooth" : "sine"; oscillator.frequency.setValueAtTime(from, now); oscillator.frequency.exponentialRampToValueAtTime(to, now + .14);
-    gain.gain.setValueAtTime(setting.audio.sfxVolume, now); gain.gain.exponentialRampToValueAtTime(.001, now + .18); oscillator.connect(gain).connect(context.destination); oscillator.start(); oscillator.stop(now + .18); oscillator.addEventListener("ended", () => context.close(), { once: true });
+    gain.gain.setValueAtTime(setting.audio.sfxVolume, now); gain.gain.exponentialRampToValueAtTime(.001, now + .18); oscillator.connect(gain).connect(context.destination); oscillator.start(); oscillator.stop(now + .18); oscillator.addEventListener("ended", () => { this.activeContexts.delete(context); if (context.state !== "closed") context.close().catch(() => {}); }, { once: true });
   },
   play(name) {
-    if (!setting.audio.enabled) return; const clip = this.clips.get(name);
+    if (this.muted || !setting.audio.enabled) return; const clip = this.clips.get(name);
     if (!clip) return this.synth(name); const instance = clip.cloneNode();
     instance.volume = Math.min(1, setting.audio.sfxVolume * (setting.audio.eventVolume?.[name] ?? 1));
-    instance.play().catch(() => this.synth(name));
+    this.activeClips.add(instance);
+    instance.addEventListener("ended", () => this.activeClips.delete(instance), { once:true });
+    instance.play().catch(() => { this.activeClips.delete(instance); this.synth(name); });
   },
   ensureBgm() { if (runtime.bgm || !runtime.bgmPath) return runtime.bgm; runtime.bgm = new Audio(runtimeAssetUrl(runtime.bgmPath)); runtime.bgm.loop = true; runtime.bgm.volume = setting.audio.bgmVolume; runtime.bgm.preload = "metadata"; return runtime.bgm; },
-  async tryBgm() { const bgm = this.ensureBgm(); if (!bgm) return; try { await bgm.play(); elements.runtime.dataset.bgmState = "playing"; } catch { elements.runtime.dataset.bgmState = "blocked"; } },
+  async tryBgm() { if (this.muted || !setting.audio.enabled) return; const bgm = this.ensureBgm(); if (!bgm) return; try { await bgm.play(); elements.runtime.dataset.bgmState = "playing"; } catch { elements.runtime.dataset.bgmState = "blocked"; } },
   startBgm() { runtime.bgmRequested = true; },
   unlockBgm() { if (runtime.bgmRequested && (!runtime.bgm || runtime.bgm.paused)) this.tryBgm(); },
   stopBgm() { runtime.bgmRequested = false; runtime.bgmPath = ""; runtime.bgm?.pause(); runtime.bgm = null; elements.runtime.dataset.bgmState = "idle"; }
 };
+function syncAudioButtons() {
+  const label = audio.muted ? "เปิดเสียง" : "ปิดเสียง";
+  const marks = audio.muted ? '<path d="m16 9 5 6m0-6-5 6"/>' : '<path d="M16 9a5 5 0 0 1 0 6m3-9a9 9 0 0 1 0 12"/>';
+  const icon = `<svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h4l5-4v14l-5-4H3z"/>${marks}</svg>`;
+  const button = $("#toggle-audio");
+  button.innerHTML = icon; button.setAttribute("aria-label", label); button.title = label; button.setAttribute("aria-pressed", String(audio.muted));
+  $("[data-audio-icon]").innerHTML = icon; $("[data-audio-label]").textContent = label;
+  $("[data-lab-action='toggle-audio']").setAttribute("aria-pressed", String(audio.muted));
+}
+$("#toggle-audio").addEventListener("click", () => {
+  audio.muted = !audio.muted;
+  if (audio.muted) {
+    runtime.bgm?.pause();
+    for (const clip of audio.activeClips) clip.pause();
+    audio.activeClips.clear();
+    for (const context of audio.activeContexts) if (context.state !== "closed") context.close().catch(() => {});
+    audio.activeContexts.clear();
+  } else audio.unlockBgm();
+  syncAudioButtons();
+});
+syncAudioButtons();
 window.addEventListener("pointerdown", () => audio.unlockBgm(), { capture: true });
 window.addEventListener("keydown", () => audio.unlockBgm(), { capture: true });
 
@@ -570,6 +669,19 @@ function createCircularGrid() {
 createWorldIsland();
 createCircularGrid();
 const skyboxGroup = new THREE.Group(), distantDecorGroup = new THREE.Group(), atmosphereGroup = new THREE.Group(), lessonGroup = new THREE.Group(), effectGroup = new THREE.Group(); scene.add(skyboxGroup, distantDecorGroup, atmosphereGroup, lessonGroup, effectGroup);
+const worldGuiSystem = worldGuiSystemTools.createWorldGuiSystem({
+  THREE,
+  viewport: elements.viewport,
+  camera,
+  setting,
+  getGround: () => {
+    const model = setting.ground.island?.model;
+    return { radius: setting.ground.radius, gridSize: setting.ground.gridSize, height: setting.ground.island?.enabled && model?.enabled && model?.path ? (model.gridHeight ?? .018) : .018 };
+  },
+  getObjects: () => lessonGroup.children,
+  markSceneActive
+});
+function toggleDebugArea(force) { return worldGuiSystem.debug.toggle(force); }
 function decorRandom(index, salt = 0) { const value = Math.sin((index + 1) * 12.9898 + (salt + 1) * 78.233) * 43758.5453; return value - Math.floor(value); }
 function createMathSymbolDecor(entry) {
   const group = new THREE.Group(), color = new THREE.Color(entry.color || "#ff8a65"), material = new THREE.MeshPhysicalMaterial({ color, emissive: color.clone().multiplyScalar(.08), emissiveIntensity: .32, roughness: .3, metalness: .03, clearcoat: .72, clearcoatRoughness: .16, fog: entry.fog !== false, transparent: false, opacity: 1 });
@@ -639,6 +751,7 @@ function markSceneActive() { lastSceneActivity = performance.now(); }
 
 // Highlight กลางใช้ Bounding Box รวม จึงไม่สร้างเส้นซ้อนภายใน Procedural/Composite Asset
 const highlightSetting = setting.object.highlight || {}, highlightRoot = new THREE.Group(), highlightRing = new THREE.Group(), floatingMarker = new THREE.Group();
+const solidWhiteHighlightTexture = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1, THREE.RGBAFormat); solidWhiteHighlightTexture.colorSpace = THREE.SRGBColorSpace; solidWhiteHighlightTexture.needsUpdate = true;
 const ringDiscMaterial = new THREE.MeshBasicMaterial({ color: highlightSetting.hover?.ringColor || "#ffffff", transparent: true, opacity: .055, depthWrite: false, depthTest: true, toneMapped: false }), ringDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 64), ringDiscMaterial); ringDisc.rotation.x = -Math.PI / 2;
 const ringHaloMaterial = new THREE.MeshBasicMaterial({ color: highlightSetting.hover?.ringColor || "#ffffff", transparent: true, opacity: .52, depthWrite: false, depthTest: true, toneMapped: false }), ringHalo = new THREE.Mesh(new THREE.TorusGeometry(1, highlightSetting.ring?.thickness || .045, 8, 64), ringHaloMaterial); ringHalo.rotation.x = Math.PI / 2; highlightRing.add(ringDisc, ringHalo);
 const markerSize = highlightSetting.marker?.size || 1, markerGem = new THREE.Group(), markerGeometry = new THREE.OctahedronGeometry(1, 0), markerEdgeMaterial = new THREE.MeshPhysicalMaterial({ color: highlightSetting.marker?.edgeColor || "#5369dc", roughness: .22, metalness: .06, clearcoat: .9, clearcoatRoughness: .1, depthTest: true }), markerCrystalMaterial = new THREE.MeshPhysicalMaterial({ color: highlightSetting.marker?.color || "#63d9ff", emissive: new THREE.Color(highlightSetting.marker?.color || "#63d9ff").multiplyScalar(.16), emissiveIntensity: .5, roughness: .12, metalness: .02, clearcoat: 1, clearcoatRoughness: .06, depthTest: true }), markerCoreMaterial = new THREE.MeshPhysicalMaterial({ color: highlightSetting.marker?.secondaryColor || "#effcff", emissive: highlightSetting.marker?.secondaryColor || "#effcff", emissiveIntensity: .72, roughness: .08, clearcoat: 1, depthTest: true });
@@ -652,8 +765,10 @@ function loadSelectionMarkerModel() { const path = highlightSetting.marker?.path
 loadSelectionMarkerModel();
 highlightRoot.add(highlightRing, floatingMarker); highlightRoot.visible = false; highlightRoot.userData.hoverBounds = new THREE.Box3(); highlightRoot.userData.selectedBounds = new THREE.Box3(); scene.add(highlightRoot);
 function forEachObjectMaterial(object, callback) { if (!object) return; object.traverse?.(child => { if (child.userData?.isLessonDecoration) return; const materials = Array.isArray(child.material) ? child.material : [child.material]; for (const value of materials) if (value?.color) callback(value, child); }); }
-function restoreObjectSurface(object) { forEachObjectMaterial(object, (value, child) => { if (child.userData.baseColor) value.color.copy(child.userData.baseColor); if (value.emissive && child.userData.baseEmissive) value.emissive.copy(child.userData.baseEmissive); if ("emissiveIntensity" in value && child.userData.baseEmissiveIntensity != null) value.emissiveIntensity = child.userData.baseEmissiveIntensity; }); }
-function applyObjectHighlight(object, state = "none") { if (!object) return; restoreObjectSurface(object); if (state === "none" || highlightSetting.enabled === false) return; const style = highlightSetting[state]; if (!style) return; const tint = new THREE.Color(style.tint || "#ffffff"), strength = clamp(style.strength ?? .12, 0, 1); forEachObjectMaterial(object, (value, child) => { child.userData.baseColor ??= value.color.clone(); child.userData.baseEmissive ??= value.emissive?.clone?.(); child.userData.baseEmissiveIntensity ??= value.emissiveIntensity ?? 0; value.color.copy(child.userData.baseColor).lerp(tint, strength); if (value.emissive && child.userData.baseEmissive) { value.emissive.copy(child.userData.baseEmissive).lerp(tint, Math.min(.55, strength * 1.8)); value.emissiveIntensity = child.userData.baseEmissiveIntensity + (style.emissiveStrength ?? 0); } }); }
+function rememberHighlightSurface(value) { const surface = value.userData ||= {}; surface.baseHighlightColor ??= value.color.clone(); surface.baseHighlightEmissive ??= value.emissive?.clone?.(); surface.baseHighlightEmissiveIntensity ??= value.emissiveIntensity ?? 0; if (!Object.prototype.hasOwnProperty.call(surface, "baseHighlightEmissiveMap")) surface.baseHighlightEmissiveMap = value.emissiveMap ?? null; return surface; }
+function setHighlightEmissiveMap(value, map) { if (!("emissiveMap" in value) || value.emissiveMap === map) return; const mapPresenceChanged = Boolean(value.emissiveMap) !== Boolean(map); value.emissiveMap = map; if (mapPresenceChanged) value.needsUpdate = true; }
+function restoreObjectSurface(object) { forEachObjectMaterial(object, value => { const surface = value.userData || {}; if (surface.baseHighlightColor) value.color.copy(surface.baseHighlightColor); if (value.emissive && surface.baseHighlightEmissive) value.emissive.copy(surface.baseHighlightEmissive); if ("emissiveIntensity" in value && surface.baseHighlightEmissiveIntensity != null) value.emissiveIntensity = surface.baseHighlightEmissiveIntensity; if (Object.prototype.hasOwnProperty.call(surface, "baseHighlightEmissiveMap")) setHighlightEmissiveMap(value, surface.baseHighlightEmissiveMap); }); }
+function applyObjectHighlight(object, state = "none") { if (!object) return; restoreObjectSurface(object); if (state === "none" || highlightSetting.enabled === false) return; const style = highlightSetting[state]; if (!style) return; const tint = new THREE.Color(style.tint || "#ffffff"), strength = clamp(style.strength ?? .12, 0, 1); forEachObjectMaterial(object, value => { const surface = rememberHighlightSurface(value), textured = Boolean(value.map); value.color.copy(surface.baseHighlightColor).lerp(tint, strength); if (value.emissive && surface.baseHighlightEmissive) { if (textured) setHighlightEmissiveMap(value, solidWhiteHighlightTexture); value.emissive.copy(surface.baseHighlightEmissive).lerp(tint, Math.min(.55, strength * 1.8)); value.emissiveIntensity = surface.baseHighlightEmissiveIntensity + (textured ? (style.texturedEmissiveStrength ?? style.emissiveStrength ?? 0) : (style.emissiveStrength ?? 0)); } }); }
 function isActionableCallout(object) { return Boolean(object?.userData?.worldCallout?.actionable); }
 function usesSelectionFeedback(object) { return Boolean(object && object.userData?.selectionFeedback !== false && !isActionableCallout(object)); }
 function setWorldCalloutHovered(object, value) { const callout = object?.userData?.worldCallout; if (!callout?.actionable || callout.hovered === value) return; callout.hovered = value; elements.canvas.classList.toggle("is-hovering-callout", value); markSceneActive(); }
@@ -739,13 +854,13 @@ function setHovered(object) {
 }
 function disposeObject(object) { object.traverse(child => { child.userData?.domElement?.remove?.(); child.userData?.worldUiTexture?.dispose?.(); child.geometry?.dispose?.(); if (Array.isArray(child.material)) child.material.forEach(m => m.dispose?.()); else child.material?.dispose?.(); }); }
 function setDisplayHovered(object) { if (hoveredDisplay === object) return; if (hoveredDisplay?.material) hoveredDisplay.material.opacity = hoveredDisplay.userData.idleOpacity; hoveredDisplay = object; if (object?.material) object.material.opacity = object.userData.hoverOpacity; }
-function clearWorld() { setHovered(null); setDisplayHovered(null); setSelected(null); hideDragCue(); removeDragGuideline(); animations.clear(); commitFlashes.clear(); activeGuidelines.clear(); targetFocusEffects.clear(); worldCallouts.clear(); spawnSequence = 0; runtime.sceneEntered = false; for (const child of [...lessonGroup.children]) { lessonGroup.remove(child); disposeObject(child); } interactive.length = 0; uiDisplays.length = 0; while (effectGroup.children.length) { const child = effectGroup.children.pop(); disposeObject(child); } markSceneActive(); }
+function clearWorld() { setHovered(null); setDisplayHovered(null); setSelected(null); hideDragCue(); removeDragGuideline(); animations.clear(); commitFlashes.clear(); activeGuidelines.clear(); targetFocusEffects.clear(); worldCallouts.clear(); worldGuiSystem.clearAll(); spawnSequence = 0; runtime.sceneEntered = false; runtime.lessonSceneInitialized = false; for (const child of [...lessonGroup.children]) { lessonGroup.remove(child); disposeObject(child); } interactive.length = 0; uiDisplays.length = 0; while (effectGroup.children.length) { const child = effectGroup.children.pop(); disposeObject(child); } markSceneActive(); }
 
 function startCommitFlash(object) { const config = setting.object.commit; if (!config?.enabled || !object) return; restoreObjectSurface(object); const materials = []; forEachObjectMaterial(object, material => { if (!material.transparent) materials.push(material); }); if (!materials.length) return; commitFlashes.set(object, { start: performance.now(), duration: config.duration || 780, flashes: config.flashes || 3, color: new THREE.Color(config.color || "#ffffff"), materials: [...new Set(materials)].map(material => ({ material, baseColor: material.color.clone(), emissive: material.emissive?.clone(), emissiveIntensity: material.emissiveIntensity })) }); }
 
 function syncInteractive(object) { const enabled = Boolean(object.userData.draggable || object.userData.clickable), index = interactive.indexOf(object); if (enabled && index < 0) interactive.push(object); if (!enabled && index >= 0) { interactive.splice(index, 1); if (hovered === object) setHovered(null); if (selected === object) setSelected(null); } }
-function makeHandle(mesh) { const changed = () => markSceneActive(); const clearHighlight = () => { if (hovered === mesh) setHovered(null); if (selected === mesh) setSelected(null); }; const handle = { object3D: mesh, setPosition(x, y, z) { animations.delete(mesh); mesh.position.set(x, y, z); mesh.userData.groundY = y; changed(); }, setRotation(x = 0, y = 0, z = 0) { mesh.rotation.set(THREE.MathUtils.degToRad(x), THREE.MathUtils.degToRad(y), THREE.MathUtils.degToRad(z)); changed(); }, setScale(x = 1, y = x, z = x) { const visual = mesh.userData.visualRoot || mesh; visual.scale.set(x, y, z); changed(); }, animateTo(x, y, z, { duration = 620, delay = 0, arcHeight = .7 } = {}) { animations.set(mesh, { kind: "move", start: performance.now() + delay, duration, from: mesh.position.clone(), to: new THREE.Vector3(x, y, z), arcHeight }); mesh.userData.groundY = y; markSceneActive(); }, stopAnimation() { animations.delete(mesh); }, playCommit() { startCommitFlash(mesh); screenSpark(mesh); markSceneActive(); }, setColor(color) { forEachObjectMaterial(mesh, (value, child) => { value.color.set(color); child.userData.baseColor = value.color.clone(); }); markSceneActive(); }, setVisible(value) { mesh.visible = value; if (!value) clearHighlight(); changed(); }, setDraggable(value) { mesh.userData.draggable = Boolean(value); syncInteractive(mesh); }, setClickable(value) { mesh.userData.clickable = Boolean(value); syncInteractive(mesh); }, setHitArea(size = null, offset = [0, 0, 0]) { setInteractionHitArea(mesh, size, offset); markSceneActive(); }, setDragFromCenter(value) { mesh.userData.dragFromCenter = Boolean(value); }, remove() { clearHighlight(); commitFlashes.delete(mesh); activeGuidelines.delete(mesh); mesh.parent?.remove(mesh); const index = interactive.indexOf(mesh); if (index >= 0) interactive.splice(index, 1); disposeObject(mesh); changed(); } }; mesh.userData.lessonHandle = handle; return Object.freeze(handle); }
-function queueSpawn(object) { if (!setting.object.spawn.enabled) return; object.userData.spawnable = true; object.scale.setScalar(.001); if (runtime.sceneEntered) animations.set(object, { kind: "spawn", start: performance.now(), duration: setting.object.spawn.duration }); }
+function makeHandle(mesh) { const changed = () => markSceneActive(); const cancelAnimation = () => { const previous = animations.get(mesh); if (previous?.kind === "spawn" || previous?.kind === "drop") mesh.scale.setScalar(1); animations.delete(mesh); }; const clearHighlight = () => { if (hovered === mesh) setHovered(null); if (selected === mesh) setSelected(null); }; const handle = { object3D: mesh, setPosition(x, y, z) { cancelAnimation(); mesh.position.set(x, y, z); mesh.userData.groundY = y; changed(); }, setRotation(x = 0, y = 0, z = 0) { mesh.rotation.set(THREE.MathUtils.degToRad(x), THREE.MathUtils.degToRad(y), THREE.MathUtils.degToRad(z)); changed(); }, setScale(x = 1, y = x, z = x) { const visual = mesh.userData.visualRoot || mesh; visual.scale.set(x, y, z); changed(); }, animateTo(x, y, z, { duration = 620, delay = 0, arcHeight = .7 } = {}) { cancelAnimation(); animations.set(mesh, { kind: "move", start: performance.now() + delay, duration, from: mesh.position.clone(), to: new THREE.Vector3(x, y, z), arcHeight }); mesh.userData.groundY = y; markSceneActive(); }, stopAnimation() { cancelAnimation(); changed(); }, playCommit() { startCommitFlash(mesh); screenSpark(mesh); markSceneActive(); }, setHighlighted(value) { applyObjectHighlight(mesh, value ? "hover" : "none"); changed(); }, setColor(color) { forEachObjectMaterial(mesh, value => { value.color.set(color); rememberHighlightSurface(value).baseHighlightColor.copy(value.color); }); markSceneActive(); }, setVisible(value) { mesh.visible = value; if (!value) clearHighlight(); changed(); }, setDraggable(value) { mesh.userData.draggable = Boolean(value); syncInteractive(mesh); }, setClickable(value) { mesh.userData.clickable = Boolean(value); syncInteractive(mesh); }, setHitArea(size = null, offset = [0, 0, 0]) { setInteractionHitArea(mesh, size, offset); markSceneActive(); }, setDragFromCenter(value) { mesh.userData.dragFromCenter = Boolean(value); }, remove() { clearHighlight(); commitFlashes.delete(mesh); activeGuidelines.delete(mesh); mesh.parent?.remove(mesh); const index = interactive.indexOf(mesh); if (index >= 0) interactive.splice(index, 1); disposeObject(mesh); changed(); } }; mesh.userData.lessonHandle = handle; return Object.freeze(handle); }
+function queueSpawn(object, enabled = true) { if (!enabled || !setting.object.spawn.enabled) return; object.userData.spawnable = true; object.scale.setScalar(.001); if (runtime.sceneEntered) animations.set(object, { kind: "spawn", start: performance.now(), duration: setting.object.spawn.duration }); }
 function playWorldEntrance() { let index = 0; lessonGroup.traverse(object => { if (object.userData.spawnable) { object.scale.setScalar(.001); animations.set(object, { kind: "spawn", start: performance.now() + index++ * setting.object.spawn.stagger, duration: setting.object.spawn.duration }); } }); }
 function updateGuideline(line) { const from = line.userData.fromObject ? line.userData.fromObject.getWorldPosition(new THREE.Vector3()) : line.userData.guideFrom.clone(), to = line.userData.guideTo, middle = new THREE.Vector3((from.x + to.x) / 2, Math.max(from.y, to.y) + 2.3, (from.z + to.z) / 2), curve = new THREE.QuadraticBezierCurve3(from, middle, to), points = curve.getPoints(40), direction = points.at(-1).clone().sub(points.at(-2)).normalize(); line.geometry.setFromPoints(points); line.computeLineDistances(); line.userData.arrow.position.copy(to).addScaledVector(direction, -line.userData.arrowOffset); line.userData.arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction); }
 function createGuideline({ from = [0, .2, 0], fromObject = null, to = [0, .2, 0], color = setting.interaction.guideline.color, parent = lessonGroup } = {}) { const style = threeColor(color), guide = setting.interaction.guideline, arrowLength = guide.arrowLength ?? .52, geometry = new THREE.BufferGeometry(), line = new THREE.Line(geometry, new THREE.LineDashedMaterial({ color: style.color, dashSize: guide.dashSize, gapSize: guide.gapSize, transparent: true, opacity: .92 * style.alpha, depthTest: false, toneMapped: false, fog: false })), arrow = new THREE.Mesh(new THREE.ConeGeometry(guide.arrowSize ?? .22, arrowLength, 14), new THREE.MeshBasicMaterial({ color: style.color, transparent: true, opacity: .98 * style.alpha, depthTest: false, depthWrite: false, toneMapped: false, fog: false })); arrow.renderOrder = 951; Object.assign(line.userData, { flowingGuideline: true, fromObject, guideFrom: new THREE.Vector3(...from), guideTo: new THREE.Vector3(...to), arrow, arrowOffset: arrowLength * .46 }); line.add(arrow); line.renderOrder = 950; updateGuideline(line); parent.add(line); activeGuidelines.add(line); return line; }
@@ -895,9 +1010,9 @@ function primitiveGeometry(shape = "box", definition = {}) {
   }
 }
 function createPrimitivePart(definition = {}) { const shape = normalizedPrimitiveShape(definition.shape || "box"), materialDefinition = definition.material || {}, geometry = primitiveGeometry(shape, definition), mesh = new THREE.Mesh(geometry, lessonMaterial({ ...materialDefinition, color: definition.color || materialDefinition.color })), size = definition.size || [1, 1, 1], scaleValues = [size[0] ?? 1, size[1] ?? size[0] ?? 1, size[2] ?? size[0] ?? 1], rotation = definition.rotation || [0, 0, 0], opaqueSolid = !["plane", "circle", "ring", "sector-flat", "ring-sector-flat"].includes(shape) && (materialDefinition.opacity ?? 1) >= .98 && materialDefinition.depthWrite !== false; mesh.position.fromArray(definition.position || [0, 0, 0]); mesh.rotation.set(...rotation.map(THREE.MathUtils.degToRad)); mesh.scale.set(...scaleValues); mesh.castShadow = Boolean(shadowSetting.lessonCast && opaqueSolid); mesh.receiveShadow = shadowSetting.lessonReceive !== false; return mesh; }
-function prepareLessonVisual(root, interactionRoot) { root.traverse(child => { if (!child.userData.isLessonDecoration) child.userData.interactionRoot = interactionRoot; if (!child.isMesh || child.userData.isLessonDecoration) return; child.userData.baseColor = child.material?.color?.clone?.(); child.userData.baseEmissive = child.material?.emissive?.clone?.(); child.userData.baseEmissiveIntensity = child.material?.emissiveIntensity ?? 0; }); }
+function prepareLessonVisual(root, interactionRoot) { root.traverse(child => { if (!child.userData.isLessonDecoration) child.userData.interactionRoot = interactionRoot; }); forEachObjectMaterial(root, value => rememberHighlightSurface(value)); }
 function setInteractionHitArea(root, size = null, offset = [0, 0, 0]) { const previous = root.userData.interactionHitArea; if (previous) { root.remove(previous); previous.geometry?.dispose?.(); previous.material?.dispose?.(); root.userData.interactionHitArea = null; } if (!Array.isArray(size) || size.length < 3 || size.some(value => Number(value) <= 0)) return; const hitArea = new THREE.Mesh(new THREE.BoxGeometry(...size.map(Number)), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, colorWrite: false })); hitArea.name = `${root.name || "lesson-object"}-hit-area`; hitArea.position.fromArray(offset); Object.assign(hitArea.userData, { isLessonDecoration: true, interactionRoot: root }); root.add(hitArea); root.userData.interactionHitArea = hitArea; }
-function configureLessonObject(root, visual, options = {}) { const position = options.position || [0, 0, 0], rotation = options.rotation || [0, 0, 0], scale = options.scale ?? 1, scaleValues = Array.isArray(scale) ? scale : [scale, scale, scale]; root.name = options.name || root.name || "lesson-object"; root.position.fromArray(position); root.rotation.set(...rotation.map(THREE.MathUtils.degToRad)); visual.scale.multiply(new THREE.Vector3(...scaleValues)); Object.assign(root.userData, { visualRoot: visual, draggable: Boolean(options.draggable), clickable: Boolean(options.clickable || options.onClick), selectionFeedback: options.selectionFeedback !== false, dragAxis: options.dragAxis || setting.interaction.defaultDragAxis, dragLiftHeight: options.dragLiftHeight, dragFromCenter: Boolean(options.dragFromCenter), hoverMessage: options.hoverMessage || "", guideTarget: options.guideTarget || null, onHover: typeof options.onHover === "function" ? options.onHover : null, onDrag: options.onDrag || null, onDrop: options.onDrop || null, onClick: options.onClick || null, objectiveAction: options.objectiveAction, groundY: position[1] }); prepareLessonVisual(visual, root); setInteractionHitArea(root, options.hitArea, options.hitAreaOffset); lessonGroup.add(root); queueSpawn(root); const handle = makeHandle(root); syncInteractive(root); return handle; }
+function configureLessonObject(root, visual, options = {}) { const position = options.position || [0, 0, 0], rotation = options.rotation || [0, 0, 0], scale = options.scale ?? 1, scaleValues = Array.isArray(scale) ? scale : [scale, scale, scale]; root.name = options.name || root.name || "lesson-object"; root.position.fromArray(position); root.rotation.set(...rotation.map(THREE.MathUtils.degToRad)); visual.scale.multiply(new THREE.Vector3(...scaleValues)); Object.assign(root.userData, { visualRoot: visual, draggable: Boolean(options.draggable), clickable: Boolean(options.clickable || options.onClick), tapToClick: Boolean(options.tapToClick), tapClickTolerance: Number.isFinite(options.tapClickTolerance) ? Math.max(1, options.tapClickTolerance) : 7, selectionFeedback: options.selectionFeedback !== false, dragAxis: options.dragAxis || setting.interaction.defaultDragAxis, dragLiftHeight: options.dragLiftHeight, dragFromCenter: Boolean(options.dragFromCenter), hoverMessage: options.hoverMessage || "", guideTarget: options.guideTarget || null, onHover: typeof options.onHover === "function" ? options.onHover : null, onDrag: options.onDrag || null, onDrop: options.onDrop || null, onClick: options.onClick || null, objectiveAction: options.objectiveAction, groundY: position[1], debugTargetSize: options.targetSize, debugAreaHidden: options.debugAreaHidden === true }); prepareLessonVisual(visual, root); setInteractionHitArea(root, options.hitArea, options.hitAreaOffset); lessonGroup.add(root); queueSpawn(root, options.spawn !== false); const handle = makeHandle(root); syncInteractive(root); return handle; }
 function addPrimitive(options = {}) { const root = new THREE.Group(), visual = new THREE.Group(), mesh = createPrimitivePart(options); visual.add(mesh); root.add(visual); return configureLessonObject(root, visual, options); }
 function addGroup(options = {}) { const root = new THREE.Group(), visual = new THREE.Group(); for (const definition of options.parts || options.children || []) visual.add(createPrimitivePart(definition)); root.add(visual); return configureLessonObject(root, visual, options); }
 function libraryAsset(id) { const definition = lessonAssetLibrary.assets[id]; if (!definition) throw new Error(`LESSON_ASSET_NOT_FOUND: ไม่พบ Asset ID ${id}`); return definition; }
@@ -1268,6 +1383,27 @@ function addWorldGui(options = {}) {
   root.userData.lessonHandle = handle;
   return handle;
 }
+function addWorldLabel(options = {}) {
+  return addWorldGui({
+    name: options.name || "world-label",
+    size: [3.4, .72],
+    fontSize: 112,
+    minFontSize: 84,
+    maxLines: 2,
+    fontWeight: 700,
+    color: "#ffffff",
+    backgroundOpacity: 0,
+    borderOpacity: 0,
+    borderWidth: 0,
+    accentEnabled: false,
+    strokeWidth: 0,
+    shadowColor: "rgba(0,0,0,.72)",
+    shadowBlur: 4,
+    shadowOffsetX: 0,
+    shadowOffsetY: 2,
+    ...options
+  });
+}
 async function loadCustomModel(path, options = {}) { if (!path) throw new Error("LESSON_ASSET_PATH_REQUIRED: world.addModel ต้องมี path"); const base = options.baseUrl || runtime.lessonUrl || import.meta.url, url = runtimeAssetUrl(path, base); if (new URL(url).origin !== location.origin) throw new Error("LESSON_ASSET_ORIGIN_ERROR: รองรับเฉพาะโมเดลที่อยู่ origin เดียวกัน"); return new Promise((resolve, reject) => { const finish = object => resolve(object), fail = error => reject(new Error(`LESSON_ASSET_LOAD_FAILED: โหลดโมเดล ${path} ไม่สำเร็จ (${error?.message || "unknown"})`)), extension = new URL(url).pathname.split(".").pop().toLowerCase(); if (extension === "glb" || extension === "gltf") import("three/addons/loaders/GLTFLoader.js").then(({ GLTFLoader }) => new GLTFLoader().load(url, gltf => finish(gltf.scene), undefined, fail)).catch(fail); else if (extension === "fbx") import("three/addons/loaders/FBXLoader.js").then(({ FBXLoader }) => new FBXLoader().load(url, finish, undefined, fail)).catch(fail); else fail(new Error("รองรับเฉพาะ .glb, .gltf และ .fbx")); }); }
 function platformImportedMaterial(source, options = {}) {
   const map = source?.map || null;
@@ -1322,7 +1458,7 @@ function configureModelObject(object, options = {}) {
 }
 async function addModel(options = {}) { return configureModelObject(await loadCustomModel(options.path, options), options); }
 function addLibraryObject(options = {}) { const id = options.asset || options.id, definition = libraryAsset(id), common = { ...options, name: options.name || id, scale: options.scale ?? definition.defaultScale ?? 1 }; if (definition.type === "prefab") { const parts = (definition.parts || []).map(part => options.color ? { ...part, color: options.color } : part); return addGroup({ ...common, parts }); } if (definition.type === "model") { if (!libraryModelTemplates.has(id)) libraryModelTemplates.set(id, loadCustomModel(definition.path, { baseUrl: import.meta.url })); return libraryModelTemplates.get(id).then(template => configureModelObject(template.clone(true), { ...common, targetSize: options.targetSize ?? definition.targetSize, normalize: options.normalize ?? definition.normalize })); } throw new Error(`LESSON_ASSET_TYPE_UNSUPPORTED: Asset ${id} ไม่รองรับ type ${definition.type}`); }
-function addObject(options = {}) { const type = options.type || options.source?.type || "primitive", source = options.source || {}; if (type === "library") return addLibraryObject({ ...options, asset: options.asset || source.asset }); if (type === "model") return addModel({ ...options, path: options.path || source.path }); if (type === "text" || type === "text3d") return addText3D(options); if (type === "group" || type === "prefab") return addGroup(options); return addPrimitive({ ...options, shape: options.shape || source.shape, geometry: options.geometry || source.geometry }); }
+function addObject(options = {}) { const type = options.type || options.source?.type || "primitive", source = options.source || {}; if (type === "library") return addLibraryObject({ ...options, asset: options.asset || source.asset }); if (type === "model") return addModel({ ...options, path: options.path || source.path }); if (type === "label") return addWorldLabel(options); if (type === "text" || type === "text3d") return addText3D(options); if (type === "group" || type === "prefab") return addGroup(options); return addPrimitive({ ...options, shape: options.shape || source.shape, geometry: options.geometry || source.geometry }); }
 function addConnector({ name = "connector", from = [0, 0, 0], to = [0, 0, 1], color = "#65758b", thickness = .075, opacity = .72 } = {}) {
   const start = new THREE.Vector3(...from), end = new THREE.Vector3(...to), direction = end.clone().sub(start), length = direction.length();
   if (length <= .0001) return addGroup({ name, position: from, parts: [] });
@@ -1344,7 +1480,7 @@ function addConnector({ name = "connector", from = [0, 0, 0], to = [0, 0, 1], co
 }
 const world = Object.freeze({
   clear() { guiService.clearScope("scene", "step", "question"); clearWorld(); },
-  capabilities: Object.freeze({ version: "3.0.0", objects: Object.freeze(["primitive", "group", "text3d", "library", "model", "zone", "callout", "connector", "worldCounter", "worldGui", "guideline", "lineRender"]), primitiveShapes: Object.freeze(SUPPORTED_PRIMITIVE_SHAPES), interactions: Object.freeze(["drag", "click", "custom-hit-area", "actionable-callout", "actionable-world-gui"]), modelFormats: Object.freeze(["glb", "gltf", "fbx"]) }),
+  capabilities: Object.freeze({ version: "3.1.0", objects: Object.freeze(["primitive", "group", "text3d", "label", "library", "model", "zone", "callout", "connector", "worldCounter", "worldGui", "guideline", "lineRender"]), primitiveShapes: Object.freeze(SUPPORTED_PRIMITIVE_SHAPES), interactions: Object.freeze(["drag", "click", "custom-hit-area", "actionable-callout", "actionable-world-gui"]), modelFormats: Object.freeze(["glb", "gltf", "fbx"]) }),
   assets: Object.freeze({ version: lessonAssetLibrary.version, list() { return Object.entries(lessonAssetLibrary.assets).map(([id, value]) => ({ id, name: value.name || id, type: value.type, tags: [...(value.tags || [])] })); }, get(id) { const value = libraryAsset(id); return JSON.parse(JSON.stringify({ id, ...value })); }, preloadImages(paths = []) { return preloadLessonTextures(paths, runtime.lessonUrl || import.meta.url); } }),
   addObject,
   addPrimitive,
@@ -1353,6 +1489,9 @@ const world = Object.freeze({
   addText3D,
   addWorldCounter,
   addWorldGui,
+  addLabel: addWorldLabel,
+  label: addWorldLabel,
+  lable: addWorldLabel,
   addLibraryObject,
   addModel,
   addBox({ name = "box", size = [2.4, 1.8, 2.4], position = [0, .9, 0], color = "#ff9fbe", draggable = false, dragAxis = setting.interaction.defaultDragAxis, hoverMessage = "", guideTarget = null, onDrag = null, onDrop = null } = {}) { const [w, h, d] = size, geometry = new RoundedBoxGeometry(w, h, d, 8, Math.min(w, h, d) * .16), mesh = new THREE.Mesh(geometry, material(color)); mesh.name = name; mesh.position.set(...position); mesh.castShadow = Boolean(shadowSetting.lessonCast); mesh.receiveShadow = shadowSetting.lessonReceive !== false; Object.assign(mesh.userData, { draggable, visualRoot: mesh, dragAxis, hoverMessage, guideTarget, onDrag, onDrop, groundY: position[1], baseColor: mesh.material.color.clone(), size }); lessonGroup.add(mesh); queueSpawn(mesh); syncInteractive(mesh); return makeHandle(mesh); },
@@ -1401,7 +1540,22 @@ const world = Object.freeze({
     const activate = event => { const payload = { handle, object: group, sourceEvent: event }; const definition = typeof insight === "function" ? insight(payload) : insight; if (definition) guiService.insight.show(typeof definition === "string" ? { message: definition } : definition); onClick?.(payload); };
     const callout = { group, leaderMaterial, ringMaterial, dom, actionable, hovered: false, hoverAmount: 0, phase: Math.random() * Math.PI * 2, desiredPosition: new THREE.Vector3(...calloutPosition) };
     Object.assign(group.userData, { clickable: false, draggable: false, interactionStyle: "callout", objectiveAction: calloutObjectiveAction, worldCallout: callout, onClick: actionable ? activate : null });
-    handle = makeHandle(group); worldCallouts.add(callout);
+    const baseHandle = makeHandle(group);
+    const writeText = next => {
+      const value = String(next ?? "").trim();
+      dom.title = value;
+      const label = actionable ? dom.querySelector("span") : dom;
+      if (label) label.textContent = value;
+      markSceneActive();
+      return value;
+    };
+    handle = Object.freeze({
+      ...baseHandle,
+      setText(next) { writeText(next); return handle; },
+      remove() { worldCallouts.delete(callout); dom.remove(); baseHandle.remove(); }
+    });
+    group.userData.lessonHandle = handle;
+    worldCallouts.add(callout);
     if (actionable) { dom.addEventListener("pointerenter", () => setWorldCalloutHovered(group, true)); dom.addEventListener("pointerleave", () => setWorldCalloutHovered(group, false)); dom.addEventListener("click", event => { event.preventDefault(); event.stopPropagation(); if (calloutObjectiveAction) objectiveAction(); uiSound(); activate(event); }); }
     return handle;
   },
@@ -1494,11 +1648,21 @@ function interactiveHit() {
   return resolved.find(hit => isActionableCallout(hit.object)) || resolved[0] || null;
 }
 function snapshot() { const points = [...pointers.values()]; return { yaw: cameraState.yaw, pitch: cameraState.pitch, distance: cameraState.distance, points, pinch: points.length === 2 ? Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y) : 0 }; }
-elements.canvas.addEventListener("pointerdown", event => { if (elements.runtime.classList.contains("web-page-mode")) return; event.preventDefault(); elements.canvas.setPointerCapture(event.pointerId); rayFrom(event); const hit = interactiveHit(); if (hit?.object.userData.draggable) { if (hit.object.userData.objectiveAction !== false) objectiveAction(); dragged = hit.object; dragPointerId = event.pointerId; dragged.userData.dragOrigin = dragged.position.clone(); hideDragCue(); setSelected(dragged); setHovered(dragged); audio.play("onClick"); if (dragged.userData.guideTarget) dragGuideline = createGuideline({ fromObject: dragged, to: dragged.userData.guideTarget, parent: effectGroup }); const axis = dragged.userData.dragAxis; if (axis === "xy") dragPlane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()).negate(), dragged.position); else dragPlane.set(new THREE.Vector3(0, 1, 0), 0); if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) { if (dragged.userData.dragFromCenter) dragOffset.set(0, 0, 0); else dragOffset.copy(dragged.position).sub(dragPoint); } dragged.position.y += dragged.userData.dragLiftHeight ?? setting.object.motion.liftHeight; elements.canvas.classList.add("is-dragging-object"); return; } if (hit?.object.userData.clickable) { if (hit.object.userData.objectiveAction !== false) objectiveAction(); if (isActionableCallout(hit.object) || hit.object.userData.selectionFeedback === false) { setSelected(null); setHovered(hit.object); } else { setSelected(hit.object); setHovered(hit.object); } audio.play("onClick"); hit.object.userData.onClick?.({ handle: hit.object.userData.lessonHandle, object: hit.object, hitPoint: { x: hit.point.x, y: hit.point.y, z: hit.point.z } }); return; } pauseDragCue(); setSelected(null); setHovered(null); pointers.set(event.pointerId, { x: event.clientX, y: event.clientY }); orbit = snapshot(); });
+elements.canvas.addEventListener("pointerdown", event => { if (elements.runtime.classList.contains("web-page-mode")) return; event.preventDefault(); elements.canvas.setPointerCapture(event.pointerId); rayFrom(event); const hit = interactiveHit(); if (hit?.object.userData.draggable) { if (hit.object.userData.objectiveAction !== false) objectiveAction(); dragged = hit.object; dragPointerId = event.pointerId; dragged.userData.dragOrigin = dragged.position.clone(); dragged.userData.dragStartClient = { x: event.clientX, y: event.clientY }; hideDragCue(); setSelected(dragged); setHovered(dragged); audio.play("onClick"); if (dragged.userData.guideTarget) dragGuideline = createGuideline({ fromObject: dragged, to: dragged.userData.guideTarget, parent: effectGroup }); const axis = dragged.userData.dragAxis; if (axis === "xy") dragPlane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(new THREE.Vector3()).negate(), dragged.position); else dragPlane.set(new THREE.Vector3(0, 1, 0), 0); if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) { if (dragged.userData.dragFromCenter) dragOffset.set(0, 0, 0); else dragOffset.copy(dragged.position).sub(dragPoint); } dragged.position.y += dragged.userData.dragLiftHeight ?? setting.object.motion.liftHeight; elements.canvas.classList.add("is-dragging-object"); return; } if (hit?.object.userData.clickable) { if (hit.object.userData.objectiveAction !== false) objectiveAction(); if (isActionableCallout(hit.object) || hit.object.userData.selectionFeedback === false) { setSelected(null); setHovered(hit.object); } else { setSelected(hit.object); setHovered(hit.object); } audio.play("onClick"); hit.object.userData.onClick?.({ handle: hit.object.userData.lessonHandle, object: hit.object, hitPoint: { x: hit.point.x, y: hit.point.y, z: hit.point.z } }); return; } pauseDragCue(); setSelected(null); setHovered(null); pointers.set(event.pointerId, { x: event.clientX, y: event.clientY }); orbit = snapshot(); });
 elements.canvas.addEventListener("pointermove", event => { if (!dragged && pointers.size === 0) { rayFrom(event); setHovered(interactiveHit()?.object || null); setDisplayHovered(raycaster.intersectObjects(uiDisplays, false)[0]?.object || null); } if (dragged && event.pointerId === dragPointerId) { rayFrom(event); setDisplayHovered(null); if (raycaster.ray.intersectPlane(dragPlane, dragPoint)) { const next = dragPoint.clone().add(dragOffset), axis = dragged.userData.dragAxis || "xz", limit = setting.ground.radius - setting.interaction.dragPadding; if (axis.includes("x")) dragged.position.x = clamp(next.x, -limit, limit); if (axis.includes("y")) dragged.position.y = clamp(next.y, .2, 9); if (axis.includes("z")) dragged.position.z = clamp(next.z, -limit, limit); dragged.userData.onDrag?.({ x: dragged.position.x, y: dragged.position.y, z: dragged.position.z }); } return; } if (!pointers.has(event.pointerId) || !orbit) return; pointers.set(event.pointerId, { x: event.clientX, y: event.clientY }); const points = [...pointers.values()]; if (points.length === 1) { cameraState.yaw = orbit.yaw - (points[0].x - orbit.points[0].x) * setting.interaction.rotateSpeed; cameraState.pitch = clamp(orbit.pitch + (points[0].y - orbit.points[0].y) * setting.interaction.tiltSpeed, THREE.MathUtils.degToRad(cameraConfig.minPitch), THREE.MathUtils.degToRad(cameraConfig.maxPitch)); } else if (points.length === 2 && orbit.pinch > 0) { const distance = Math.hypot(points[0].x - points[1].x, points[0].y - points[1].y); cameraState.distance = clamp(orbit.distance * orbit.pinch / Math.max(distance, 1), cameraConfig.minDistance, cameraMaxDistance()); } updateCamera(); });
 function endPointer(event) {
   if (event.pointerId === dragPointerId) {
     const object = dragged, origin = object.userData.dragOrigin.clone(), dropPosition = object.position.clone(), animationBeforeDrop = animations.get(object);
+    const dragStart = object.userData.dragStartClient;
+    const dragDistance = dragStart ? Math.hypot(event.clientX - dragStart.x, event.clientY - dragStart.y) : Infinity;
+    if (object.userData.tapToClick && dragDistance < object.userData.tapClickTolerance) {
+      object.position.copy(origin);
+      object.userData.onClick?.({ handle: object.userData.lessonHandle, object, hitPoint: { x: object.position.x, y: object.position.y, z: object.position.z } });
+      removeDragGuideline();
+      setHovered(null);
+      dragged = null; dragPointerId = null; elements.canvas.classList.remove("is-dragging-object");
+      return;
+    }
     const result = object.userData.onDrop?.({ x: object.position.x, y: object.position.y, z: object.position.z }, makeHandle(object));
     const accepted = result !== false && result?.accepted !== false, committed = accepted && (result?.commit ?? true), animationAfterDrop = animations.get(object);
     const lessonHandledPlacement = !object.position.equals(dropPosition) || animationAfterDrop !== animationBeforeDrop;
@@ -1526,8 +1690,32 @@ elements.canvas.addEventListener("pointerup", endPointer); elements.canvas.addEv
 let lastUiSoundAt = 0;
 const mobileRenderMedia = matchMedia("(max-width: 760px), (orientation: portrait)");
 function uiSound() { const now = performance.now(); if (now - lastUiSoundAt < 70) return; lastUiSoundAt = now; audio.play("onUiBtnClick"); }
-document.addEventListener("pointerdown", event => { const button = event.target.closest("button"); if (!button || button.disabled) return; button.classList.remove("is-ui-pressed"); void button.offsetWidth; button.classList.add("is-ui-pressed"); }, { capture: true });
-document.addEventListener("animationend", event => { if (event.animationName === "ui-button-press") event.target.classList.remove("is-ui-pressed"); });
+let pressedButton = null;
+function releasePressedButton() {
+  pressedButton?.classList.remove("is-ui-pressed");
+  pressedButton = null;
+}
+document.addEventListener("pointerdown", event => {
+  const button = event.target.closest("button");
+  if (!button || button.disabled || button.classList.contains("lab-menu-backdrop") || event.button !== 0) return;
+  releasePressedButton();
+  pressedButton = button;
+  button.classList.add("is-ui-pressed");
+}, { capture: true });
+document.addEventListener("pointerup", releasePressedButton, { capture: true });
+document.addEventListener("pointercancel", releasePressedButton, { capture: true });
+document.addEventListener("keydown", event => {
+  if (event.repeat || (event.key !== "Enter" && event.key !== " ")) return;
+  const button = event.target.closest?.("button");
+  if (!button || button.disabled || button.classList.contains("lab-menu-backdrop")) return;
+  releasePressedButton();
+  pressedButton = button;
+  button.classList.add("is-ui-pressed");
+}, { capture: true });
+document.addEventListener("keyup", event => {
+  if (event.key === "Enter" || event.key === " ") releasePressedButton();
+}, { capture: true });
+window.addEventListener("blur", releasePressedButton);
 document.addEventListener("click", event => { const button = event.target.closest("button"); if (button && !button.disabled) uiSound(); }, { capture: true });
 function cameraButtonAction(callback) { pauseDragCue(); callback(); resumeDragCue(180); }
 $("#reset-view").addEventListener("click", () => { uiSound(); cameraButtonAction(resetCamera); }); $("#zoom-in").addEventListener("click", () => { uiSound(); cameraButtonAction(() => { cameraState.distance = clamp(cameraState.distance - 1.5, cameraConfig.minDistance, cameraConfig.maxDistance); updateCamera(); }); }); $("#zoom-out").addEventListener("click", () => { uiSound(); cameraButtonAction(() => { cameraState.distance = clamp(cameraState.distance + 1.5, cameraConfig.minDistance, cameraConfig.maxDistance); updateCamera(); }); }); $("#rotate-left").addEventListener("click", () => { uiSound(); cameraButtonAction(() => { cameraState.yaw -= THREE.MathUtils.degToRad(15); updateCamera(); }); }); $("#rotate-right").addEventListener("click", () => { uiSound(); cameraButtonAction(() => { cameraState.yaw += THREE.MathUtils.degToRad(15); updateCamera(); }); });
@@ -1588,6 +1776,7 @@ renderer.setAnimationLoop(now => {
   if (fallingLeafSystem) for (const { mesh, motions, dummy } of fallingLeafSystem.groups) { for (let index = 0; index < motions.length; index++) { const motion = motions[index]; motion.position.y -= motion.fall * delta; motion.position.x += motion.drift * delta + Math.sin(now * .0016 + motion.phase) * .003 * delta; motion.position.z += Math.cos(now * .0011 + motion.phase) * .0015 * delta; motion.rotation.x += .0018 * delta; motion.rotation.y += .0025 * delta; motion.rotation.z += .0012 * delta; if (motion.position.y < .18) motion.position.set((Math.random() - .5) * 29, 9 + Math.random() * 4, (Math.random() - .5) * 23); dummy.position.copy(motion.position); dummy.rotation.copy(motion.rotation); dummy.scale.set(motion.size, motion.size * 1.65, motion.size); dummy.updateMatrix(); mesh.setMatrixAt(index, dummy.matrix); } mesh.instanceMatrix.needsUpdate = true; }
   if (atmospherePoints) { atmospherePoints.rotation.y += .0006 * (delta / 16.67); atmospherePoints.position.y = Math.sin(now * .0007) * .18; }
   for (const object of atmosphereGroup.children) if (object.userData.windTrail) { object.position.x += object.userData.windTrail.speed * delta * .48; if (object.position.x > 18) object.position.x = -18; }
+  worldGuiSystem.update(now);
   if (!elements.runtime.classList.contains("web-page-mode")) renderer.render(scene, camera);
 });
 
@@ -1607,12 +1796,237 @@ function resolveLessonDisplayData(lessonData, meta) {
   };
 }
 function modeLabel(mode) { return mode === "student-quiz" ? "QUIZ" : mode === "teacher-lab" ? "TEACHER LAB" : "STUDENT LAB"; }
-function applyRuntimeUi() { elements.runtime.className = `${runtime.mode} ${runtime.meta.worldType === "webPage" ? "web-page-mode" : ""}`; elements.mode.textContent = modeLabel(runtime.mode); elements.title.textContent = runtime.lessonData.title; elements.taxonomy.textContent = [runtime.lessonData.category, runtime.lessonData.subcategory].filter(Boolean).join(" · ") || runtime.meta.description; elements.hint.textContent = runtime.meta.tooltip || "ลากวัตถุไปยังพื้นที่เป้าหมาย"; elements.webRoot.hidden = runtime.meta.worldType !== "webPage"; elements.howto.hidden = runtime.mode === "student-quiz" || !runtime.meta.howto.length; elements.quizPanel.hidden = runtime.mode !== "student-quiz"; elements.mascot.hidden = runtime.meta.worldType === "webPage"; elements.mascot.classList.toggle("is-disabled", mascotSetting.enabled === false); elements.mascot.classList.toggle("is-stationary", mascotBehavior === "stationary"); elements.mascot.dataset.character = activeMascotKey; elements.mascot.dataset.behavior = mascotBehavior; setMascotPose("idle"); scheduleMascotBlink(); requestAnimationFrame(syncConsoleDockHeight); }
+const titleMarqueeAnimations = new WeakMap();
+// Keep the objective and step number on one row; only overflowing text moves.
+let objectiveMarqueeAnimation;
+let objectiveMarqueeFrame;
+function scheduleObjectiveMarquee() {
+  cancelAnimationFrame(objectiveMarqueeFrame);
+  objectiveMarqueeFrame = requestAnimationFrame(() => {
+    objectiveMarqueeAnimation?.cancel();
+    objectiveMarqueeAnimation = null;
+    const viewport = elements.objective.parentElement;
+    const distance = Math.ceil(elements.objective.scrollWidth - viewport.clientWidth);
+    if (!viewport.clientWidth || distance <= 2 || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const travel = Math.max(3000, distance / 28 * 1000);
+    const duration = travel + 4000;
+    objectiveMarqueeAnimation = elements.objective.animate([
+      { transform: "translateX(0)", offset: 0 },
+      { transform: "translateX(0)", offset: 2000 / duration },
+      { transform: `translateX(-${distance}px)`, offset: (2000 + travel) / duration },
+      { transform: `translateX(-${distance}px)`, offset: 1 }
+    ], { duration, iterations: Infinity, easing: "linear" });
+  });
+}
+new MutationObserver(scheduleObjectiveMarquee).observe(elements.objective, { childList: true, characterData: true, subtree: true });
+new ResizeObserver(scheduleObjectiveMarquee).observe(elements.objective.parentElement);
+document.fonts?.ready?.then(scheduleObjectiveMarquee);
+document.fonts?.addEventListener("loadingdone", scheduleObjectiveMarquee);
+function refreshTitleMarquee(element) {
+  const viewport = element?.parentElement;
+  if (!viewport) return;
+  titleMarqueeAnimations.get(element)?.animation?.cancel();
+  titleMarqueeAnimations.delete(element);
+  element.style.removeProperty("--title-marquee-distance");
+  element.style.removeProperty("--title-marquee-duration");
+  element.style.transform = "translateX(0)";
+  const textRange = document.createRange();
+  textRange.selectNodeContents(element);
+  const measuredTextWidth = textRange.getBoundingClientRect().width;
+  textRange.detach?.();
+  const elementRect = element.getBoundingClientRect();
+  const viewportRect = viewport.getBoundingClientRect();
+  const leadingOffset = Math.max(0, elementRect.left - viewportRect.left);
+  const availableWidth = Math.max(1, viewport.clientWidth - leadingOffset);
+  const textWidth = Math.max(measuredTextWidth, element.scrollWidth);
+  const distance = Math.ceil(Math.max(0, textWidth - availableWidth));
+  if (distance <= 2) return;
+  const initialPauseDuration = 2500;
+  const repeatPauseDuration = 2000;
+  const travelDuration = Math.max(3500, Math.min(12000, distance / 28 * 1000));
+  const state = {};
+  const firstAnimation = element.animate([
+    { transform: "translateX(0)" },
+    { transform: `translateX(-${distance}px)` }
+  ], {
+    delay: initialPauseDuration,
+    duration: travelDuration,
+    iterations: 1,
+    easing: "linear"
+  });
+  state.animation = firstAnimation;
+  titleMarqueeAnimations.set(element, state);
+  firstAnimation.finished.then(() => {
+    if (titleMarqueeAnimations.get(element) !== state) return;
+    const repeatDuration = repeatPauseDuration + travelDuration;
+    state.animation = element.animate([
+      { transform: "translateX(0)", offset: 0 },
+      { transform: "translateX(0)", offset: repeatPauseDuration / repeatDuration },
+      { transform: `translateX(-${distance}px)`, offset: 1 }
+    ], {
+      duration: repeatDuration,
+      iterations: Infinity,
+      easing: "linear"
+    });
+  }).catch(() => {});
+}
+function setTitleMarqueeText(element, value) {
+  element.textContent = value;
+  requestAnimationFrame(() => refreshTitleMarquee(element));
+  document.fonts?.ready?.then(() => refreshTitleMarquee(element));
+}
+let titleMarqueeResizeTimer = 0;
+window.addEventListener("resize", () => {
+  clearTimeout(titleMarqueeResizeTimer);
+  titleMarqueeResizeTimer = setTimeout(() => {
+    refreshTitleMarquee(elements.taxonomy);
+    refreshTitleMarquee(elements.title);
+  }, 120);
+});
+if (typeof ResizeObserver === "function") {
+  const titleMarqueeObserver = new ResizeObserver(() => {
+    refreshTitleMarquee(elements.taxonomy);
+    refreshTitleMarquee(elements.title);
+  });
+  const titleCopy = elements.title?.closest(".title-copy");
+  if (titleCopy) titleMarqueeObserver.observe(titleCopy);
+}
+const labCompactMedia = matchMedia("(max-width: 760px), (orientation: portrait)");
+const revisedIconShapes = {
+  "back.svg": '<path d="m15 4-8 8 8 8"/>',
+  "previous.svg": '<path d="m15 4-8 8 8 8"/>',
+  "next.svg": '<path d="m9 4 8 8-8 8"/>',
+  "edit.svg": '<path d="m4 16-1 5 5-1L20 8l-4-4Z"/><path d="m13 7 4 4"/>',
+  "reset.svg": '<path d="M20 10a8 8 0 1 0-2 8M20 4v6h-6"/>',
+  "home.svg": '<path d="m3 11 9-8 9 8M6 9v12h12V9M10 21v-7h4v7"/>',
+  "info.svg": '<circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7" r=".5"/>',
+  "question.svg": '<path d="M7 7a5 5 0 0 1 10 0c0 4-5 4-5 8"/><circle cx="12" cy="20" r=".5"/>',
+  "zoom-in.svg": '<circle cx="10" cy="10" r="6"/><path d="m15 15 6 6M10 7v6M7 10h6"/>',
+  "zoom-out.svg": '<circle cx="10" cy="10" r="6"/><path d="m15 15 6 6M7 10h6"/>',
+  "rotate-left.svg": '<path d="M4 10a8 8 0 1 1 3 9M4 4v6h6"/>',
+  "rotate-right.svg": '<path d="M20 10a8 8 0 1 0-3 9M20 4v6h-6"/>',
+  "hand.svg": '<path d="M8 12V5a2 2 0 0 1 4 0v6-8a2 2 0 0 1 4 0v9-5a2 2 0 0 1 4 0v8c0 5-3 7-7 7-3 0-5-2-7-5l-3-4a2 2 0 0 1 3-2l2 2"/>'
+};
+function syncRevisedIcons() {
+  const revised = elements.runtime.classList.contains("runtime-ui-revised");
+  for (const img of elements.runtime.querySelectorAll('.topbar img, .world-controls img, #lab-menu img, .howto-panel>button img, .quiz-panel .console-state-icon img, .gui-control img')) {
+    const original = img.dataset.uiOriginalSrc || img.getAttribute("src") || "";
+    const name = img.dataset.icon || original.split("/").at(-1)?.split("?")[0];
+    if (!revisedIconShapes[name]) continue;
+    if (!img.dataset.uiOriginalSrc) img.dataset.uiOriginalSrc = original;
+    img.src = revised ? `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0759ed" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${revisedIconShapes[name]}</svg>`)}` : original;
+  }
+}
+const labMenuToggle = $("#lab-menu-toggle"), labMenuOverlay = $("#lab-menu-overlay"), labToolsToggle = $("#lab-tools-toggle");
+function closeLabMenu(returnFocus = false) {
+  labMenuOverlay.hidden = true;
+  labMenuToggle.setAttribute("aria-expanded", "false");
+  if (returnFocus) labMenuToggle.focus();
+}
+function syncLabResponsiveUi() {
+  syncRevisedIcons();
+  const compact = elements.runtime.classList.contains("runtime-ui-revised") && labCompactMedia.matches;
+  labMenuToggle.hidden = !compact;
+  const hasTools = [...elements.controlDock.children].some(node => node.dataset.controlId !== "runtime-skip-teaching" && !node.hidden && !node.classList.contains("is-leaving"));
+  const toolCount = [...elements.controlDock.children]
+    .filter(node => node.dataset.controlId !== "runtime-skip-teaching" && !node.hidden && !node.classList.contains("is-leaving"))
+    .reduce((count, node) => count + node.querySelectorAll("button:not([hidden])").length, 0);
+  elements.runtime.dataset.mobileToolCount = String(toolCount);
+  elements.runtime.style.setProperty("--mobile-tool-count", String(Math.max(1, toolCount)));
+  labToolsToggle.hidden = !compact;
+  labToolsToggle.disabled = !hasTools || elements.runtime.classList.contains("lab-tools-retiring");
+  if (!compact || !hasTools || labToolsToggle.disabled) elements.runtime.classList.remove("lab-tools-ready");
+  else if (!elements.runtime.classList.contains("lab-tools-ready")) requestAnimationFrame(() => {
+    if (!labToolsToggle.disabled && labCompactMedia.matches) elements.runtime.classList.add("lab-tools-ready");
+  });
+  if (!compact || !hasTools) {
+    elements.runtime.classList.remove("lab-tools-open");
+    labToolsToggle.setAttribute("aria-expanded", "false");
+    labToolsToggle.textContent = "◀";
+  }
+  if (!compact) closeLabMenu();
+}
+labMenuToggle.addEventListener("click", () => {
+  const open = labMenuOverlay.hidden;
+  labMenuOverlay.hidden = !open;
+  labMenuToggle.setAttribute("aria-expanded", String(open));
+  if (open) $("#lab-menu button:not([hidden])")?.focus();
+});
+labMenuOverlay.addEventListener("click", event => {
+  const action = event.target.closest("[data-lab-action]");
+  if (action) {
+    if (action.dataset.labAction !== "toggle-audio") closeLabMenu();
+    document.getElementById(action.dataset.labAction)?.click();
+  }
+  else if (event.target.closest(".lab-menu-backdrop")) closeLabMenu(true);
+});
+labMenuOverlay.addEventListener("keydown", event => {
+  if (event.key === "Escape") { event.preventDefault(); closeLabMenu(true); }
+  if (event.key === "Tab") {
+    const buttons = [...labMenuOverlay.querySelectorAll("button")].filter(button => button.getClientRects().length);
+    const first = buttons[0], last = buttons.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+});
+labToolsToggle.addEventListener("click", () => {
+  if (labToolsToggle.disabled) return;
+  const open = elements.runtime.classList.toggle("lab-tools-open");
+  labToolsToggle.setAttribute("aria-expanded", String(open));
+  labToolsToggle.setAttribute("aria-label", open ? "พับเครื่องมือบทเรียน" : "เปิดเครื่องมือบทเรียน");
+  labToolsToggle.textContent = open ? "▶" : "◀";
+});
+labCompactMedia.addEventListener("change", syncLabResponsiveUi);
+new MutationObserver(syncLabResponsiveUi).observe(elements.controlDock, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "class"] });
+function applyRuntimeUi() {
+  elements.runtime.className = `${runtime.mode} ${runtime.meta.worldType === "webPage" ? "web-page-mode" : ""}`;
+  elements.runtime.classList.toggle("runtime-ui-revised", runtime.meta.worldType !== "webPage");
+  syncLabResponsiveUi();
+  scheduleQuestionFit();
+  elements.mode.textContent = elements.runtime.classList.contains("runtime-ui-revised") ? (runtime.mode === "student-quiz" ? "QUIZ" : "LAB") : modeLabel(runtime.mode);
+  const unitTitle = [runtime.lessonData.category, runtime.lessonData.subcategory]
+    .map(displayText)
+    .filter(value => value && value !== "คณิตศาสตร์")
+    .join(" · ") || runtime.meta.description || "หัวข้อการเรียนรู้";
+  setTitleMarqueeText(elements.taxonomy, unitTitle);
+  setTitleMarqueeText(elements.title, runtime.lessonData.title);
+  elements.hint.textContent = runtime.meta.tooltip || "ลากวัตถุไปยังพื้นที่เป้าหมาย";
+  elements.webRoot.hidden = runtime.meta.worldType !== "webPage";
+  elements.howto.hidden = runtime.mode === "student-quiz" || !runtime.meta.howto.length;
+  elements.quizPanel.hidden = runtime.mode !== "student-quiz";
+  elements.mascot.hidden = runtime.meta.worldType === "webPage";
+  elements.mascot.classList.toggle("is-disabled", mascotSetting.enabled === false);
+  elements.mascot.classList.toggle("is-stationary", mascotBehavior === "stationary");
+  elements.mascot.dataset.character = activeMascotKey;
+  elements.mascot.dataset.behavior = mascotBehavior;
+  setMascotPose("idle");
+  scheduleMascotBlink();
+  requestAnimationFrame(syncConsoleDockHeight);
+}
 function lessonPayload(extra = {}) { return { values: { ...runtime.values }, mode: runtime.mode, meta: runtime.meta, ...extra }; }
-async function resetLessonScene(extra = {}) { guiService.clearScope("scene", "step", "question"); setLessonQuestion(""); if (runtime.meta.worldType === "3d-world-space") world.clear(); await runtime.lesson.reset?.(lessonPayload(extra)); runtime.sceneEntered = false; markSceneActive(); }
+async function resetLessonScene(extra = {}) {
+  const retireTools = labCompactMedia.matches && elements.runtime.classList.contains("lab-tools-ready");
+  elements.runtime.classList.add("lab-tools-retiring");
+  elements.runtime.classList.remove("lab-tools-ready", "lab-tools-open");
+  labToolsToggle.disabled = true;
+  labToolsToggle.setAttribute("aria-expanded", "false");
+  labToolsToggle.setAttribute("aria-label", "เปิดเครื่องมือบทเรียน");
+  if (retireTools && !matchMedia("(prefers-reduced-motion: reduce)").matches) await new Promise(resolve => setTimeout(resolve, 240));
+  try {
+    guiService.clearScope("scene", "step", "question"); setLessonQuestion("");
+    const preserveScene = runtime.meta.worldType === "3d-world-space" && runtime.meta.scenePersistence === "lesson" && runtime.lessonSceneInitialized;
+    if (runtime.meta.worldType === "3d-world-space" && !preserveScene) world.clear();
+    await runtime.lesson.reset?.(lessonPayload(extra));
+    if (runtime.meta.worldType === "3d-world-space") runtime.lessonSceneInitialized = true;
+    runtime.sceneEntered = false; markSceneActive();
+  } finally {
+    elements.runtime.classList.remove("lab-tools-retiring");
+    syncLabResponsiveUi();
+  }
+}
 function scheduleMascotBlink() { clearTimeout(runtime.mascotBlinkTimer); clearTimeout(runtime.mascotBlinkReleaseTimer); if (elements.mascot.hidden || mascotSetting.enabled === false) return; const [minimum, maximum] = mascotSetting.idle?.blinkInterval || [2800, 5200], delay = minimum + Math.random() * Math.max(0, maximum - minimum); runtime.mascotBlinkTimer = setTimeout(() => { elements.mascotCharacter.classList.add("is-blinking"); runtime.mascotBlinkReleaseTimer = setTimeout(() => { elements.mascotCharacter.classList.remove("is-blinking"); scheduleMascotBlink(); }, mascotSetting.idle?.blinkDuration || 150); }, delay); }
 function resetMascotTimers() { clearTimeout(runtime.optionCloseTimer); clearTimeout(runtime.mascotFlightTimer); clearTimeout(runtime.mascotLandingTimer); clearTimeout(runtime.mascotSpeechTimer); clearTimeout(runtime.mascotHintTimer); clearTimeout(runtime.mascotPoseTimer); }
-function setMascotPose(pose = "idle") { elements.mascot.dataset.pose = mascotBehavior === "stationary" ? pose : "idle"; }
+function setMascotPose(pose = "idle") { const nextPose = mascotBehavior === "stationary" ? pose : "idle"; if (elements.mascot.dataset.pose !== nextPose) elements.mascot.dataset.pose = nextPose; }
 async function playQuizMascotReaction() {
   if (mascotBehavior !== "stationary" || runtime.mode !== "student-quiz") return;
   const poses = ["celebrate", "instruction", "hint"], previous = elements.mascot.dataset.lastQuizPose || "", choices = poses.filter(pose => pose !== previous), pose = choices[Math.floor(Math.random() * choices.length)] || "celebrate";
@@ -1643,23 +2057,26 @@ function showStepOption(option) {
   }
   const iconName = mascotSetting.messaging?.typeIcons?.[option.type] || "lightbulb.svg", renderSpeech = () => { elements.stepOption.hidden = false; elements.stepOption.innerHTML = `<button class="mascot-collapse" type="button" aria-label="พับคำแนะนำ" title="พับคำแนะนำ">${iconMarkup("collapse.svg")}</button><div class="option-heading">${iconMarkup(iconName)}<div><small>${escapeHtml(mascotProfile.name || mascotSetting.name || "ผู้ช่วยประจำบทเรียน")}</small><h3>${escapeHtml(option.header || "คำแนะนำ")}</h3></div></div><p></p>`; elements.stepOption.querySelector(".mascot-collapse")?.addEventListener("click", () => { uiSound(); showStepOption(null); }); void elements.stepOption.offsetWidth; elements.stepOption.classList.add("is-opening"); typeText(elements.stepOption.querySelector("p"), option.message, mascotSetting.speech?.textSpeed || setting.ui.animation.typewriterSpeed); };
   if (!enabled) { renderSpeech(); return; }
-  setMascotPose(option.type === "hint" ? "hint" : option.type === "feedback" ? "celebrate" : "instruction");
+  setMascotPose("speaking");
   elements.mascot.classList.remove("is-returning", "is-landing"); elements.mascot.classList.add("is-speaking");
   if (mascotBehavior === "stationary") { elements.mascot.classList.remove("is-flying-in"); elements.mascot.classList.add("is-talking"); renderSpeech(); return; }
   if (wasSpeaking) { elements.mascot.classList.remove("is-flying-in"); elements.mascot.classList.add("is-talking"); renderSpeech(); return; }
   elements.stepOption.hidden = true; elements.mascot.classList.remove("is-talking"); elements.mascot.classList.add("is-flying-in"); runtime.mascotSpeechTimer = setTimeout(renderSpeech, messageDelay); runtime.mascotFlightTimer = setTimeout(() => { elements.mascot.classList.remove("is-flying-in"); elements.mascot.classList.add("is-landing"); runtime.mascotLandingTimer = setTimeout(() => { elements.mascot.classList.remove("is-landing"); elements.mascot.classList.add("is-talking"); }, landingDuration); }, flyInDuration);
 }
-function animateConsole() { elements.howto.classList.remove("is-updating"); void elements.howto.offsetWidth; elements.howto.classList.add("is-updating"); }
+function animateConsole() {
+  elements.howto.classList.remove("is-updating");
+}
 function syncLabSkipControl() {
   const id = "runtime-skip-teaching", steps = runtime.meta?.howto || [];
   const shouldShow = runtime.mode !== "student-quiz" && steps.length > 1 && runtime.stepIndex < steps.length - 1;
   const existing = guiService.control.get(id);
   if (!shouldShow) { existing?.hide(); return; }
-  if (existing) { existing.show(); return; }
+  if (existing) { if (existing.element.hidden || existing.element.classList.contains("is-leaving")) existing.show(); return; }
   guiService.control.show({
     id, scope: "lesson", position: "bottom-right", tone: "info",
+    systemRole: "skip-teaching",
     ariaLabel: "ข้ามขั้นตอนการสอน", objectiveAction: false,
-    items: [{ id: "skip", label: "ข้ามการสอน", icon: "next.svg" }],
+    items: [{ id: "skip", label: "ข้ามการสอน", icon: "skip.svg" }],
     onAction: event => {
       if (event.id !== "skip") return;
       const currentSteps = runtime.meta?.howto || [];
@@ -1667,7 +2084,7 @@ function syncLabSkipControl() {
     }
   });
 }
-async function setStep(index) { const steps = runtime.meta.howto; if (!steps.length) return; guiService.clearScope("step"); clearTypewriters(); runtime.stepIndex = clamp(index, 0, steps.length - 1); const step = steps[runtime.stepIndex], freestyle = step.type === "freestyle"; guiService.console.reset(); elements.howto.classList.toggle("is-freestyle", freestyle); elements.consoleState.classList.toggle("is-hand", freestyle); elements.consoleStateImage.src = iconUrl(freestyle ? "hand.svg" : "book.svg"); elements.stepCounter.textContent = `ขั้นตอน ${runtime.stepIndex + 1} / ${steps.length}${freestyle ? " · ทดลองเอง" : ""}`; typeText(elements.stepTitle, step.title); typeText(elements.stepDescription, step.desc); $("#previous-step").disabled = runtime.stepIndex === 0; $("#next-step").disabled = runtime.stepIndex === steps.length - 1; syncLabSkipControl(); queueStepOption(step.option); animateConsole(); await runtime.lesson.onStep?.(runtime.stepIndex, step, lessonPayload()); if (!runtime.sceneEntered) { world.playEntrance(); runtime.sceneEntered = true; } }
+async function setStep(index) { const steps = runtime.meta.howto; if (!steps.length) return; guiService.clearScope("step"); clearTypewriters(); runtime.stepIndex = clamp(index, 0, steps.length - 1); const step = steps[runtime.stepIndex], finalLabStep = runtime.stepIndex === steps.length - 1, freestyle = step.type === "freestyle" || finalLabStep; guiService.control.setLessonPhase(finalLabStep ? "lab" : "teaching"); guiService.console.reset(); elements.howto.classList.toggle("is-freestyle", freestyle); elements.consoleState.classList.toggle("is-hand", freestyle); elements.consoleStateImage.src = iconUrl(freestyle ? "hand.svg" : "book.svg"); elements.stepCounter.textContent = `${runtime.stepIndex + 1} / ${steps.length}`; typeText(elements.stepTitle, step.title); typeText(elements.stepDescription, step.desc); $("#previous-step").disabled = runtime.stepIndex === 0; $("#next-step").disabled = runtime.stepIndex === steps.length - 1; syncLabSkipControl(); queueStepOption(step.option); animateConsole(); await runtime.lesson.onStep?.(runtime.stepIndex, step, lessonPayload()); if (!runtime.sceneEntered) { world.playEntrance(); runtime.sceneEntered = true; } }
 function showInformation() { uiSound(); const tags = Array.isArray(runtime.lessonData.tags) ? runtime.lessonData.tags : [], category = [runtime.lessonData.category, runtime.lessonData.subcategory].filter(Boolean).join(" · ") || "บทเรียนเสริมทักษะ"; showModal(`<div class="info-dialog"><header class="modal-hero">${iconMarkup("book.svg")}<div><span class="mode-badge">${escapeHtml(modeLabel(runtime.mode))}</span><h2>${escapeHtml(runtime.lessonData.title)}</h2></div></header><div class="info-topic">${iconMarkup("book.svg")}<div><h3>เรื่องที่กำลังเรียน</h3><p>${escapeHtml(runtime.meta.description)}</p></div></div><div class="info-topic">${iconMarkup("category.svg")}<div><h3>หมวดการเรียนรู้</h3><p>${escapeHtml(category)}</p><div class="tag-list">${tags.map(tag => `<span>${escapeHtml(tag)}</span>`).join("")}</div></div></div><div class="info-topic is-target">${iconMarkup("target.svg")}<div><h3>เป้าหมายของบทเรียน</h3><p>${escapeHtml(runtime.meta.keyResult)}</p></div></div></div>`); }
 function editorFieldVisible(field, values) { const rule = field.showWhen; if (!rule?.key) return true; const accepted = Array.isArray(rule.values) ? rule.values : [rule.value]; return accepted.some(value => String(value) === String(values[rule.key])); }
 function editorFieldMarkup(field) { const key = escapeHtml(field.key), value = runtime.values[field.key] ?? "", range = field.option || [], min = field.min ?? range[0] ?? 0, max = field.max ?? range[1] ?? 100, help = field.help ? `<em class="editor-help">${escapeHtml(field.help)}</em>` : "", primaryClass = field.key === "problemType" ? " is-primary" : ""; if (field.type === "dropdown") { const options = (field.option || []).map(item => { const option = item && typeof item === "object" ? item : { value: item, label: item }; return `<option value="${escapeHtml(option.value)}" ${String(option.value) === String(value) ? "selected" : ""}>${escapeHtml(option.label)}</option>`; }).join(""); return `<label class="editor-field${primaryClass}" data-editor-field="${key}"><span>${escapeHtml(field.name)}</span><select data-edit="${key}">${options}</select>${help}</label>`; } if (field.type === "slider") return `<label class="editor-field is-slider${primaryClass}" data-editor-field="${key}"><span>${escapeHtml(field.name)}</span><output data-range-output="${key}">${escapeHtml(value)}</output><input data-edit="${key}" type="range" value="${escapeHtml(value)}" min="${escapeHtml(min)}" max="${escapeHtml(max)}" step="${escapeHtml(field.step ?? 1)}"><small><i>${escapeHtml(min)}</i><i>${escapeHtml(max)}</i></small>${help}</label>`; return `<label class="editor-field${primaryClass}" data-editor-field="${key}"><span>${escapeHtml(field.name)}</span><input data-edit="${key}" type="number" value="${escapeHtml(value)}" min="${escapeHtml(min)}" max="${escapeHtml(max)}" step="${escapeHtml(field.step ?? 1)}">${help}</label>`; }
@@ -1676,15 +2093,15 @@ function showEditor() { uiSound(); const fields = runtime.meta.editSchema.map(ed
 function shuffle(items) { const copy = [...items]; for (let i = copy.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[copy[i], copy[j]] = [copy[j], copy[i]]; } return copy; }
 function questionValues(question) { const values = { ...runtime.meta.defaultValue }; for (const item of question.data || []) values[item.key] = item.value; return values; }
 const quizNextButton = $("#next-question");
-function hideQuizNext() { quizNextButton.hidden = true; quizNextButton.classList.remove("is-returning"); quizNextButton.classList.add("is-waiting"); quizNextButton.disabled = true; if (runtime.quiz) runtime.quiz.objectiveActionTaken = false; }
-function revealQuizNext() { quizNextButton.hidden = false; quizNextButton.classList.remove("is-waiting"); quizNextButton.disabled = false; void quizNextButton.offsetWidth; quizNextButton.classList.add("is-returning"); }
-function objectiveAction() { clearTimeout(runtime.mascotHintTimer); if (runtime.mode !== "student-quiz" || !runtime.quiz) return; runtime.quiz.objectiveActionTaken = true; revealQuizNext(); }
-async function showQuestion(index) { const quiz = runtime.quiz; if (index >= quiz.questions.length) return finishQuiz(); quiz.acceptingAnswers = false; guiService.clearScope("question"); hideQuizNext(); clearTypewriters(); quiz.index = index; quiz.pendingAnswer = null; const question = quiz.questions[index]; runtime.values = questionValues(question); typeText(elements.question, question.question); elements.quizDots.innerHTML = quiz.questions.map((_, dot) => `<i class="${dot < index ? "done" : dot === index ? "current" : ""}"></i>`).join(""); $("[data-next-label]").textContent = index === quiz.questions.length - 1 ? "ส่งคำตอบ" : "ต่อไป"; if (index) audio.play("nextQuest"); await resetLessonScene({ question, questionIndex: index }); world.playEntrance(); runtime.sceneEntered = true; quiz.acceptingAnswers = true; postToHost("lesson.progress", { current: index + 1, total: quiz.questions.length }); }
+function hideQuizNext() { quizNextButton.hidden = runtime.mode !== "student-quiz" || !runtime.quiz || runtime.completed; quizNextButton.classList.remove("is-returning"); quizNextButton.classList.add("is-waiting"); quizNextButton.disabled = true; if (runtime.quiz) runtime.quiz.objectiveActionTaken = false; }
+function revealQuizNext() { const wasDisabled = quizNextButton.disabled; quizNextButton.hidden = false; quizNextButton.classList.remove("is-waiting"); quizNextButton.disabled = false; if (wasDisabled) { quizNextButton.classList.remove("is-returning"); void quizNextButton.offsetWidth; quizNextButton.classList.add("is-returning"); } }
+function objectiveAction() { clearTimeout(runtime.mascotHintTimer); if (runtime.mode !== "student-quiz" || !runtime.quiz?.acceptingAnswers || runtime.completed) return; if (!runtime.quiz.pendingAnswer || runtime.quiz.pendingAnswer.hasAnswer === false) { hideQuizNext(); return; } runtime.quiz.objectiveActionTaken = true; revealQuizNext(); }
+async function showQuestion(index) { const quiz = runtime.quiz; if (index >= quiz.questions.length) return finishQuiz(); quiz.acceptingAnswers = false; guiService.clearScope("question"); hideQuizNext(); clearTypewriters(); quiz.index = index; quiz.pendingAnswer = null; const question = quiz.questions[index]; runtime.values = questionValues(question); typeText(elements.question, question.question); elements.quizDots.innerHTML = quiz.questions.map((_, dot) => `<i class="${dot < index ? "done" : dot === index ? "current" : ""}"></i>`).join(""); $("[data-next-label]").textContent = index === quiz.questions.length - 1 ? "ยืนยันคำตอบ" : "ข้อต่อไป"; quizNextButton.classList.toggle("is-final-question", index === quiz.questions.length - 1); quizNextButton.setAttribute("aria-label", index === quiz.questions.length - 1 ? "ยืนยันคำตอบและดูคะแนน" : "บันทึกคำตอบแล้วไปข้อต่อไป"); elements.quizDots.setAttribute("aria-label", `ข้อ ${index + 1} จาก ${quiz.questions.length}`); if (index) audio.play("nextQuest"); await resetLessonScene({ question, questionIndex: index }); world.playEntrance(); runtime.sceneEntered = true; quiz.acceptingAnswers = true; postToHost("lesson.progress", { current: index + 1, total: quiz.questions.length }); }
 function answerQuiz(correct, details = {}) { const quiz = runtime.quiz; if (!quiz?.acceptingAnswers) return false; const question = quiz.questions[quiz.index]; quiz.pendingAnswer = { questionIndex: quiz.index, question: question.question, correct: Boolean(correct), ...details }; objectiveAction(); return true; }
 function commitQuizAnswer() { const quiz = runtime.quiz, question = quiz.questions[quiz.index], answer = quiz.pendingAnswer || { questionIndex: quiz.index, question: question.question, correct: false, skipped: true }; quiz.answers.push(answer); if (answer.correct) quiz.score += 1; }
-function answerSummary(answer) { if (answer?.skipped) return "ไม่ได้ตอบ"; if (answer?.leftCount != null && answer?.rightCount != null) return `${answer.leftCount} ${answer.operator} ${answer.rightCount}`; return "ยังไม่ได้วางคำตอบ"; }
+function answerSummary(answer) { if (answer?.skipped) return "ไม่ได้ตอบ"; if (typeof answer?.answerText === "string" && answer.answerText.trim()) return answer.answerText; if (answer?.leftCount != null && answer?.rightCount != null) return `${answer.leftCount} ${answer.operator} ${answer.rightCount}`; return "ยังไม่ได้วางคำตอบ"; }
 function finishQuiz() { const quiz = runtime.quiz; runtime.completed = true; const durationMs = Date.now() - quiz.startedAt; audio.play("completeLesson"); celebrate(); const minutes = Math.floor(durationMs / 60000), seconds = Math.floor(durationMs % 60000 / 1000), percent = Math.round(quiz.score / quiz.questions.length * 100), review = quiz.questions.map((question, index) => { const answer = quiz.answers.find(item => item.questionIndex === index), correct = answer?.correct; return `<li class="${correct ? "correct" : "wrong"}"><b>${correct ? "✓" : "×"}</b><div><strong>${escapeHtml(question.question)}</strong><span>คำตอบที่วาง: ${escapeHtml(answerSummary(answer))}</span></div></li>`; }).join(""); showModal(`<div class="quiz-result"><header class="result-hero">${iconMarkup("trophy.svg")}<div><span>MISSION COMPLETE</span><h2>${percent >= 80 ? "ยอดเยี่ยมมาก!" : "เก่งมาก ลองอีกครั้งได้เสมอ"}</h2><p>ใช้เวลา ${minutes} นาที ${seconds} วินาที</p></div><div class="result-score"><strong>${quiz.score}</strong><small>/ ${quiz.questions.length}</small></div></header><div class="result-stars">${[1, 2, 3].map(star => `<i class="${percent >= star * 30 ? "earned" : ""}">★</i>`).join("")}</div><h3 class="review-title">คำตอบและผลแต่ละข้อ</h3><ol class="review-list">${review}</ol></div>`, { dismissible: false, primaryLabel: "ตกลง", onPrimary: () => { const result = { score: quiz.score, maxScore: quiz.questions.length, durationMs, answers: quiz.answers }; postToHost("lesson.complete", { lessonId: runtime.lessonData.Id, lessonVersion: runtime.lesson.version || "1.0.0", status: "completed", ...result }); postToHost("lesson.closeRequested"); } }); }
-async function beginQuiz() { closeModal(); runtime.quiz = { questions: shuffle(runtime.meta.quiz).slice(0, Math.min(5, runtime.meta.quiz.length)), index: 0, score: 0, answers: [], pendingAnswer: null, acceptingAnswers: false, startedAt: Date.now() }; await showQuestion(0); }
+async function beginQuiz() { closeModal(); runtime.completed = false; runtime.quiz = { questions: shuffle(runtime.meta.quiz).slice(0, Math.min(5, runtime.meta.quiz.length)), index: 0, score: 0, answers: [], pendingAnswer: null, acceptingAnswers: false, startedAt: Date.now() }; await showQuestion(0); }
 function readyQuiz() { const art = runtimeAssetUrl(setting.entry.quizWelcomeImagePath || setting.entry.loadingImagePath || setting.entry.imagePath); showModal(`<div class="quiz-welcome"><div class="quiz-welcome-art"><img src="${art}" alt="" /><span class="mode-badge">PRE-TEST</span></div><div class="quiz-welcome-copy"><span class="quiz-eyebrow">PUZZLE CHALLENGE</span><h2>พร้อมเริ่มภารกิจทดสอบหรือยัง?</h2><p>ลองตอบหรือทำโจทย์อย่างน้อยหนึ่งครั้ง แล้วจึงส่งคำตอบเพื่อไปข้อต่อไป เราจะสรุปคะแนนพร้อมกันเมื่อทำครบ</p><div class="quiz-rules"><div>${iconMarkup("question.svg")}<b>${Math.min(5, runtime.meta.quiz.length)} ข้อ</b><small>สุ่มจาก ${runtime.meta.quiz.length} ข้อ</small></div><div>${iconMarkup("next.svg")}<b>ลองก่อนส่ง</b><small>ตอบถูกหรือผิดก็ส่งได้</small></div><div>${iconMarkup("trophy.svg")}<b>สรุปท้ายเกม</b><small>ดูคะแนนพร้อมกัน</small></div></div></div></div>`, { dismissible: false, primaryLabel: "เริ่มภารกิจ", onPrimary: beginQuiz }); }
 
 const lessonUi = Object.freeze({
@@ -1693,6 +2110,7 @@ const lessonUi = Object.freeze({
   topMessage: guiService.topMessage,
   choice: guiService.choice,
   gizmo: guiService.gizmo,
+  worldGuiSystem,
   feedback: guiService.feedback,
   dialog: guiService.dialog,
   insight: guiService.insight,
@@ -1780,7 +2198,7 @@ async function openLesson(payload) {
     failureStage = "register";
     if (!registered?.mount) throw new Error("lessonApp ต้องมี mount(context)");
     failureStage = "metadata";
-    runtime.lesson = registered; runtime.lessonUrl = lessonUrl; runtime.mode = lessonData.mode; runtime.meta = normalizeMeta(registered.meta, lessonData); runtime.lessonData = resolveLessonDisplayData(lessonData, runtime.meta); runtime.values = { ...runtime.meta.defaultValue }; configureCamera(runtime.meta.camera || {}); elements.entryTitle.textContent = runtime.lessonData.title;
+    runtime.lesson = registered; runtime.lessonUrl = lessonUrl; runtime.mode = lessonData.mode; syncDebugHud(); runtime.meta = normalizeMeta(registered.meta, lessonData); runtime.lessonData = resolveLessonDisplayData(lessonData, runtime.meta); runtime.values = { ...runtime.meta.defaultValue }; runtime.stepIndex = 0; guiService.control.setLessonPhase(runtime.mode === "student-quiz" ? "quiz" : runtime.meta.howto.length ? "teaching" : "lab"); configureCamera(runtime.meta.camera || {}); elements.entryTitle.textContent = runtime.lessonData.title;
     updateEntry(55, "กำลังเตรียมสื่อและคำแนะนำ…", runtime.meta.welcomeMessage);
     if (runtime.mode === "student-quiz" && !runtime.meta.quiz.length) throw new Error("บทเรียน Quiz ต้องมีคำถามอย่างน้อย 1 ข้อ");
     failureStage = "assets";
@@ -1836,7 +2254,7 @@ function bindLessonCloseButton(button) {
 
 bindLessonCloseButton($("#close-runtime"));
 bindLessonCloseButton($("#entry-close"));
-$("#show-information").addEventListener("click", showInformation); $("#edit-lesson").addEventListener("click", showEditor); $("#previous-step").addEventListener("click", () => setStep(runtime.stepIndex - 1)); $("#next-step").addEventListener("click", () => setStep(runtime.stepIndex + 1)); $("#reset-lesson").addEventListener("click", async () => { uiSound(); runtime.values = { ...runtime.meta.defaultValue }; if (runtime.mode === "student-quiz") readyQuiz(); else { await resetLessonScene(); await setStep(0); } }); $("#next-question").addEventListener("click", async () => { hideQuizNext(); uiSound(); commitQuizAnswer(); await playQuizMascotReaction(); await showQuestion(runtime.quiz.index + 1); });
+$("#show-information").addEventListener("click", showInformation); $("#edit-lesson").addEventListener("click", showEditor); $("#previous-step").addEventListener("click", () => setStep(runtime.stepIndex - 1)); $("#next-step").addEventListener("click", () => setStep(runtime.stepIndex + 1)); $("#reset-lesson").addEventListener("click", async () => { uiSound(); runtime.values = { ...runtime.meta.defaultValue }; if (runtime.mode === "student-quiz") readyQuiz(); else { await resetLessonScene(); await setStep(0); } }); $("#next-question").addEventListener("click", async () => { if (quizNextButton.disabled || !runtime.quiz?.acceptingAnswers) return; runtime.quiz.acceptingAnswers = false; hideQuizNext(); uiSound(); commitQuizAnswer(); await playQuizMascotReaction(); await showQuestion(runtime.quiz.index + 1); });
 elements.mascotNotice.addEventListener("click", () => { uiSound(); revealPendingMascotOption(); });
 window.addEventListener("message", event => { if (event.origin !== location.origin || event.source !== window.parent || event.data?.channel !== "edu-widget") return; if (event.data.type === "host.openLesson") openLesson(event.data.payload); if (event.data.type === "host.closeLesson") closeLesson(); if (event.data.type === "host.toggleRuntimeSetting") runtimeSettingMenu?.toggle(); });
 postToHost("runtime.ready");
@@ -1851,6 +2269,7 @@ function captureGuiDebugSnapshot() {
 }
 function clearGuiDebug() {
   guiService.clearScope("debug");
+  worldGuiSystem.clear("debug");
   for (const handle of worldDebugDisplays.values()) handle.remove();
   worldDebugDisplays.clear();
   if (!guiDebugSnapshot) return;
@@ -1874,6 +2293,10 @@ function guiLabAction(action, payload) {
     const target = selected || interactive[0], existing = guiService.gizmo.get("debug-gizmo");
     if (existing && action === "update") existing.update({ text: message, tone });
     else { existing?.remove(); if (target) guiService.gizmo.attach(target.userData?.lessonHandle || target, { id: "debug-gizmo", scope: "debug", type: "label", text: message, tone, worldOffset: [0, 2, 0] }); else guiService.gizmo.at([0, 2.5, 0], { id: "debug-gizmo", scope: "debug", type: "label", text: message, tone }); }
+  } else if (service === "world-gui-system") {
+    const target = selected || interactive[0], existing = worldGuiSystem.get("debug-world-gui-system");
+    if (existing && action === "update") existing.update({ text: message, tone });
+    else { existing?.remove(); if (target) worldGuiSystem.attach(target.userData?.lessonHandle || target, { id: "debug-world-gui-system", scope: "debug", text: message, tone }); else worldGuiSystem.at([0, 2.5, 0], { id: "debug-world-gui-system", scope: "debug", text: message, tone }); }
   } else if (service === "world-counter") {
     let existing = worldDebugDisplays.get(service); const requested = Number.parseInt(message, 10), nextValue = Number.isFinite(requested) ? requested : (existing?.getValue?.() ?? 0) + (action === "update" ? 1 : 0);
     if (existing && action === "update") existing.setValue(nextValue);
@@ -1898,6 +2321,7 @@ function guiLabAction(action, payload) {
 const runtimeSettingMenu = runtimeSettingTools.setupRuntimeSettingMenu({
   setting,
   baseline: runtimeSettingBaseline,
+  debugEnabled: setting.debugHUD === true,
   getMode: () => runtime.mode,
   onApply: async () => {
     if (runtime.lessonData) runtimeSettingTools.saveRuntimeLessonRestore({ lessonData: structuredClone(runtime.lessonData), language: runtime.language });
@@ -1913,8 +2337,19 @@ const runtimeSettingMenu = runtimeSettingTools.setupRuntimeSettingMenu({
     sessionStorage.setItem("edu-runtime-force-asset-version", String(Date.now()));
     location.reload();
   },
-  onRetest: ({ mode } = {}) => postToHost("lesson.retestRequested", mode ? { mode } : {}),
+  onRetest: ({ mode } = {}) => requestRetest(mode),
+  onToggleDebugArea: () => toggleDebugArea(),
   onGuiLabAction: guiLabAction
 });
+function requestRetest(mode) { postToHost("lesson.retestRequested", mode ? { mode } : {}); }
+elements.debugHud?.addEventListener("click", event => {
+  const button = event.target.closest("[data-debug-action]");
+  if (!button) return;
+  uiSound();
+  if (button.dataset.debugAction === "refresh") requestRetest();
+  else if (button.dataset.debugAction === "panel") runtimeSettingMenu.toggle();
+  else if (button.dataset.debugAction === "switch-mode") requestRetest(runtime.mode === "student-quiz" ? "teacher-lab" : "student-quiz");
+});
+syncDebugHud();
 const restoredRuntimeLesson = runtimeSettingTools.consumeRuntimeLessonRestore();
 if (restoredRuntimeLesson) queueMicrotask(() => openLesson(restoredRuntimeLesson));
